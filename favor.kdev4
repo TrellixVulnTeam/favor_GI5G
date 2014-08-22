@@ -1,0 +1,4 @@
+[Project]
+Name=favor
+Manager=KDevCMakeManager
+VersionControl=kdevgit
