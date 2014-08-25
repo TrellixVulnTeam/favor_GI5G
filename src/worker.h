@@ -6,6 +6,8 @@
 namespace favor{
   namespace worker{
     void initialize();
+    void cleanup();
+    void buildDatabase();
   }
 }
 

@@ -6,7 +6,8 @@
 namespace favor{
   namespace reader{
     void initialize();
+    void cleanup();
   }
 }
 
-#endif#endif
+#endif

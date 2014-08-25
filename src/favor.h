@@ -3,9 +3,9 @@
 
 #include <string>
 #include "lib/sqlite/sqlite3.h"
+#include "definitions.h"
 
 namespace favor{
-  const std::string DB_NAME="favor.db";
   void initialize();
   void cleanup();
 }
