@@ -7,7 +7,11 @@ namespace favor{
   namespace worker{
     void initialize();
     void cleanup();
+    void sqlite3_exec_noread(const char *sql);
     void buildDatabase();
+    void truncateDatabase();
+    void indexDatabase();
+    void deindexDatabase();
   }
 }
 
