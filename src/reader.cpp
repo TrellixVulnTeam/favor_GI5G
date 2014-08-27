@@ -6,16 +6,10 @@ namespace favor{
       sqlite3 *db;
     }
     void initialize(){
-      int result = sqlite3_open_v2(DB_NAME, &db, SQLITE_OPEN_READONLY, "");
-      if (result!=SQLITE_OK){
-	//TODO: throw an exception or something
-      }
+      sqlite3_validate(sqlite3_open_v2(DB_NAME, &db, SQLITE_OPEN_READONLY, "")); //TODO: this is broken
     }
     void cleanup(){
-      int result = sqlite3_close(db);
-      if (result!=SQLITE_OK){
-	//Log failure, probably means it's busy because we haven't finalized all of our statements
-      }
+      sqlite3_validate(sqlite3_close(db));
     }
   }
 }

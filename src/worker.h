@@ -5,13 +5,17 @@
 
 namespace favor{
   namespace worker{
+    //Basic
     void initialize();
     void cleanup();
-    void sqlite3_exec_noread(const char *sql);
+    //Database
     void buildDatabase();
     void truncateDatabase();
     void indexDatabase();
     void deindexDatabase();
+    //Writing methods
+    void sqlite3_exec_noread(string sql);
+    void add_account(string name, MessageType type, string detailsJson);
   }
 }
 

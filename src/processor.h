@@ -4,8 +4,9 @@
 #include "favor.h"
 
 namespace favor{
-
-  
+  namespace processor{
+    
+  }
 }
 
 #endif

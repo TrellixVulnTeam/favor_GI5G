@@ -14,7 +14,7 @@ namespace favor{
 
 //Accounts table
 #define ACCOUNT_TABLE "accounts"
-#define ACCOUNT_TABLE_SCHEMA "(name TEXT NOT NULL, type INTEGER NOT NULL, details_json TEXT)"
+#define ACCOUNT_TABLE_SCHEMA "(name TEXT NOT NULL, type INTEGER NOT NULL, details_json TEXT, PRIMARY KEY(name, type))"
 
 //Messages tables, name has to be determined at runtime from type and accountname
 /*Note:
@@ -22,8 +22,8 @@ namespace favor{
  * "But the following declaration does not result in "x" being an alias for the rowid:
  * CREATE TABLE t(x INTEGER PRIMARY KEY DESC, y, z);"
  */
-#define RECEIVED_MESSAGE_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, PRIMARY KEY(id DESC))"
-#define SENT_MESSAGE_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, PRIMARY KEY(id, address DESC))"
+#define RECEIVED_MESSAGE_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, PRIMARY KEY(id))"
+#define SENT_MESSAGE_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, PRIMARY KEY(id, address))"
 
 
 #endif
