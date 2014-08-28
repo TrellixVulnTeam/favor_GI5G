@@ -6,10 +6,10 @@ namespace favor{
       sqlite3 *db;
     }
     void initialize(){
-      sqlite3_validate(sqlite3_open_v2(DB_NAME, &db, SQLITE_OPEN_READONLY, "")); //TODO: this is broken
+      sqlv(sqlite3_open_v2(DB_NAME, &db, SQLITE_OPEN_READONLY, NULL));
     }
     void cleanup(){
-      sqlite3_validate(sqlite3_close(db));
+      sqlv(sqlite3_close(db));
     }
   }
 }

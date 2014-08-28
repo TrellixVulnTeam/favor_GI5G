@@ -6,11 +6,11 @@ namespace favor{
       sqlite3 *db;
     }
     void initialize(){
-      sqlite3_validate(sqlite3_open(DB_NAME, &db));
+      sqlv(sqlite3_open(DB_NAME, &db));
     }
     
     void cleanup(){
-      sqlite3_validate(sqlite3_close(db));
+      sqlv(sqlite3_close(db));
     }
     
     void sqlite3_exec_noread(string sql){
@@ -28,13 +28,12 @@ namespace favor{
       sqlite3_stmt *stmt;
       //TODO: Investigate how necessary freeing things is when binding text to sqlite, and make sure that we know what to avoid
       //in this method and methods like it when it comes to leaking memory
-      sqlite3_validate(sqlite3_prepare_v2(db, "INSERT INTO " ACCOUNT_TABLE " VALUES(?,?,?);", -1, &stmt, NULL));
-      sqlite3_validate(sqlite3_bind_text(stmt, 1, name.c_str(), strlen(name.c_str()), SQLITE_STATIC)); //Memory managed by containing string, so we tell SQLite it's static
-      sqlite3_validate(sqlite3_bind_int(stmt, 2, type));
-      sqlite3_validate(sqlite3_bind_text(stmt, 3, detailsJson.c_str(), strlen(detailsJson.c_str()), SQLITE_STATIC));
-      sqlite3_validate(sqlite3_step(stmt));
-            cout << sqlite3_errmsg(db) << endl;
-      sqlite3_validate(sqlite3_finalize(stmt));
+      sqlv(sqlite3_prepare_v2(db, "INSERT INTO " ACCOUNT_TABLE " VALUES(?,?,?);", -1, &stmt, NULL));
+      sqlv(sqlite3_bind_text(stmt, 1, name.c_str(), strlen(name.c_str()), SQLITE_STATIC)); //Memory managed by containing string, so we tell SQLite it's static
+      sqlv(sqlite3_bind_int(stmt, 2, type));
+      sqlv(sqlite3_bind_text(stmt, 3, detailsJson.c_str(), strlen(detailsJson.c_str()), SQLITE_STATIC));
+      sqlv(sqlite3_step(stmt));
+      sqlv(sqlite3_finalize(stmt));
     }
 
     

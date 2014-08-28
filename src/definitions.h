@@ -1,7 +1,13 @@
 #ifndef favor_def_include
 #define favor_def_include
 
-
+//Macros
+/*
+ * For ease of use reasons, everywhere we use SQLite in favor, there should be an
+ * sqlite* variable available named "db". If there's an exception to this rule, the 
+ * perpetrator can call sqlite3_validate directly...
+ */
+#define sqlv(arg1) sqlite3_validate(arg1, db);
 //Types
 namespace favor{
   enum MessageType {TYPE_EMAIL, TYPE_ANDROIDTEXT, TYPE_LINE, TYPE_SKYPE, NUMBER_OF_TYPES};

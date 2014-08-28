@@ -20,17 +20,30 @@ namespace favor{
    reader::cleanup();
   }
   
-  void sqlite3_validate(int result){
-    cout << result << endl;
+  //These methods will not behave well with numbers whose digit count exceeds the DIGIT_MAX
+  #define INT_DIGIT_MAX 10 
+  #define LONG_DIGIT_MAX 20
+  string int_string(int val){
+    char result[INT_DIGIT_MAX] = {0};
+    sprintf(result, "%d", val);
+    return string(result);
+  }
+  string long_string(long val)
+  {
+    char result[LONG_DIGIT_MAX] = {0};
+    sprintf(result, "%ld", val);
+    return string(result);
+  }
+
+
+  void sqlite3_validate(int result, sqlite3 *db ){
     switch(result){
-      case SQLITE_ROW: //TODO: this is a mess right now with stdout usage, but the important thing is that not every !=SQLITE_OK code is an error
-	cout << "ROW" << endl;
-        break;
-      case SQLITE_DONE:
-	cout << "DONE" << endl;
-	break;
+      case SQLITE_OK: break;
+      case SQLITE_ROW: break;
+      case SQLITE_DONE: break;
       default:
-	logger::error(sqlite3_errstr(result));
+	logger::error("SQLite error #"+long_string(result)+", db says \""+sqlite3_errmsg(db)+"\"");
+	//TODO: throw exception
     }
   }
 

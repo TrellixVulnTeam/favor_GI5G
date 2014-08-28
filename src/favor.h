@@ -4,6 +4,7 @@
 #include <string>
 #include <ctime>
 #include <cstring>
+#include <cstdio>
 #include <iostream> //TODO: necessary?
 #include "lib/sqlite/sqlite3.h"
 #include "definitions.h"
@@ -15,7 +16,9 @@ namespace favor{
   void initialize();
   void cleanup();
   //Utility
-  void sqlite3_validate(int result);
+  string int_string(int);
+  string long_string(long);
+  void sqlite3_validate(int result, sqlite3 *db);
 }
 
 #endif
