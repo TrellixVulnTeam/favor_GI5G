@@ -38,6 +38,7 @@ namespace favor{
 
   void sqlite3_validate(int result, sqlite3 *db ){
     switch(result){
+      //TODO: a specific case for constraint violations (esp. unique) that logs an error but doesn't except
       case SQLITE_OK: break;
       case SQLITE_ROW: break;
       case SQLITE_DONE: break;

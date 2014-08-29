@@ -6,6 +6,6 @@
 int main(int argc, char **argv) {
     favor::initialize();
     favor::worker::buildDatabase();
-    favor::worker::add_account("testemail@gmail.com", favor::TYPE_EMAIL, "");
+    favor::worker::addAccount("testemail@gmail.com", favor::TYPE_EMAIL, "");
     return 0;
 }

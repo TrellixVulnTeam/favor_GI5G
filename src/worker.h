@@ -14,8 +14,8 @@ namespace favor{
     void indexDatabase();
     void deindexDatabase();
     //Writing methods
-    void sqlite3_exec_noread(string sql);
-    void add_account(string name, MessageType type, string detailsJson);
+    void exec(string sql);
+    void addAccount(string name, MessageType type, string detailsJson);
   }
 }
 

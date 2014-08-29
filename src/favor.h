@@ -2,6 +2,8 @@
 #define favor_core_include
 
 #include <string>
+#include <vector>
+#include <list>
 #include <ctime>
 #include <cstring>
 #include <cstdio>
