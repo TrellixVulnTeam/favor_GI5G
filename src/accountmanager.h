@@ -3,14 +3,15 @@
 
 #include "favor.h"
 
-#define SENT_TABLE_NAME accountName+"_"+MessageTypeName[type]+"_sent"
-#define RECEIVED_TABLE_NAME accountName+"_"+MessageTypeName[type]+"_received"
-
 namespace favor{
+  
+  
   class AccountManager{
-  private:
+  public:
     const MessageType type;
     const string accountName;
+    
+
   protected:
     AccountManager(string accNm, MessageType typ, string detailsJson);
     void holdMessage(bool sent, long id, long date, string address, bool media, string msg);

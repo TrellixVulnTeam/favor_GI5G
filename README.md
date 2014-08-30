@@ -2,6 +2,8 @@ Just getting things set up right now.
 
 Todo:
  - Verify builds on Android
+ - Rethink database creation (specifically the creation of tables for accounts). These should probably be built as they're added, because right now we try to build
+ tables for each account by reading it from the database... which is empty because we just built it. That makes sense.
  - Basic unit tests
  - Integrate rapidjson, use it to parse account details. We can probably just use it for our int->string conversions as well
  - Start on threadsafety as described below

@@ -30,6 +30,13 @@ namespace favor{
  */
 #define RECEIVED_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, PRIMARY KEY(id))"
 #define SENT_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, PRIMARY KEY(id, address))"
+/*Note:
+ * Date is more selective than address and in that sense might seem like a better candidate for
+ * being first in the index, but we will commonly query specifying an address and no date at all.
+ * In this case, if address was not first, we could not even use the index at all. Also, queries are
+ * sorted DESC.
+ */
+#define MESSAGE_INDEX_SCHEMA "(address DESC, date DESC)" 
 
 
 #endif

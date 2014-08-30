@@ -29,7 +29,7 @@ namespace favor{
     void refreshAccountList() //TODO: test this code
     {
       sqlite3_stmt *stmt;
-      const char* sql = "SELECT * FROM " ACCOUNT_TABLE ";";
+      const char sql[] = "SELECT * FROM " ACCOUNT_TABLE ";"; //Important this is an array and not a const char* so that sizeof() works properly
       //TODO: take writer lock
       
       accounts.erase(accounts.begin(), accounts.end());
