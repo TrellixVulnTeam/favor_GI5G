@@ -28,6 +28,19 @@ namespace favor{
       sqlv(sqlite3_bind_text(stmt, 3, detailsJson.c_str(), detailsJson.length(), SQLITE_STATIC));
       sqlv(sqlite3_step(stmt));
       sqlv(sqlite3_finalize(stmt));
+      AccountManager::buildTablesStatic(name, type);
+    }
+    
+    void removeAccount(string name, MessageType type){
+     sqlite3_stmt *stmt;
+     //TODO: hardcoded column names. :(
+     const char sql[] = "DELETE FROM " ACCOUNT_TABLE " WHERE name=? AND type=?;";
+     sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
+     sqlv(sqlite3_bind_text(stmt, 1, name.c_str(), name.length(), SQLITE_STATIC));
+     sqlv(sqlite3_bind_int(stmt, 2, type));
+     sqlv(sqlite3_step(stmt));
+     sqlv(sqlite3_finalize(stmt));
+     AccountManager::destroyTablesStatic(name, type);
     }
 
     
@@ -36,10 +49,7 @@ namespace favor{
       for(int i = 0; i < NUMBER_OF_TYPES; ++i){
 	//TODO: build contacts/addresses by type
       }
-      list<AccountManager> l = reader::accountList();
-      for(list<AccountManager>::iterator it = l.begin(); it != l.end(); ++it){
-	it->buildTables();
-      }
+      //We don't build per account here because there won't be any accounts, because we just built the database
     }
     
     void truncateDatabase()
@@ -60,12 +70,24 @@ namespace favor{
     
     void indexDatabase()
     {
-
+      for(int i = 0; i < NUMBER_OF_TYPES; ++i){
+	//TODO: index contacts/addresses by type
+      }
+      list<AccountManager> l = reader::accountList();
+      for(list<AccountManager>::iterator it = l.begin(); it != l.end(); ++it){
+	it->indexTables();
+      }
     }
     
     void deindexDatabase()
     {
-
+      for(int i = 0; i < NUMBER_OF_TYPES; ++i){
+	//TODO: deindex contacts/addresses by type
+      }
+      list<AccountManager> l = reader::accountList();
+      for(list<AccountManager>::iterator it = l.begin(); it != l.end(); ++it){
+	it->deindexTables();
+      }
     }
 
 

@@ -44,7 +44,7 @@ namespace favor{
       case SQLITE_DONE: break;
       default:
 	logger::error("SQLite error #"+long_string(result)+", db says \""+sqlite3_errmsg(db)+"\"");
-	//TODO: throw exception
+	throw sqliteException();
     }
   }
 

@@ -17,9 +17,14 @@ namespace favor{
   
   void AccountManager::buildTables()
   {
-    worker::exec("CREATE TABLE IF NOT EXISTS " SENT_TABLE_NAME SENT_TABLE_SCHEMA ";");
-    worker::exec("CREATE TABLE IF NOT EXISTS " RECEIVED_TABLE_NAME RECEIVED_TABLE_SCHEMA ";");
+    buildTablesStatic(accountName, type);
   }
+  
+  void AccountManager::destroyTables()
+  {
+    destroyTablesStatic(accountName, type);
+  }
+
     
   //TODO: test next 3 methods (truncateTables, deindexTables, indexTables)
   void AccountManager::truncateTables()
@@ -39,8 +44,20 @@ namespace favor{
     worker::exec("CREATE INDEX IF NOT EXISTS " RECEIVED_INDEX_NAME " ON " RECEIVED_TABLE_NAME MESSAGE_INDEX_SCHEMA ";");
     worker::exec("CREATE INDEX IF NOT EXISTS " SENT_INDEX_NAME " ON " SENT_TABLE_NAME MESSAGE_INDEX_SCHEMA ";");
   }
+  
+  void AccountManager::fetchContacts()
+  {
+    logger::error("Unoverridden fetchContacts() called. This should never happen.");
+    assert(false);
+  }
 
+  void AccountManager::fetchMessages()
+  {
+    logger::error("Unoverridden fetchMessages() called. This should never happen.");
+    assert(false);
+  }
 
+  //Static methods
 
     
   AccountManager AccountManager::buildManager(string accNm, MessageType typ, string detailsJson)
@@ -51,9 +68,22 @@ namespace favor{
 	break;
       default:
 	logger::error("Attempt to initialize manager for unsupported type "+int_string(typ));
-	//TODO: throw exception
+	assert(false);
     }
 
+  }
+  
+  void AccountManager::buildTablesStatic(string accountName, MessageType type)
+  {
+    //TODO: index if indexing is enabled
+    worker::exec("CREATE TABLE IF NOT EXISTS " SENT_TABLE_NAME SENT_TABLE_SCHEMA ";");
+    worker::exec("CREATE TABLE IF NOT EXISTS " RECEIVED_TABLE_NAME RECEIVED_TABLE_SCHEMA ";");
+  }
+
+  void AccountManager::destroyTablesStatic(string accountName, MessageType type)
+  {
+    worker::exec("DROP TABLE IF EXISTS " SENT_TABLE_NAME ";");
+    worker::exec("DROP TABLE IF EXISTS " RECEIVED_TABLE_NAME ";");
   }
 
 

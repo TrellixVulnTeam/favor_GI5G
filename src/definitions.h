@@ -21,6 +21,10 @@ namespace favor{
 //Accounts table
 #define ACCOUNT_TABLE "accounts"
 #define ACCOUNT_TABLE_SCHEMA "(name TEXT NOT NULL, type INTEGER NOT NULL, details_json TEXT, PRIMARY KEY(name, type))"
+/*Note:
+ * Frankly, the accounts table doesn't seem worth indexing. We almost exclusively read all the records from it anyway, and it's tiny.
+ * The only performance gains would be on deletes, which are very infrequent.
+ */
 
 //Messages tables, name has to be determined at runtime from type and accountname
 /*Note:

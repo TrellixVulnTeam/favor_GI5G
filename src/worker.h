@@ -16,6 +16,7 @@ namespace favor{
     //Writing methods
     void exec(string sql);
     void addAccount(string name, MessageType type, string detailsJson);
+    void removeAccount(string name, MessageType type);
   }
 }
 
