@@ -8,6 +8,7 @@ namespace favor{
     }
     void initialize(){
       sqlv(sqlite3_open(DB_NAME, &db));
+      exec("PRAGMA foreign_keys = ON;");
     }
     
     void cleanup(){
@@ -47,11 +48,13 @@ namespace favor{
     void buildDatabase(){
       exec("CREATE TABLE IF NOT EXISTS " ACCOUNT_TABLE ACCOUNT_TABLE_SCHEMA ";");
       for(int i = 0; i < NUMBER_OF_TYPES; ++i){
-	//TODO: build contacts/addresses by type
+	exec("CREATE TABLE IF NOT EXISTS " CONTACT_TABLE(i) CONTACT_TABLE_SCHEMA ";");
+	exec("CREATE TABLE IF NOT EXISTS " ADDRESS_TABLE(i) ADDRESS_TABLE_SCHEMA(i) ";");
       }
-      //We don't build per account here because there won't be any accounts, because we just built the database
+      //We don't build per account here because there won't be any accounts right after we just built the database
     }
     
+    //TODO: test next 3 methods (truncateTables, deindexTables, indexTables)
     void truncateDatabase()
     {
       /* http://www.sqlite.org/lang_delete.html
@@ -60,7 +63,8 @@ namespace favor{
       */
       exec("DELETE FROM " ACCOUNT_TABLE);
       for(int i = 0; i < NUMBER_OF_TYPES; ++i){
-	//TODO: truncate contacts/addresses by type
+	exec("DELETE FROM " CONTACT_TABLE(i) ";");
+	exec("DELETE FROM " ADDRESS_TABLE(i) ";");
       }
       list<AccountManager> l = reader::accountList();
       for(list<AccountManager>::iterator it = l.begin(); it != l.end(); ++it){
@@ -71,7 +75,7 @@ namespace favor{
     void indexDatabase()
     {
       for(int i = 0; i < NUMBER_OF_TYPES; ++i){
-	//TODO: index contacts/addresses by type
+	exec("CREATE INDEX IF NOT EXISTS " ADDRESS_INDEX(i) " ON " ADDRESS_INDEX(i) ADDRESS_INDEX_SCHEMA ";");
       }
       list<AccountManager> l = reader::accountList();
       for(list<AccountManager>::iterator it = l.begin(); it != l.end(); ++it){
@@ -82,7 +86,7 @@ namespace favor{
     void deindexDatabase()
     {
       for(int i = 0; i < NUMBER_OF_TYPES; ++i){
-	//TODO: deindex contacts/addresses by type
+	exec("DROP INDEX IF EXISTS " ADDRESS_INDEX(i) ";");
       }
       list<AccountManager> l = reader::accountList();
       for(list<AccountManager>::iterator it = l.begin(); it != l.end(); ++it){

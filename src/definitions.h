@@ -26,6 +26,20 @@ namespace favor{
  * The only performance gains would be on deletes, which are very infrequent.
  */
 
+//Contacts table
+#define CONTACT_TABLE(type) "contacts_" + string(MessageTypeName[type]) + ""
+#define CONTACT_TABLE_SCHEMA "(name TEXT NOT NULL, display_name TEXT NOT NULL, PRIMARY KEY(name))"
+
+/* No need to index this table as its only element is its primary key */
+
+//Addresses table
+#define ADDRESS_TABLE(type) "addresses_" +string(MessageTypeName[type]) + ""
+#define ADDRESS_TABLE_SCHEMA(type) "(address TEXT NOT NULL, contact_name TEXT NOT NULL REFERENCES " CONTACT_TABLE(type) "(name))"
+
+#define ADDRESS_INDEX "i_" ADDRESS_TABLE
+#define ADDRESS_INDEX_SCHEMA "(contact_name)"
+
+
 //Messages tables, name has to be determined at runtime from type and accountname
 /*Note:
  * http://www.sqlite.org/lang_createtable.html

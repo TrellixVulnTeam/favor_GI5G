@@ -6,7 +6,13 @@
 
 namespace favor{
   //Forward declarations of manager subclasses so we can use their constructors
-  class EmailManager : public AccountManager {public: EmailManager(string accNm, string detailsJson);};
+  class EmailManager : public AccountManager {
+  public:
+    EmailManager(string accNm, string detailsJson);
+  protected:
+    void fetchMessages() override;
+    void fetchContacts() override; 
+  };
   //class LineManager : public AccountManager {public: LineManager(string accNm, string detailsJson);}; //etc
   
 }

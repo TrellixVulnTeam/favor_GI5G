@@ -1,11 +1,11 @@
 Just getting things set up right now. 
 
 Todo:
- - Verify builds on Android
+ - Define to_string locally for ANDROID compilations or bring back Favor specific conversions methods, since Android's C++11 does not support these. It's important to note that until this is done
+ __android compiliation is temporarily broken__.
  - Basic unit tests
  - Integrate rapidjson, use it to parse account details. We can probably just use it for our int->string conversions as well
  - Start on threadsafety as described below
- - Start in on exceptions, specifically verifying these on Android as well
  - Finalize at least the mail library so we can write a single message manager, if only for testing purposes
  
  

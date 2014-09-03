@@ -26,7 +26,6 @@ namespace favor{
   }
 
     
-  //TODO: test next 3 methods (truncateTables, deindexTables, indexTables)
   void AccountManager::truncateTables()
   {
     worker::exec("DELETE FROM " SENT_TABLE_NAME);
@@ -67,7 +66,7 @@ namespace favor{
       case TYPE_ANDROIDTEXT:
 	break;
       default:
-	logger::error("Attempt to initialize manager for unsupported type "+int_string(typ));
+	logger::error("Attempt to initialize manager for unsupported type "+to_string(typ));
 	assert(false);
     }
 
