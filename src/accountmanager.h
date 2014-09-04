@@ -29,7 +29,7 @@ namespace favor{
     //Work
     void updateMessages();
     void updateContacts();
-  //Static methods
+    //Static methods
     static AccountManager buildManager(string accNm, MessageType typ, string detailsJson);
     static void buildTablesStatic(string accountName, MessageType type);
     static void destroyTablesStatic(string accountName, MessageType type);
