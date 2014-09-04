@@ -66,7 +66,7 @@ namespace favor{
       case TYPE_ANDROIDTEXT:
 	break;
       default:
-	logger::error("Attempt to initialize manager for unsupported type "+to_string(typ));
+	logger::error("Attempt to initialize manager for unsupported type "+as_string(typ));
 	assert(false);
     }
 

@@ -23,6 +23,8 @@ namespace favor{
   void cleanup();
   //Utility
   void sqlite3_validate(int result, sqlite3 *db);
+  string as_string(int i);
+  string as_string(long l);
 }
 
 #endif

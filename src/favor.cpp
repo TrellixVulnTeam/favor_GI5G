@@ -28,9 +28,36 @@ namespace favor{
       case SQLITE_ROW: break;
       case SQLITE_DONE: break;
       default:
-	logger::error("SQLite error #"+to_string(result)+", db says \""+sqlite3_errmsg(db)+"\"");
+	logger::error("SQLite error #"+as_string(result)+", db says \""+sqlite3_errmsg(db)+"\"");
 	throw sqliteException();
     }
+    
   }
+  
+  //On Android, these methods will not behave well with numbers whose digit count exceeds the DIGIT_MAX
+  string as_string(long int l)
+  {
+    #ifdef ANDROID
+    #define LONG_DIGIT_MAX 20
+    char result[LONG_DIGIT_MAX] = {0};
+    sprintf(result, "%ld", l);
+    return string(result);
+    #else
+    return to_string(l);
+    #endif
+  }
+
+  string as_string(int i)
+  {
+    #ifdef ANDROID
+    #define INT_DIGIT_MAX 10
+    char result[INT_DIGIT_MAX] = {0};
+    sprintf(result, "%d", i);
+    return string(result);
+    #else
+    return to_string(i);
+    #endif
+  }
+
 
 }

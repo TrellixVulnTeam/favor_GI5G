@@ -22,6 +22,6 @@ extern "C" {
       Java_com_example_favortest_MainActivity_stringFromJNI
       (JNIEnv *env, jobject obj)
       {
-            return env->NewStringUTF((std::to_string(testFunction())+", Hello from C++ over JNI!").c_str());
+            return env->NewStringUTF((favor::as_string(testFunction())+", Hello from C++ over JNI!").c_str());
       }
 }

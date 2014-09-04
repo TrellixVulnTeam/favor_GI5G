@@ -4,6 +4,8 @@
 #include <android/log.h>
 #define LOG_TAG "favor"
 #define LOGE(s) __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, s.c_str())
+#define LOGW(s) __android_log_write(ANDROID_LOG_WARN, LOG_TAG, s.c_str())
+#define LOGI(s) __android_log_write(ANDROID_LOG_INFO, LOG_TAG, s.c_str())
 #else
 #define LOGE(s) log("[error] "+s, LOG_ERROR)
 #define LOGW(s) log("[warning] "+s, LOG_WARN)
