@@ -1,9 +1,7 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - Think about how best to decouple MessageManagers from the reader and make the system flexible enough to support Java MessageManagers as well without significant changes or compromising design.
- - Get VMIME compiled and hooked into an Email message manager so that we can populate the database with something.
- - Start in on the actual Android application, not just Android tests. This includes the JNI hooks, and specifically one for moving message data down into the C++ layer.
+ - Make a serious attempt at getting Thrift C++ code and libcurl (ideally VMIME, but probably not) to compile with the NDK
  - Basic unit tests
  - Integrate rapidjson, use it to parse account details. We can probably just use it for our int->string conversions as well
  - Start on threadsafety as described below
@@ -23,13 +21,3 @@ Todo (in order):
   - Depending on which std:: containers we use, there may or may not be a reader lock as well. This would exist only to keep the writer out while anyone was reading, and could potentially lead to
   writer starvation in cases with many reading threads, but this is not a use case Favor was designed for.
   
-  
-On Portability
-==
-Favor was designed with the intent to run on Android as well as desktop platforms, and the core will be written with the intent to compile anyhwere. That said, MessageManagers are not written to be
-portable. Why? Consider two cases for a MessageManager:
- 1. We have a MessageManager that reads data from a local source. This is near impossible to make portable for obvious reasons: the data is unlikely to be formatted the same way, stored in the same
- place or potentially even be accessible at all between dekstop and phone platforms. 
- 2. We have a MessageManager that hits the network. This is a case where we would ideally be able to write something portable, but the reality is that Android's C support is minimal and its C++
- support is barebones. It would take more work (and frankly, an understanding of the NDK and of C++ build systems greater than we currently possess) to get these compiling on Android distributions
- than it does to simply rewrite them in Java. 
