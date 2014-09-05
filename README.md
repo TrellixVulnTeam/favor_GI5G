@@ -1,7 +1,6 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - Make a serious attempt at getting Thrift C++ code and libcurl (ideally VMIME, but probably not) to compile with the NDK
  - Basic unit tests
  - Integrate rapidjson, use it to parse account details. We can probably just use it for our int->string conversions as well
  - Start on threadsafety as described below
@@ -21,3 +20,25 @@ Todo (in order):
   - Depending on which std:: containers we use, there may or may not be a reader lock as well. This would exist only to keep the writer out while anyone was reading, and could potentially lead to
   writer starvation in cases with many reading threads, but this is not a use case Favor was designed for.
   
+  
+On Portability
+==
+Favor's c++ core is designed to be the backend for an eventual desktop program, as well asn an Android phone application. This means we want the _majority_ of Favor code to be portable to either
+platform. However, realistically, there are some cases in which it serves us better to just rewrite code. Additionally, there are some MessageManagers that are decidedly platform specific. Examples:
+ - Email will be available on both platforms, but almost certainly implemented differently (and largely in Java) on Android because of how difficult it has proven to get any kind of IMAP/MIME library
+ working with the NDK.
+ - Skype will be desktop only, because we rely on reading user's Skype logs which we won't have permission to do on Android (they might also be formatted differently, but this is moot if we can't read
+ them at all).
+ - Text messages will obviously be Android only, for obvious reasons. Also written largely in Java because Android has particularly convenient APIs for ensuring backwards compatibility which are not
+ exposed in C++.
+ - Line (and other thrift based clients) will be available on both platforms... and hopefully implemented similarly. This is a later part of the project, so we have only limited knowledge right now,
+ but it seems there is some evidence of being able to compile thrift clients with the NDK based on Apache tickets here: https://issues.apache.org/jira/browse/THRIFT-1846. Also seems reasonable on the
+ grounds that its main dependency is Boost, which has at least some (unofficial) NDK support.
+ 
+ Dependencies
+ ==
+ - Obviously, favor uses SQLite, but this is bundled and compiled with Favor itself (though this may eventually change so there's less superflous code in the repo). SQLite is an easy dependency to
+   resolve.
+ - The desktop implementation of the Email MessageManager (EmailManager) uses VMIME, built like this:
+ "cmake -G "Unix Makefiles" -DVMIME_HAVE_MESSAGING_PROTO_POP3=OFF -DVMIME_HAVE_MESSAGING_PROTO_SENDMAIL=OFF -DVMIME_HAVE_MESSAGING_PROTO_MAILDIR=OFF -DVMIME_HAVE_MESSAGING_PROTO_SMTP=OFF -DVMIME_SHARED_PTR_USE_CXX=ON -DVMIME_SHARED_PTR_USE_BOOST=OFF -DVMIME_BUILD_SHARED_LIBRARY=ON -DCMAKE_BUILD_TYPE="Release" -DVMIME_BUILD_SAMPLES=OFF -DVMIME_BUILD_SHARED_LIBRARY=OFF"
+ 

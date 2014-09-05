@@ -62,7 +62,9 @@ namespace favor{
   AccountManager AccountManager::buildManager(string accNm, MessageType typ, string detailsJson)
   {
     switch(typ){
+      #ifdef FAVOR_EMAIL_MANAGER
       case TYPE_EMAIL: return EmailManager(accNm, detailsJson);
+      #endif
       case TYPE_ANDROIDTEXT:
 	break;
       default:
