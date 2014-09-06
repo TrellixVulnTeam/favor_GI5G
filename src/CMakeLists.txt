@@ -22,10 +22,8 @@ IF(FAVOR_EMAIL_MANAGER)
   find_library(VMIME_LOCATION libvmime.so) #TODO: if this fails (VMIME_LOCATION-NOTFOUND), check for a user submitted path
   add_library(libvmime SHARED IMPORTED)
   set_target_properties(libvmime PROPERTIES IMPORTED_LOCATION ${VMIME_LOCATION})
-  
-  #TODO: why does this only work if we use the location instead of the library (like CMake supposedly wants?)
-  #is it better, or even okay this way?
-  LIST(APPEND compilation_libraries ${VMIME_LOCATION})
+
+  LIST(APPEND compilation_libraries libvmime)
 ENDIF()
 
 # Include Line
