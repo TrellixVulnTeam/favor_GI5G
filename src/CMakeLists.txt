@@ -5,6 +5,7 @@ find_package(Threads) #So we can use threads later
 set(compilation_files favor.cpp processor.cpp reader.cpp worker.cpp accountmanager.cpp logger.cpp) #Core files
 LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/lib/sqlite/sqlite3.c) #Sqlite
 
+SET(CMAKE_CXX_FLAGS "-std=c++11")
 set(compilation_libraries ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 #${CMAKE_DL_LIBS} is our "-ldl"
 #${CMAKE_THREAD_LIBS_INIT} is our "-pthread"
@@ -18,10 +19,13 @@ IF(FAVOR_EMAIL_MANAGER)
   LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/managers/emailmanager.cpp)
   add_definitions(-DFAVOR_EMAIL_MANAGER)
   
-  find_library(VMIME_LOCATION libvmime.a) #TODO: if this fails (VMIME_LOCATION-NOTFOUND), check for a user submitted path
-  add_library(libvmime STATIC IMPORTED)
-  set_property(TARGET libvmime PROPERTY IMPORTED_LOCATION VMIME_LOCATION)
-  LIST(APPEND compilation_libraries ${libvmime})
+  find_library(VMIME_LOCATION libvmime.so) #TODO: if this fails (VMIME_LOCATION-NOTFOUND), check for a user submitted path
+  add_library(libvmime SHARED IMPORTED)
+  set_target_properties(libvmime PROPERTIES IMPORTED_LOCATION ${VMIME_LOCATION})
+  
+  #TODO: why does this only work if we use the location instead of the library (like CMake supposedly wants?)
+  #is it better, or even okay this way?
+  LIST(APPEND compilation_libraries ${VMIME_LOCATION})
 ENDIF()
 
 # Include Line
@@ -29,6 +33,4 @@ OPTION(FAVOR_LINE_MANAGER "Include the MessageManager for Line messaging client"
 
 
 add_library(favor SHARED ${compilation_files})
-
-SET(CMAKE_CXX_FLAGS "-std=c++11")
 target_link_libraries (favor ${compilation_libraries})
