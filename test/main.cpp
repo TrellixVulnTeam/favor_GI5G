@@ -2,15 +2,17 @@
 #include "../src/favor.h"
 #include "../src/worker.h"
 #include "../src/reader.h"
+#include "../src/logger.h"
 //TODO: this should be replaced by a real testing framework ASAP
 
 int main(int argc, char **argv) {
     favor::initialize();
     favor::worker::buildDatabase();
-    favor::worker::addAccount("testemail@gmail.com", favor::TYPE_EMAIL, "{}");
+    //favor::worker::addAccount("testemail@gmail.com", favor::TYPE_EMAIL, "{}");
     //favor::worker::removeAccount("testemail@gmail.com", favor::TYPE_EMAIL);
     favor::reader::refreshAll();
-    cout << favor::reader::accountList().front().type << endl;
-    cout << favor::reader::accountList().front().accountName << endl;
+    favor::logger::info(favor::as_string(favor::reader::accountList().front()->type));
+    favor::logger::info(favor::reader::accountList().front()->accountName);
+    favor::reader::accountList().front()->updateMessages();
     return 0;
 }

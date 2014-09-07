@@ -1,6 +1,7 @@
 Just getting things set up right now. 
 
 Todo (in order):
+ - Verify the shared_ptrs are acting the way I want them to for AccountManagers, because I'm new to this C++11 feature
  - Basic unit tests
  - Integrate rapidjson, use it to parse account details. We can probably just use it for our int->string conversions as well
  - Start on threadsafety as described below

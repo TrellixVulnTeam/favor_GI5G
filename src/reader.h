@@ -10,7 +10,7 @@ namespace favor{
     void initialize();
     void cleanup();
     //Getters
-    list<AccountManager> accountList();
+    list<shared_ptr<AccountManager>> accountList();
     //Refreshers
     void refreshAll();
     void refreshAccountList();

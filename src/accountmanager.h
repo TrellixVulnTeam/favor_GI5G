@@ -30,7 +30,7 @@ namespace favor{
     void updateMessages();
     void updateContacts();
     //Static methods
-    static AccountManager buildManager(string accNm, MessageType typ, string detailsJson);
+    static shared_ptr<AccountManager> buildManager(string accNm, MessageType typ, string detailsJson);
     static void buildTablesStatic(string accountName, MessageType type);
     static void destroyTablesStatic(string accountName, MessageType type);
   };

@@ -66,9 +66,9 @@ namespace favor{
 	exec("DELETE FROM " CONTACT_TABLE(i) ";");
 	exec("DELETE FROM " ADDRESS_TABLE(i) ";");
       }
-      list<AccountManager> l = reader::accountList();
-      for(list<AccountManager>::iterator it = l.begin(); it != l.end(); ++it){
-	it->truncateTables();
+      list<shared_ptr<AccountManager>> l = reader::accountList();
+      for(list<shared_ptr<AccountManager>>::iterator it = l.begin(); it != l.end(); ++it){
+	(*it)->truncateTables();
       }
     }
     
@@ -77,9 +77,9 @@ namespace favor{
       for(int i = 0; i < NUMBER_OF_TYPES; ++i){
 	exec("CREATE INDEX IF NOT EXISTS " ADDRESS_INDEX(i) " ON " ADDRESS_INDEX(i) ADDRESS_INDEX_SCHEMA ";");
       }
-      list<AccountManager> l = reader::accountList();
-      for(list<AccountManager>::iterator it = l.begin(); it != l.end(); ++it){
-	it->indexTables();
+      list<shared_ptr<AccountManager>> l = reader::accountList();
+      for(list<shared_ptr<AccountManager>>::iterator it = l.begin(); it != l.end(); ++it){
+	(*it)->indexTables();
       }
     }
     
@@ -88,9 +88,9 @@ namespace favor{
       for(int i = 0; i < NUMBER_OF_TYPES; ++i){
 	exec("DROP INDEX IF EXISTS " ADDRESS_INDEX(i) ";");
       }
-      list<AccountManager> l = reader::accountList();
-      for(list<AccountManager>::iterator it = l.begin(); it != l.end(); ++it){
-	it->deindexTables();
+      list<shared_ptr<AccountManager>> l = reader::accountList();
+      for(list<shared_ptr<AccountManager>>::iterator it = l.begin(); it != l.end(); ++it){
+	(*it)->deindexTables();
       }
     }
 

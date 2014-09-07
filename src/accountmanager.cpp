@@ -44,6 +44,19 @@ namespace favor{
     worker::exec("CREATE INDEX IF NOT EXISTS " SENT_INDEX_NAME " ON " SENT_TABLE_NAME MESSAGE_INDEX_SCHEMA ";");
   }
   
+  void AccountManager::updateContacts()
+  {
+    fetchContacts();
+    //TODO: process results
+  }
+
+  void AccountManager::updateMessages()
+  {
+    fetchMessages();
+    //TODO: process results
+  }
+
+  
   void AccountManager::fetchContacts()
   {
     logger::error("Unoverridden fetchContacts() called. This should never happen.");
@@ -59,11 +72,11 @@ namespace favor{
   //Static methods
 
     
-  AccountManager AccountManager::buildManager(string accNm, MessageType typ, string detailsJson)
+  shared_ptr<AccountManager> AccountManager::buildManager(string accNm, favor::MessageType typ, string detailsJson)
   {
     switch(typ){
       #ifdef FAVOR_EMAIL_MANAGER
-      case TYPE_EMAIL: return EmailManager(accNm, detailsJson);
+      case TYPE_EMAIL: return make_shared<EmailManager>(accNm, detailsJson);
       #endif
       case TYPE_ANDROIDTEXT:
 	break;

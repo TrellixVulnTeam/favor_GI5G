@@ -8,7 +8,7 @@
 #include <cstring>
 #include <cstdio>
 #include <cassert>
-
+#include <memory> //
 #include <iostream> //TODO: necessary?
 
 #include "lib/sqlite/sqlite3.h"

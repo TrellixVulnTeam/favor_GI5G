@@ -30,6 +30,15 @@ namespace favor{
     {
       LOGE(s);
     }
+    void warning(string s)
+    {
+      LOGW(s);
+    }
+    void info(string s)
+    {
+     LOGI(s); 
+    }
+
     
   }
 }
