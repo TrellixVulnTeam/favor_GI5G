@@ -7,8 +7,8 @@ Todo (in order):
  - Start on threadsafety as described below
  
  
- On Threading
- ==
+On Threading
+==
  This may change over the course of development, but favor's current approach to threadsafety is a many-readers one-writer scheme. The worker:: namespace represents your writer, and is 
  _not designed to be threadsafe_. You can have as many threads calling ::reader namespace methods as you like, but there should be a designated worker thread (note that much of the ::worker logic may 
  end up being incidentally threadsafe in some cases because SQLite is threadsafe, but you are not encouraged to take chances. The reader needs very little locking as it is mostly about providing data,
@@ -20,8 +20,8 @@ Todo (in order):
   and risk stale data.
   - Depending on which std:: containers we use, there may or may not be a reader lock as well. This would exist only to keep the writer out while anyone was reading, and could potentially lead to
   writer starvation in cases with many reading threads, but this is not a use case Favor was designed for.
-  
-  
+ 
+
 On Portability
 ==
 Favor's c++ core is designed to be the backend for an eventual desktop program, as well asn an Android phone application. This means we want the _majority_ of Favor code to be portable to either
@@ -36,10 +36,9 @@ platform. However, realistically, there are some cases in which it serves us bet
  but it seems there is some evidence of being able to compile thrift clients with the NDK based on Apache tickets here: https://issues.apache.org/jira/browse/THRIFT-1846. Also seems reasonable on the
  grounds that its main dependency is Boost, which has at least some (unofficial) NDK support.
  
- Dependencies
- ==
+
+Dependencies
+==
  - Obviously, favor uses SQLite, but this is bundled and compiled with Favor itself (though this may eventually change so there's less superflous code in the repo). SQLite is an easy dependency to
    resolve.
- - The desktop implementation of the Email MessageManager (EmailManager) uses VMIME, built like this:
- "cmake -G "Unix Makefiles" -DVMIME_HAVE_MESSAGING_PROTO_POP3=OFF -DVMIME_HAVE_MESSAGING_PROTO_SENDMAIL=OFF -DVMIME_HAVE_MESSAGING_PROTO_MAILDIR=OFF -DVMIME_HAVE_MESSAGING_PROTO_SMTP=OFF -DVMIME_SHARED_PTR_USE_CXX=ON -DVMIME_SHARED_PTR_USE_BOOST=OFF -DVMIME_BUILD_SHARED_LIBRARY=ON -DCMAKE_BUILD_TYPE="Release" -DVMIME_BUILD_SAMPLES=OFF -DVMIME_BUILD_SHARED_LIBRARY=OFF"
- 
+ - The desktop implementation of the Email MessageManager (EmailManager) uses VMIME, built using the command in favor/src/lib/vmime/build_cmd
