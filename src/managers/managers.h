@@ -4,6 +4,10 @@
 #include "../favor.h"
 #include "../accountmanager.h"
 
+#ifdef FAVOR_EMAIL_MANAGER
+#include <vmime/vmime.hpp>
+#endif
+
 namespace favor{
   //Forward declarations of manager subclasses so we can use their constructors
   #ifdef FAVOR_EMAIL_MANAGER
@@ -13,6 +17,9 @@ namespace favor{
   protected:
     void fetchMessages() override;
     void fetchContacts() override; 
+  private:
+    shared_ptr<vmime::net::store> login();
+    string folderList(vector<shared_ptr<vmime::net::folder>> folders);
   };
   #endif
   //class LineManager : public AccountManager {public: LineManager(string accNm, string detailsJson);}; //etc

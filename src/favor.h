@@ -9,7 +9,6 @@
 #include <cstdio>
 #include <cassert>
 #include <memory>
-#include <regex>
 #include <iostream> //TODO: necessary?
 
 #include "lib/sqlite/sqlite3.h"

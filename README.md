@@ -1,6 +1,7 @@
 Just getting things set up right now. 
 
 Todo (in order):
+ - g++ 4.9 on Android? Necessary for <regex> implementations
  - Verify the shared_ptrs are acting the way I want them to for AccountManagers, because I'm new to this C++11 feature
  - Basic unit tests
  - Integrate rapidjson, use it to parse account details. We can probably just use it for our int->string conversions as well
@@ -43,4 +44,6 @@ Dependencies
 ==
  - Obviously, favor uses SQLite, but this is bundled and compiled with Favor itself (though this may eventually change so there's less superflous code in the repo). SQLite is an easy dependency to
    resolve.
- - The desktop implementation of the Email MessageManager (EmailManager) uses VMIME, built using the command in favor/src/lib/vmime/build_cmd
+ - The desktop implementation of the Email MessageManager (EmailManager) uses a [very slightly modified VMIME](https://github.com/Mindful/vmime/)  built using the command in 
+ favor/src/lib/vmime/build_cmd. We'll move to using the official library as soon as it has support for IMAP search. Until then, the only changes in the homebrew version are to expose some 
+ internals so we can run our own IMAP searches.
