@@ -4,6 +4,8 @@ Todo (in order):
  - Verify the shared_ptrs are acting the way I want them to for AccountManagers, because I'm new to this C++11 feature
  - Basic unit tests
  - Integrate rapidjson, use it to parse account details. We can probably just use it for our int->string conversions as well
+ - Update the EmailManager compile flags so we can distinguish between compiling the local version, or whatever we'll need to support the android verison. Alternatively, just add conditionals inside 
+ the EmailManager compilation (ugh) to check if we're on Android or not.
  - Start on threadsafety as described below
  
  

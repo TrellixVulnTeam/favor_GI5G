@@ -6,7 +6,7 @@ namespace favor{
   class sqliteException : public std::exception{
     virtual const char* what() const throw()
       {
-	return "An internal SQLite3 operation has failed unexpectedly";
+	return "An internal SQLite3 operation has failed";
       }
   };
   class networkException : public std::exception{
@@ -15,5 +15,13 @@ namespace favor{
 	return "Unable to perform normal network operations";
       }
   };
+  #ifdef FAVOR_EMAIL_MANAGER
+  class emailException : public std::exception{
+    virtual const char* what() const throw()
+    {
+      return "Error interfacing with the email server";
+    }
+  };
+  #endif
 }
 #endif
