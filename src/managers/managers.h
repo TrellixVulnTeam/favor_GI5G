@@ -20,6 +20,7 @@ namespace favor{
   private:
     shared_ptr<vmime::net::store> login();
     string folderList(vector<shared_ptr<vmime::net::folder>> folders);
+    void parseMessage(bool sent, favor::shared_ptr<vmime::net::message> m);
   };
   #endif
   //class LineManager : public AccountManager {public: LineManager(string accNm, string detailsJson);}; //etc

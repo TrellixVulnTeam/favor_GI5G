@@ -12,6 +12,7 @@
 #define LOGI(s) log("[info] "+s, LOG_INFO)
 #endif
 
+using namespace std;
 namespace favor{
   namespace logger{
     namespace {

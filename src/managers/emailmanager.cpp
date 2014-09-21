@@ -13,7 +13,9 @@
 using namespace vmime;
 using namespace vmime::net;
 
+using namespace std;
 namespace favor{
+  
   
     /*
     * If you need to do more complex verifications on certificates, you will
@@ -31,6 +33,91 @@ namespace favor{
     };
 
     EmailManager::EmailManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_EMAIL, detailsJson){}
+    
+    
+      /** Print the MIME structure of a message on the standard output.
+  *
+  * @param s structure object
+  * @param level current depth
+  */
+static void printStructure(vmime::shared_ptr <const vmime::net::messageStructure> s, const int level = 0)
+{
+	for (int i = 0 ; i < s->getPartCount() ; ++i)
+	{
+		vmime::shared_ptr <const vmime::net::messagePart> part = s->getPartAt(i);
+
+		for (int j = 0 ; j < level * 2 ; ++j)
+			std::cout << " ";
+
+		std::cout << (part->getNumber() + 1) << ". "
+				<< part->getType().generate()
+				<< " [" << part->getSize() << " byte(s)]"
+				<< std::endl;
+
+		printStructure(part->getStructure(), level + 1);
+	}
+}   
+
+
+    void processPart(shared_ptr<vmime::net::messagePart> part, shared_ptr<vmime::net::message> m,  vmime::utility::outputStreamAdapter& bodystream, bool& media){
+      vmime::mediaType type = part->getType();
+      if (type.getType()==vmime::mediaTypes::TEXT){
+	if (type.getSubType()==vmime::mediaTypes::TEXT_PLAIN){
+	  //We can add to the body directly
+	  //TODO: is this launching a fetch to get this info? If not, we already have it, and I'm scared that we already have images/attachments too - which we don't want to download in full
+	  //I assume it is though, given the option for peeking (the final "true"). Unfortunately, it's also picking up the header right now
+	  m->extractPart(part, bodystream, 0, 0, -1, true);
+	}
+	else if (type.getSubType()==vmime::mediaTypes::TEXT_HTML){
+	  //Strip the HTMl, add it to the body
+	}
+	else if (type.getSubType()==vmime::mediaTypes::TEXT_ENRICHED || type.getSubType()==vmime::mediaTypes::TEXT_RICHTEXT){
+	  logger::warning("Skipped parsing "+type.getType()+" portion of message with UID "+string(m->getUID()));
+	}
+      }
+    }
+    
+    void EmailManager::parseMessage(bool sent, shared_ptr<vmime::net::message> m){
+      shared_ptr<const vmime::header> head = m->getHeader();
+      
+      shared_ptr<const vmime::datetime> date = head->Date()->getValue<vmime::datetime>();
+     
+      long uid = stoi(m->getUID()); //stoi function may not be implemented on Android but this mail client is dekstop-only anyway
+      
+      string addr;
+      if (sent){
+	//Yes, this is a pretty wretched mess. Unfortunately, I'm somewhat at a loss for how to make this better with the 
+	//current VMIME implementation. Getting an addressList back sucks.
+	shared_ptr<const vmime::address> firstAddr = head->To()->getValue<vmime::addressList>()->getAddressAt(0);
+	shared_ptr<const vmime::mailbox> resultAddr;
+	if(firstAddr->isGroup()){
+	  shared_ptr<const vmime::mailboxGroup> grp = dynamic_pointer_cast<const vmime::mailboxGroup>(firstAddr);
+	  resultAddr = grp->getMailboxAt(0);
+	}
+	else{
+	  resultAddr = dynamic_pointer_cast<const vmime::mailbox>(firstAddr);
+	}
+	addr = resultAddr->getEmail().toString();
+      }
+      else {
+	addr = head->From()->getValue<vmime::mailbox>()->getEmail().toString();
+      }
+
+      //Easy header stuff is done, now we move onto parsing
+      bool media = false;
+      std::stringstream body;
+      vmime::utility::outputStreamAdapter bodystream(cout);
+      
+      shared_ptr<vmime::net::messageStructure> structure = m->getStructure();
+      for(int i = 0; i < structure->getPartCount(); ++i){
+	processPart(structure->getPartAt(i), m, bodystream, media);
+      };
+      
+      cout << date->getSecond() << " : " << addr << " : " << uid << endl;
+      printStructure(structure);
+      cout << body.str() << endl;
+    }
+      
     
     string EmailManager::folderList(vector<shared_ptr<vmime::net::folder>> folders){
       //TODO: We're basically just JSONifying the array with folders as their getName().getBuffer() members. There might be a smarter way to do this with our JSON library...
@@ -53,18 +140,41 @@ namespace favor{
       utility::url url("imaps://imap.gmail.com:993");
       sess->getProperties()["store.imaps.auth.username"] = "nope";
       sess->getProperties()["store.imaps.auth.password"] = "nope";
-      
       vmime::shared_ptr<vmime::net::store> st = sess->getStore(url);
+      
+      try {
       st->setCertificateVerifier(vmime::make_shared<TrustingCertificateVerifier>());
       st->connect();
-      logger::info("Successfully connected to "+string(url));
+      logger::info("Successfully connected to "+string(url)+"as ");
+      } 
+      //TODO: update these exceptions to contain more useful information since they can take string arguments now
+      catch (vmime::exceptions::authentication_error& e){
+	logger::error("Could not authenticate to "+string(url)+" as " " with the credentials provided");
+	throw authenticationException();
+      }
+      //I've only ever seen authentication_error, but we'll catch the similarly named exception here just in case...
+      catch (vmime::exceptions::authentication_exception& e){
+	logger::error("Could not authenticate to "+string(url)+" as " " with the credentials provided");
+	throw authenticationException();
+      } 
+      catch (vmime::exception& e){
+ 	logger::error("Error authenticating to email server: "+string(e.what()));
+ 	throw emailException();
+      }
+      
+      
       
       return st;
     }
     
     void EmailManager::fetchMessages(){
       
-      //TODO: figure out what VMIME throws if there's no internet connectivity at all (this shouldn't be hard), and rethrow it as a favor::networkException
+      
+      //TODO: cattch connection_error here
+//             catch(vmime::exceptions::connection_error){
+// 	logger::error("Error connecting to "+string(url)+"; this can mean a bad host or no internet connectivity");
+// 	throw networkConnectionException();
+//       }
       
       //TODO: catch any OTHER vmime exceptions (all of them, I hope they all inheret from a vmime::exception base) and log their what(), then rethrow them as
       //favor::emailException objects
@@ -98,14 +208,14 @@ namespace favor{
       
       for(int i = 0; i < folders.size(); ++i){
 	cout << folders[i]->getName().getBuffer() << endl;
-	if(regex_search(folders[i]->getName().getBuffer(), sentRegex)){
-	  if(!sent) sent = folders[i];
+	if (regex_search(folders[i]->getName().getBuffer(), sentRegex)){
+	  if (!sent) sent = folders[i];
 	  else {
 	    logger::error("Competing sent folders in "+folderList(folders));
 	    throw emailException();
 	  }
-	}else if(folders[i]->getName().getBuffer() == "INBOX"){
-	  if(!inbox) inbox = folders[i];
+	} else if(folders[i]->getName().getBuffer() == "INBOX"){
+	  if (!inbox) inbox = folders[i];
 	  else {
 	    logger::error("Competing INBOX folders");
 	    throw emailException();
@@ -115,13 +225,13 @@ namespace favor{
       
       //TODO: these opens should be moved into their respective methods. We should definitely close one before we try and open the other.
       //The exception/error logging should stay here though; we want to know if we're missing something ASAP
-      if(sent){
-	logger::info("Found sent folder as \"" + sent->getName().getBuffer() + "\"");
-	if(!sent->isOpen()) sent->open(vmime::net::folder::MODE_READ_ONLY); //Not that this (or INBOX) should ever already be open...
-      } else{
-	logger::error("Could not find sent folder in "+folderList(folders));
-	throw emailException();
-      }
+//       if(sent){
+// 	logger::info("Found sent folder as \"" + sent->getName().getBuffer() + "\"");
+// 	if(!sent->isOpen()) sent->open(vmime::net::folder::MODE_READ_ONLY); //Not that this (or INBOX) should ever already be open...
+//       } else{
+// 	logger::error("Could not find sent folder in "+folderList(folders));
+// 	throw emailException();
+//       }
       
       if(inbox){
 	logger::info("Found \"INBOX\"");
@@ -131,21 +241,18 @@ namespace favor{
 	throw emailException();
       }
      
-      return; //after this is slow, testing stuff before it.
       
-      //TODO: bad response  
       vmime::net::messageSet wantedMessages(inbox->UIDSearch(cmd));
       vector<shared_ptr<vmime::net::message>> messages = inbox->getAndFetchMessages(wantedMessages, 
-	  vmime::net::fetchAttributes::FLAGS | vmime::net::fetchAttributes::ENVELOPE);
+	  vmime::net::fetchAttributes::STRUCTURE | vmime::net::fetchAttributes::FULL_HEADER | vmime::net::fetchAttributes::UID);
+            cout << "size: " << messages.size() << endl;
       for(unsigned int i = 0; i < messages.size(); ++i){
-	vmime::utility::outputStreamAdapter out(cout);
-	//messages[i]->extract(out);
-	//cout << "--------------------------------" << endl;
-      }
-      cout << "size: " << messages.size() << endl;
+	parseMessage(false, messages[i]);
+      }    
       
-      
-      
+//       vmime::net::message m;
+//       m.getHeader()->Date()
+//       
     }
     
     void EmailManager::fetchContacts(){

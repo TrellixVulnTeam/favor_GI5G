@@ -2,12 +2,19 @@ Just getting things set up right now.
 
 Todo (in order):
  - g++ 4.9 on Android? Necessary for <regex> implementations
+ - Verify our exceptions as inherting from runtime_error owrk on Android
  - Verify the shared_ptrs are acting the way I want them to for AccountManagers, because I'm new to this C++11 feature
  - Basic unit tests
  - Integrate rapidjson, use it to parse account details. We can probably just use it for our int->string conversions as well
  - Update the EmailManager compile flags so we can distinguish between compiling the local version, or whatever we'll need to support the android verison. Alternatively, just add conditionals inside 
  the EmailManager compilation (ugh) to check if we're on Android or not.
  - Start on threadsafety as described below
+ 
+Presentation Principles
+==
+ - In cases where there is ambiguity about which data to use - such as when, for a received message, we must choose between using the time it was sent to our user and the time our user actually
+ received it - the decision should always to be _to use the data in the same way it is presented to the user, or that hte user thinkgs about it_. For example, in cases of email, users are typically
+ presented with the date in the email header (as opposed to IMAP's internaldate) so that would be best to use, whereas texts are almost always displayed with the timestamp they were actually received. 
  
  
 On Threading
@@ -47,3 +54,4 @@ Dependencies
  - The desktop implementation of the Email MessageManager (EmailManager) uses a [very slightly modified VMIME](https://github.com/Mindful/vmime/)  built using the command in 
  favor/src/lib/vmime/build_cmd. We'll move to using the official library as soon as it has support for IMAP search. Until then, the only changes in the homebrew version are to expose some 
  internals so we can run our own IMAP searches.
+ 

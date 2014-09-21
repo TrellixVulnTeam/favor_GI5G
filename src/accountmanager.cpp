@@ -9,6 +9,7 @@
 #define SENT_INDEX_NAME "i_" SENT_TABLE_NAME
 #define RECEIVED_INDEX_NAME "i_" RECEIVED_TABLE_NAME
 
+using namespace std;
 namespace favor{
   AccountManager::AccountManager(string accNm, MessageType typ, string detailsJson):type(typ),accountName(accNm){
     //TODO: parse json, with overriden virtual method if necessary

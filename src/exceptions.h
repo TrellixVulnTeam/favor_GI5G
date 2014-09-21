@@ -1,26 +1,37 @@
 #ifndef favor_exception_include
 #define favor_exception_include
 #include <exception>
+#include <stdexcept>
 
 namespace favor{
-  class sqliteException : public std::exception{
-    virtual const char* what() const throw()
-      {
-	return "An internal SQLite3 operation has failed";
-      }
+  class exception : public std::runtime_error{
+  protected:
+    exception() : runtime_error("") {}
+    exception(const std::string& e) : runtime_error(e) {}
   };
-  class networkException : public std::exception{
-    virtual const char* what() const throw()
-      {
-	return "Unable to perform normal network operations";
-      }
+  class sqliteException : public exception{
+  public:
+    sqliteException(const std::string& e) : exception(e){}
+    sqliteException() : exception("An internal SQLite3 operation has failed") {}
   };
+  
+  class networkConnectionException : public exception{
+  public:
+    networkConnectionException(const std::string& e) : exception(e){}
+    networkConnectionException() : exception("Failed to perform normal network operations"){}
+  };
+  
+  class authenticationException : public exception{
+  public:  
+    authenticationException(const std::string& e) : exception(e){}
+    authenticationException() : exception("Failed to login with credentials provided"){}
+  };
+  
   #ifdef FAVOR_EMAIL_MANAGER
-  class emailException : public std::exception{
-    virtual const char* what() const throw()
-    {
-      return "Error interfacing with the email server";
-    }
+  class emailException : public exception{
+  public:  
+    emailException(const std::string& e) : exception(e){}
+    emailException() : exception("Error interfacing with email server"){}
   };
   #endif
 }
