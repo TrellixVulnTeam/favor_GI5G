@@ -35,6 +35,7 @@ namespace favor{
     EmailManager::EmailManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_EMAIL, detailsJson){}
     
     std::time_t EmailManager::toTime(const vmime::datetime input){
+      //TODO: verify this works properly
       struct tm timeinfo;
       const vmime::datetime time = vmime::utility::datetimeUtils::toUniversalTime(input);
       timeinfo.tm_sec = time.getSecond();

@@ -2,7 +2,7 @@
 
 find_package(Threads) #So we can use threads later
 
-set(compilation_files favor.cpp processor.cpp reader.cpp worker.cpp accountmanager.cpp logger.cpp) #Core files
+set(compilation_files favor.cpp processor.cpp reader.cpp worker.cpp accountmanager.cpp message.cpp logger.cpp) #Core files
 LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/lib/sqlite/sqlite3.c) #Sqlite
 
 SET(CMAKE_CXX_FLAGS "-std=c++11")

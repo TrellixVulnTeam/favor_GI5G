@@ -17,6 +17,7 @@
 #include "types.h"
 
 namespace favor{
+  class message;
   //Basic
   void initialize();
   void cleanup();
@@ -24,6 +25,7 @@ namespace favor{
   void sqlite3_validate(int result, sqlite3 *db);
   string as_string(int i);
   string as_string(long l);
+  string as_string(message m);
 }
 
 #endif

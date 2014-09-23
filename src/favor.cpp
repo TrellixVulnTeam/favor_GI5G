@@ -2,6 +2,7 @@
 #include "worker.h"
 #include "reader.h"
 #include "logger.h"
+#include "message.h"
 
 using namespace std;
 
@@ -57,6 +58,10 @@ namespace favor{
     #else
     return to_string(i);
     #endif
+  }
+  
+  string as_string(message m){
+    //TODO:
   }
 
 
