@@ -16,7 +16,7 @@ namespace favor{
     
   protected:
     AccountManager(string accNm, MessageType typ, string detailsJson);
-    void holdMessage(bool sent, long id, long date, string address, bool media, string msg);
+    void holdMessage(const bool sent, const long id, const std::time_t date, const string address, const bool media, const string msg, Encoding enc = ASCII);
     virtual void fetchMessages();
     virtual void fetchContacts();
   public:

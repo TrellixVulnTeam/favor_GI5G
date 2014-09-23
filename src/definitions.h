@@ -12,6 +12,7 @@
 namespace favor{
   enum MessageType {TYPE_EMAIL, TYPE_ANDROIDTEXT, TYPE_LINE, TYPE_SKYPE, NUMBER_OF_TYPES};
   extern const char* MessageTypeName[];
+  enum Encoding {ASCII, UTF8, UTF16, UTF32};
 }
 
 //Database

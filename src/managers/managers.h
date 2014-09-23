@@ -21,6 +21,8 @@ namespace favor{
     shared_ptr<vmime::net::store> login();
     string folderList(vector<shared_ptr<vmime::net::folder>> folders);
     void parseMessage(bool sent, favor::shared_ptr<vmime::net::message> m);
+    bool hasMedia(shared_ptr<vmime::net::messageStructure> structure);
+    std::time_t toTime(const vmime::datetime input);
   };
   #endif
   //class LineManager : public AccountManager {public: LineManager(string accNm, string detailsJson);}; //etc

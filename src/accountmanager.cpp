@@ -70,6 +70,17 @@ namespace favor{
     assert(false);
   }
 
+  
+  void AccountManager::holdMessage(const bool sent, const long int id, const std::time_t date, const string address, const bool media, const string msg, favor::Encoding enc)
+  {
+    //TODO: actually export message, and give it a type based on the type of this manager
+      cout << "---------------------------------------------------------" << endl;
+      cout << "Message held with - sent: " << sent << ", id: " << id << ", date: " << date << ", address: " << address << ", media: " << media << endl << "...and Body:|" << msg << "|" << endl;
+      cout << "Body　Length: " << msg.length() << ", Encoding: " << enc << endl;
+      cout << "---------------------------------------------------------" << endl << endl;
+      
+  }
+
   //Static methods
 
     

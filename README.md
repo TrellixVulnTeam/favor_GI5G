@@ -1,6 +1,9 @@
 Just getting things set up right now. 
 
 Todo (in order):
+ - Run the EmailManager with a fetch and figure out what (if any) redundant fetching happens - look esp. for redundant header fetching, which is what I suspect we have - and avoid it.
+ - Going to have to start figuring out how we'll deal with encodings soon, as well as HTML/XTMl in messages. Probably need libxml2 for this, on PC and Android, which immediately means: 
+ stripping html, converting html character entities to unicode, computing unicode string length (this [should be easy](http://stackoverflow.com/a/4063229) )
  - g++ 4.9 on Android? Necessary for <regex> implementations
  - Verify our exceptions as inherting from runtime_error owrk on Android
  - Verify the shared_ptrs are acting the way I want them to for AccountManagers, because I'm new to this C++11 feature
@@ -13,7 +16,7 @@ Todo (in order):
 Presentation Principles
 ==
  - In cases where there is ambiguity about which data to use - such as when, for a received message, we must choose between using the time it was sent to our user and the time our user actually
- received it - the decision should always to be _to use the data in the same way it is presented to the user, or that hte user thinkgs about it_. For example, in cases of email, users are typically
+ received it - the decision should always to be _to use the data in the same way it is presented to the user, or that the user thinkgs about it_. For example, in cases of email, users are typically
  presented with the date in the email header (as opposed to IMAP's internaldate) so that would be best to use, whereas texts are almost always displayed with the timestamp they were actually received. 
  
  
