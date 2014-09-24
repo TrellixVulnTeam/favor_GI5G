@@ -1,7 +1,6 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - Run the EmailManager with a fetch and figure out what (if any) redundant fetching happens - look esp. for redundant header fetching, which is what I suspect we have - and avoid it.
  - Going to have to start figuring out how we'll deal with encodings soon, as well as HTML/XTMl in messages. Probably need libxml2 for this, on PC and Android, which immediately means: 
  stripping html, converting html character entities to unicode, computing unicode string length (this [should be easy](http://stackoverflow.com/a/4063229) )
  - g++ 4.9 on Android? Necessary for <regex> implementations

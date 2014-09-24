@@ -10,6 +10,7 @@
 #include <cassert>
 #include <memory>
 #include <iostream>
+#include <utility>
 
 #include "lib/sqlite/sqlite3.h"
 #include "definitions.h"

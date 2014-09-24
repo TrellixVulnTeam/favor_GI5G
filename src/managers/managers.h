@@ -23,6 +23,9 @@ namespace favor{
     void parseMessage(bool sent, favor::shared_ptr<vmime::net::message> m);
     bool hasMedia(shared_ptr<vmime::net::messageStructure> structure);
     std::time_t toTime(const vmime::datetime input);
+    string searchCommand(bool sent, const favor::vector<favor::string>& addresses, long int uid);
+    std::pair< std::shared_ptr<vmime::net::folder>, std::shared_ptr<vmime::net::folder>> findSentRecFolder(favor::shared_ptr<vmime::net::store> st);
+    void fetchFromFolder(favor::shared_ptr< vmime::net::folder > folder, const favor::vector< favor::string >& addresses);
   };
   #endif
   //class LineManager : public AccountManager {public: LineManager(string accNm, string detailsJson);}; //etc

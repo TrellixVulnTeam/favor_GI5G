@@ -14,23 +14,59 @@ using namespace vmime;
 using namespace vmime::net;
 
 using namespace std;
-namespace favor{
-  
-  
-    /*
-    * If you need to do more complex verifications on certificates, you will
-    * have to write your own verifier. Your verifier should inherit from the
-    * vmime::security::cert::certificateVerifier class and implement the method
-    * verify(). Then, if the specified certificate chain is trusted, simply return from the function,
-    * or else throw a certificate verification exception.
-    */
-    // Certificate verifier (TLS/SSL)
-    //TODO: We might want to actually verify something here. See the VMIME documentation
-    class TrustingCertificateVerifier : public vmime::security::cert::certificateVerifier
-    {
-    public: 
-	    void verify(vmime::shared_ptr<vmime::security::cert::certificateChain> certs, const string& hostname) override {return;}
-    };
+namespace favor {
+    namespace email { 
+      /*
+      * If you need to do more complex verifications on certificates, you will
+      * have to write your own verifier. Your verifier should inherit from the
+      * vmime::security::cert::certificateVerifier class and implement the method
+      * verify(). Then, if the specified certificate chain is trusted, simply return from the function,
+      * or else throw a certificate verification exception.
+      */
+      // Certificate verifier (TLS/SSL)
+      //TODO: We might want to actually verify something here. See the VMIME documentation
+      
+      class InfoTracer : public vmime::net::tracer
+      {
+      public:
+	void traceSend(const string& line) override {
+	  logger::info("["+service->getProtocolName()+"] Sent: "+line);
+	}
+	
+	void traceReceive(const string& line) override {
+	  logger::info("["+service->getProtocolName()+"] Received: "+line);
+	}
+	
+	InfoTracer(vmime::shared_ptr <vmime::net::service> serv, const int id) : service(serv), connectionId(id) {}
+      private:
+	vmime::shared_ptr <vmime::net::service> service;
+	const int connectionId;
+      };
+      
+      class InfoTracerFactory : public vmime::net::tracerFactory {
+      public: 
+	shared_ptr <vmime::net::tracer> create (shared_ptr <vmime::net::service> serv, const int connectionId) override{
+	  return make_shared<InfoTracer>(serv, connectionId);
+	}
+      };
+      
+      
+      /*
+      * If you need to do more complex verifications on certificates, you will
+      * have to write your own verifier. Your verifier should inherit from the
+      * vmime::security::cert::certificateVerifier class and implement the method
+      * verify(). Then, if the specified certificate chain is trusted, simply return from the function,
+      * or else throw a certificate verification exception.
+      */
+      // Certificate verifier (TLS/SSL)
+      //TODO: We might want to actually verify something here. See the VMIME documentation
+      
+      class TrustingCertificateVerifier : public vmime::security::cert::certificateVerifier
+      {
+      public: 
+	      void verify(vmime::shared_ptr<vmime::security::cert::certificateChain> certs, const string& hostname) override {return;}
+      };
+    }
 
     EmailManager::EmailManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_EMAIL, detailsJson){}
     
@@ -146,12 +182,15 @@ namespace favor{
       shared_ptr<session> sess = make_shared <session>();
       
       utility::url url("imaps://imap.gmail.com:993");
+
       sess->getProperties()["store.imaps.auth.username"] = "nope";
       sess->getProperties()["store.imaps.auth.password"] = "nope";
+
       vmime::shared_ptr<vmime::net::store> st = sess->getStore(url);
       
       try {
-      st->setCertificateVerifier(vmime::make_shared<TrustingCertificateVerifier>());
+      st->setCertificateVerifier(vmime::make_shared<email::TrustingCertificateVerifier>());
+      st->setTracerFactory(make_shared<email::InfoTracerFactory>());
       st->connect();
       logger::info("Successfully connected to "+string(url)+"as ");
       } 
@@ -175,53 +214,29 @@ namespace favor{
       return st;
     }
     
-    void EmailManager::fetchMessages(){
-      
-      
-      //TODO: cattch connection_error here
-//             catch(vmime::exceptions::connection_error){
-// 	logger::error("Error connecting to "+string(url)+"; this can mean a bad host or no internet connectivity");
-// 	throw networkConnectionException();
-//       }
-      
-      //TODO: catch any OTHER vmime exceptions (all of them, I hope they all inheret from a vmime::exception base) and log their what(), then rethrow them as
-      //favor::emailException objects
-      
-      vmime::shared_ptr<vmime::net::store> st = login();
-      
-      
-      //Dummy data
-      vector<std::string> addresses;
-      addresses.push_back("favor.t@null.net");
-      
-      //Assemble cmd
-      std::string cmd("");
-      std::string addressField("FROM");
-      long lastUID = 1; //UIDs are from 1, always
+    string EmailManager::searchCommand(bool sent, const vector<string>& addresses, long uid){
+      string cmd("");
+      string addressField = sent ? "TO" : "FROM";
       for (int i = 1; i < addresses.size(); ++i){cmd+="OR ";} //One less "OR " than the number of addresses is important, so we start from 1 here
       for (int i = 0; i < addresses.size(); ++i){cmd+=(addressField+" \""+addresses[i]+"\" ");}
-      cmd+=("UID "+to_string(lastUID)+":*");
-      
-      std::cout << cmd << endl;
-      
-      //Find sent folder
+      cmd+=("UID "+to_string(uid)+":*");
+      return cmd;
+    }
+    
+    pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> EmailManager::findSentRecFolder(shared_ptr<vmime::net::store> st){
       vector<shared_ptr<vmime::net::folder>> folders = st->getRootFolder()->getFolders(true);
-      
+      std::regex sentRegex("sent", std::regex::ECMAScript | std::regex::icase);
       shared_ptr<vmime::net::folder> sent = null;
       shared_ptr<vmime::net::folder> inbox = null;
       
-    
-      std::regex sentRegex("sent", std::regex::ECMAScript | std::regex::icase);
-      
-      for(int i = 0; i < folders.size(); ++i){
-	cout << folders[i]->getName().getBuffer() << endl;
+      for (int i = 0; i < folders.size(); ++i){
 	if (regex_search(folders[i]->getName().getBuffer(), sentRegex)){
 	  if (!sent) sent = folders[i];
 	  else {
 	    logger::error("Competing sent folders in "+folderList(folders));
 	    throw emailException("Unable to determine sent folder");
 	  }
-	} else if(folders[i]->getName().getBuffer() == "INBOX"){
+	} else if (folders[i]->getName().getBuffer() == "INBOX"){
 	  if (!inbox) inbox = folders[i];
 	  else {
 	    logger::error("Competing INBOX folders");
@@ -230,34 +245,60 @@ namespace favor{
 	}
       }
       
-      //TODO: these opens should be moved into their respective methods. We should definitely close one before we try and open the other.
-      //The exception/error logging should stay here though; we want to know if we're missing something ASAP
-//       if(sent){
-// 	logger::info("Found sent folder as \"" + sent->getName().getBuffer() + "\"");
-// 	if(!sent->isOpen()) sent->open(vmime::net::folder::MODE_READ_ONLY); //Not that this (or INBOX) should ever already be open...
-//       } else{
-// 	logger::error("Could not find sent folder in "+folderList(folders));
-// 	throw emailException();
-//       }
+      if (sent) logger::info("Found sent folder as \"" + sent->getName().getBuffer() + "\"");
+      else{
+	logger::error("Could not find sent folder in "+folderList(folders));
+	throw emailException("Could not find sent folder");
+      }
       
-      if(inbox){
-	logger::info("Found \"INBOX\"");
-	if(!inbox->isOpen()) inbox->open(vmime::net::folder::MODE_READ_ONLY);
-      } else{
+      if (inbox) logger::info("Found \"INBOX\"");
+      else{
 	logger::error("Could not find INBOX in "+folderList(folders));
+	throw emailException("Could not find INBOX");
+      }
+      
+      return pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>>(sent, inbox);
+     
+    }
+    
+    void EmailManager::fetchFromFolder(shared_ptr<vmime::net::folder> folder, const vector<string>& addresses){
+      bool sent = (folder->getName().getBuffer() != "INBOX");
+      
+      string cmd = searchCommand(sent, addresses, 1); //UIDS always from 1
+      if (!folder->isOpen()) folder->open(vmime::net::folder::MODE_READ_ONLY);
+      else logger::warning("Folder \""+folder->getName().getBuffer()+"\" already open before fetch. This should not happen.");
+      
+      vmime::net::messageSet wantedMessages(folder->UIDSearch(cmd));
+      vector<shared_ptr<vmime::net::message>> messages = folder->getAndFetchMessages(wantedMessages, 
+	  vmime::net::fetchAttributes::STRUCTURE | vmime::net::fetchAttributes::FULL_HEADER | vmime::net::fetchAttributes::UID);
+      if (messages.size()==0) return;
+      else for (unsigned int i = 0; i < messages.size(); ++i) parseMessage(false, messages[i]);  
+    }
+    
+    void EmailManager::fetchMessages(){
+      
+      //TODO: get credentials from JSON, and then if there are no addresses to fetch, just return here
+      //Dummy data
+      vector<string> addresses;
+      addresses.push_back("favor.t@null.net");
+      
+      try{
+	vmime::shared_ptr<vmime::net::store> st = login();
+	
+	pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
+	fetchFromFolder(sentRecFolders.first, addresses); //Sent folder
+	fetchFromFolder(sentRecFolders.second, addresses); //Receied folder
+      }
+      catch (vmime::exceptions::connection_error& e){
+	//TODO: this should specify the URL, which we should be computing before we connect based on stoerd JSON information
+ 	logger::error("Error connecting this can mean a bad host or no internet connectivity");
+ 	throw networkConnectionException("Connectivity error or bad host");
+      }
+      catch (vmime::exception& e){
+	logger::error("Unhandled VMIME exception, says: "+e.what());
 	throw emailException();
       }
-     
-      
-      vmime::net::messageSet wantedMessages(inbox->UIDSearch(cmd));
-      //TODO: full header fetch may be redundant here, depending on how getting parsed messages works (need trace)
-      vector<shared_ptr<vmime::net::message>> messages = inbox->getAndFetchMessages(wantedMessages, 
-	  vmime::net::fetchAttributes::STRUCTURE | vmime::net::fetchAttributes::FULL_HEADER | vmime::net::fetchAttributes::UID);
-            cout << "size: " << messages.size() << endl;
-      for(unsigned int i = 0; i < messages.size(); ++i){
-	parseMessage(false, messages[i]);
-      }    
-             
+   
     }
     
     void EmailManager::fetchContacts(){
