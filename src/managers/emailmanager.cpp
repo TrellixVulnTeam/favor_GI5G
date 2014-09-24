@@ -68,7 +68,18 @@ namespace favor {
       };
     }
 
-    EmailManager::EmailManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_EMAIL, detailsJson){}
+    EmailManager::EmailManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_EMAIL, detailsJson)
+    {
+      if (json.HasMember("password")) password = json["password"].GetString();
+      else throw badAccountDataException("EmailManager missing password");
+      //TODO: Check to make sure the username is a valid email, else except
+      
+      lastReceivedUid = json.HasMember("lastReceivedUid") ? json["lastReceivedUid"].GetInt64() : 1; //Uids start from 1, always
+      lastSentUid = json.HasMember("lastSentUid") ? json["lastSentUid"].GetInt64() : 1;
+      
+      lastReceivedUidValidity = json.HasMember("lastReceivedUidValidity") ? json["lastReceivedUidValidity"].GetInt64() : -1; // <0 if we don't know
+      lastSentUidValidity = json.HasMember("lastSentUidValidity") ? json["lastSentUidValidity"].GetInt64() : -1;
+    }
     
     std::time_t EmailManager::toTime(const vmime::datetime input){
       //TODO: verify this works properly
@@ -295,7 +306,7 @@ namespace favor {
  	throw networkConnectionException("Connectivity error or bad host");
       }
       catch (vmime::exception& e){
-	logger::error("Unhandled VMIME exception, says: "+e.what());
+	logger::error("Unhandled VMIME exception, says: "+string(e.what()));
 	throw emailException();
       }
    
@@ -304,4 +315,5 @@ namespace favor {
     void EmailManager::fetchContacts(){
       
     }
+    
 }

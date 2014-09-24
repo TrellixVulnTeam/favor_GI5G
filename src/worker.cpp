@@ -21,6 +21,7 @@ namespace favor{
     
     void addAccount(string name, MessageType type, string detailsJson)
     {
+      //TODO: validate the JSON here first, or perhaps have this be slave to another method that performs JSON validation (latter seems better, something owned by accountManager)
       sqlite3_stmt *stmt;
       const char sql[] = "INSERT INTO " ACCOUNT_TABLE " VALUES(?,?,?);"; //Important this is an array and not a const char* so that sizeof() works properly
       sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
@@ -67,7 +68,7 @@ namespace favor{
 	exec("DELETE FROM " ADDRESS_TABLE(i) ";");
       }
       list<shared_ptr<AccountManager>> l = reader::accountList();
-      for(list<shared_ptr<AccountManager>>::iterator it = l.begin(); it != l.end(); ++it){
+      for (list<shared_ptr<AccountManager>>::iterator it = l.begin(); it != l.end(); ++it){
 	(*it)->truncateTables();
       }
     }
@@ -78,7 +79,7 @@ namespace favor{
 	exec("CREATE INDEX IF NOT EXISTS " ADDRESS_INDEX(i) " ON " ADDRESS_INDEX(i) ADDRESS_INDEX_SCHEMA ";");
       }
       list<shared_ptr<AccountManager>> l = reader::accountList();
-      for(list<shared_ptr<AccountManager>>::iterator it = l.begin(); it != l.end(); ++it){
+      for (list<shared_ptr<AccountManager>>::iterator it = l.begin(); it != l.end(); ++it){
 	(*it)->indexTables();
       }
     }
@@ -89,7 +90,7 @@ namespace favor{
 	exec("DROP INDEX IF EXISTS " ADDRESS_INDEX(i) ";");
       }
       list<shared_ptr<AccountManager>> l = reader::accountList();
-      for(list<shared_ptr<AccountManager>>::iterator it = l.begin(); it != l.end(); ++it){
+      for (list<shared_ptr<AccountManager>>::iterator it = l.begin(); it != l.end(); ++it){
 	(*it)->deindexTables();
       }
     }

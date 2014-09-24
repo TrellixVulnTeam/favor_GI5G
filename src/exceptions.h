@@ -9,6 +9,7 @@ namespace favor{
     exception() : runtime_error("") {}
     exception(const std::string& e) : runtime_error(e) {}
   };
+  
   class sqliteException : public exception{
   public:
     sqliteException(const std::string& e) : exception(e){}
@@ -25,6 +26,12 @@ namespace favor{
   public:  
     authenticationException(const std::string& e) : exception(e){}
     authenticationException() : exception("Failed to login with credentials provided"){}
+  };
+  
+  class badAccountDataException : public exception{
+  public:
+    badAccountDataException(const std::string& e) : exception(e) {}
+    badAccountDataException() : exception("Crucial account metadata missing") {}
   };
   
   #ifdef FAVOR_EMAIL_MANAGER

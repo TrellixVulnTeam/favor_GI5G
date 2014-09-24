@@ -18,6 +18,13 @@ namespace favor{
     void fetchMessages() override;
     void fetchContacts() override; 
   private:
+    long lastSentUid;
+    long lastReceivedUid;
+    long lastSentUidValidity;
+    long lastReceivedUidValidity;
+    string password;
+    
+    void saveFetchMetadata();
     shared_ptr<vmime::net::store> login();
     string folderList(vector<shared_ptr<vmime::net::folder>> folders);
     void parseMessage(bool sent, favor::shared_ptr<vmime::net::message> m);

@@ -13,6 +13,8 @@
 #include <utility>
 
 #include "lib/sqlite/sqlite3.h"
+#include "lib/rapidjson/document.h"
+#include "lib/rapidjson/error/en.h"
 #include "definitions.h"
 #include "exceptions.h"
 #include "types.h"

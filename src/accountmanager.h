@@ -11,14 +11,18 @@ namespace favor{
     const MessageType type;
     const string accountName;
     
+  protected:
+    rapidjson::Document json;
+    
   private:
     void exportHeldMessages();
     
   protected:
     AccountManager(string accNm, MessageType typ, string detailsJson);
+    AccountManager(const AccountManager& that) = delete; //This shouldn't ever be copied. 
     void holdMessage(const bool sent, const long id, const std::time_t date, const string address, const bool media, const string msg, Encoding enc = ASCII);
-    virtual void fetchMessages();
-    virtual void fetchContacts();
+    virtual void fetchMessages() = 0;
+    virtual void fetchContacts() = 0;
   public:
     //Database
     void buildTables();

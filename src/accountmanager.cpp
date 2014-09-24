@@ -12,8 +12,11 @@
 using namespace std;
 namespace favor{
   AccountManager::AccountManager(string accNm, MessageType typ, string detailsJson):type(typ),accountName(accNm){
-    //TODO: parse json, with overriden virtual method if necessary
-
+    json.Parse(detailsJson.c_str());
+    if (json.HasParseError()){
+      logger::error("Parse error on json: \""+detailsJson+"\". RapidJson says: "+rapidjson::GetParseError_En(json.GetParseError()));
+      throw badAccountDataException("Failed to parse JSON details");
+    }
   }
   
   void AccountManager::buildTables()
@@ -56,20 +59,6 @@ namespace favor{
     fetchMessages();
     //TODO: process results
   }
-
-  
-  void AccountManager::fetchContacts()
-  {
-    logger::error("Unoverridden fetchContacts() called. This should never happen.");
-    assert(false);
-  }
-
-  void AccountManager::fetchMessages()
-  {
-    logger::error("Unoverridden fetchMessages() called. This should never happen.");
-    assert(false);
-  }
-
   
   void AccountManager::holdMessage(const bool sent, const long int id, const std::time_t date, const string address, const bool media, const string msg, favor::Encoding enc)
   {

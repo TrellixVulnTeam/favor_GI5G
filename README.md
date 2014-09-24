@@ -4,12 +4,10 @@ Todo (in order):
  - Going to have to start figuring out how we'll deal with encodings soon, as well as HTML/XTMl in messages. Probably need libxml2 for this, on PC and Android, which immediately means: 
  stripping html, converting html character entities to unicode, computing unicode string length (this [should be easy](http://stackoverflow.com/a/4063229) )
  - g++ 4.9 on Android? Necessary for <regex> implementations
- - Verify our exceptions as inherting from runtime_error owrk on Android
- - Verify the shared_ptrs are acting the way I want them to for AccountManagers, because I'm new to this C++11 feature
+ - Verify our exceptions as inherting from runtime_error work on Android
  - Basic unit tests
  - Integrate rapidjson, use it to parse account details. We can probably just use it for our int->string conversions as well
- - Update the EmailManager compile flags so we can distinguish between compiling the local version, or whatever we'll need to support the android verison. Alternatively, just add conditionals inside 
- the EmailManager compilation (ugh) to check if we're on Android or not.
+ - Sort out our license, based on what we want and limitations from what we're already using (GPL...)
  - Start on threadsafety as described below
  
 Presentation Principles
