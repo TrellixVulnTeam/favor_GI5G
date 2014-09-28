@@ -1,6 +1,6 @@
-#include "../accountmanager.h"
-#include "managers.h"
-#include "../logger.h"
+#include "accountmanager.h"
+#include "emailmanager.h"
+#include "logger.h"
 
 #include <regex> 
 /* "Why is such a useful/broad STD header only included in this specific manager?", you may ask. Because, as of
@@ -16,6 +16,8 @@ using namespace vmime::net;
 using namespace std;
 namespace favor {
     namespace email { 
+      
+      const unordered_map<string, string> imapServers({{"gmail.com", "imaps://imap.gmail.com:993"}});
       /*
       * If you need to do more complex verifications on certificates, you will
       * have to write your own verifier. Your verifier should inherit from the
@@ -68,11 +70,45 @@ namespace favor {
       };
     }
 
-    EmailManager::EmailManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_EMAIL, detailsJson)
+    //TODO: test this with bad URLS, and an unrecognized email+custom URL
+    EmailManager::EmailManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_EMAIL, detailsJson), serverURL("imap://bad.url:0")
     {
       if (json.HasMember("password")) password = json["password"].GetString();
       else throw badAccountDataException("EmailManager missing password");
       //TODO: Check to make sure the username is a valid email, else except
+      
+      //http://www.regular-expressions.info/email.html
+      std::regex emailRegex("[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}", std::regex::ECMAScript | std::regex::icase);
+      if (!regex_match( accountName, emailRegex)) logger::warning("Account name "+accountName+" for email manager does not match email regex");
+      
+      size_t atSign = accountName.find_first_of("@");
+      if (atSign==string::npos){
+	logger::error("Could not find \"@\" in \""+accountName+"\"");
+	throw badAccountDataException("EmailManager initialized with bad email address");
+      }
+      
+      string domain = accountName.substr(atSign+1);
+      unordered_map<string, string>::const_iterator it = email::imapServers.find(domain);
+      if (it != email::imapServers.end()) {
+	serverURL = vmime::utility::url(it->second);
+      }
+      else {
+	if (json.HasMember("url")) {
+	  try {
+	  serverURL = vmime::utility::url(json["url"].GetString());
+	  }
+	  catch (vmime::exceptions::malformed_url &e) {
+	    logger::error("Attempted to use provided url \""+string(json["url"].GetString())+"\" but it was malformed");
+	    throw badAccountDataException("Provided url was malformed");
+	  }
+	}
+	else {
+	  logger::error("Could not determine url for email "+accountName+" and no alternative URL was provided");
+	  throw badAccountDataException("Unable to determine URL for "+accountName);
+	}
+      }
+      
+      
       
       lastReceivedUid = json.HasMember("lastReceivedUid") ? json["lastReceivedUid"].GetInt64() : 1; //Uids start from 1, always
       lastSentUid = json.HasMember("lastSentUid") ? json["lastSentUid"].GetInt64() : 1;
@@ -80,6 +116,7 @@ namespace favor {
       lastReceivedUidValidity = json.HasMember("lastReceivedUidValidity") ? json["lastReceivedUidValidity"].GetInt64() : -1; // <0 if we don't know
       lastSentUidValidity = json.HasMember("lastSentUidValidity") ? json["lastSentUidValidity"].GetInt64() : -1;
     }
+
     
     std::time_t EmailManager::toTime(const vmime::datetime input){
       //TODO: verify this works properly
@@ -142,6 +179,14 @@ namespace favor {
 	  }
 	  else {
 	    htp->getText()->extract(os);
+	    pugi::xml_document doc;
+	    pugi::xml_parse_result res = doc.load(body);
+	    if (res){
+	      
+	    }
+	    else {
+	      //TODO: what do we do here, even? Maybe we should look at errors more closely? do we just throw the message out?
+	    }
 	    //TODO: strip the HTML, and more importantly, convert HTML-encoded characters into appropriate unicode
 	  }
 	  //TODO: handle encoding, at least insofar as figuring out which of our constants we pass down
@@ -186,33 +231,34 @@ namespace favor {
       return out;
     }
     
-    shared_ptr<vmime::net::store> EmailManager::login(){
-      //TODO: get the actual credentials from our JSON store, and use that info to figure out the mail url as well (though it should always be imaps)
-      //Also when we do this, update the "Successfully connected to" logger to include the username (obviously not the password)
-      
+    shared_ptr<vmime::net::store> EmailManager::login(){      
       shared_ptr<session> sess = make_shared <session>();
-      
-      utility::url url("imaps://imap.gmail.com:993");
 
-      sess->getProperties()["store.imaps.auth.username"] = "nope";
-      sess->getProperties()["store.imaps.auth.password"] = "nope";
+      //TODO: test this on a normal IMAP server (if any don't use IMAPS anymore, anyway)
+      if(serverURL.getProtocol() == "imaps"){
+	sess->getProperties()["store.imaps.auth.username"] = accountName;
+	sess->getProperties()["store.imaps.auth.password"] = password;
+      }
+      else {
+	sess->getProperties()["store.imap.auth.username"] = accountName;
+	sess->getProperties()["store.imap.auth.username"] = password;
+      }
 
-      vmime::shared_ptr<vmime::net::store> st = sess->getStore(url);
+      vmime::shared_ptr<vmime::net::store> st = sess->getStore(serverURL);
       
       try {
       st->setCertificateVerifier(vmime::make_shared<email::TrustingCertificateVerifier>());
       st->setTracerFactory(make_shared<email::InfoTracerFactory>());
       st->connect();
-      logger::info("Successfully connected to "+string(url)+"as ");
+      logger::info("Successfully connected to "+string(serverURL)+"as "+accountName);
       } 
-      //TODO: update these exceptions to contain more useful information since they can take string arguments now
       catch (vmime::exceptions::authentication_error& e){
-	logger::error("Could not authenticate to "+string(url)+" as " " with the credentials provided");
+	logger::error("Could not authenticate to "+string(serverURL)+" as "+accountName+" with the credentials provided");
 	throw authenticationException();
       }
       //I've only ever seen authentication_error, but we'll catch the similarly named exception here just in case...
       catch (vmime::exceptions::authentication_exception& e){
-	logger::error("Could not authenticate to "+string(url)+" as " " with the credentials provided");
+	logger::error("Could not authenticate to "+string(serverURL)+" as "+accountName+" with the credentials provided");
 	throw authenticationException();
       } 
       catch (vmime::exception& e){
@@ -288,7 +334,7 @@ namespace favor {
     
     void EmailManager::fetchMessages(){
       
-      //TODO: get credentials from JSON, and then if there are no addresses to fetch, just return here
+      //TODO: If there are no addresses to fetch, just return here
       //Dummy data
       vector<string> addresses;
       addresses.push_back("favor.t@null.net");

@@ -11,10 +11,15 @@
 #include <memory>
 #include <iostream>
 #include <utility>
+#include <unordered_map>
 
-#include "lib/sqlite/sqlite3.h"
-#include "lib/rapidjson/document.h"
-#include "lib/rapidjson/error/en.h"
+//External libraries
+#include "sqlite/sqlite3.h"
+#include "rapidjson/document.h"
+#include "rapidjson/error/en.h"
+#include "pugixml/pugixml.hpp"
+
+//Favor core headers
 #include "definitions.h"
 #include "exceptions.h"
 #include "types.h"

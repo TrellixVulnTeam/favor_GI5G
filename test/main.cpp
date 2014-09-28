@@ -8,8 +8,6 @@
 int main(int argc, char **argv) {
     favor::initialize();
     favor::worker::buildDatabase();
-    //favor::worker::addAccount("testemail@gmail.com", favor::TYPE_EMAIL, "{}");
-    //favor::worker::removeAccount("testemail@gmail.com", favor::TYPE_EMAIL);
     favor::reader::refreshAll();
     favor::logger::info(favor::as_string(favor::reader::accountList().front()->type));
     favor::logger::info(favor::reader::accountList().front()->accountName);

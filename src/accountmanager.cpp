@@ -1,7 +1,11 @@
 #include "accountmanager.h"
-#include "./managers/managers.h"
 #include "worker.h"
 #include "logger.h"
+
+//Managers
+#ifdef FAVOR_EMAIL_MANAGER
+#include "emailmanager.h"
+#endif
 
 #define SENT_TABLE_NAME "\""+accountName+"_"+MessageTypeName[type]+"_sent\""
 #define RECEIVED_TABLE_NAME "\""+accountName+"_"+MessageTypeName[type]+"_received\""
@@ -63,6 +67,7 @@ namespace favor{
   void AccountManager::holdMessage(const bool sent, const long int id, const std::time_t date, const string address, const bool media, const string msg, favor::Encoding enc)
   {
     //TODO: actually export message, and give it a type based on the type of this manager
+    //TODO: handle encodings, and then after that, strip the string
       cout << "---------------------------------------------------------" << endl;
       cout << "Message held with - sent: " << sent << ", id: " << id << ", date: " << date << ", address: " << address << ", media: " << media << endl << "...and Body:|" << msg << "|" << endl;
       cout << "Body　Length: " << msg.length() << ", Encoding: " << enc << endl;

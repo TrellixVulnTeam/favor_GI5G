@@ -1,16 +1,11 @@
-#ifndef favor_managers_include
-#define favor_managers_include
+#ifndef favor_emailmanager_include
+#define favor_emailmanager_include
 
-#include "../favor.h"
-#include "../accountmanager.h"
-
-#ifdef FAVOR_EMAIL_MANAGER
-#include <vmime/vmime.hpp>
-#endif
+#include "favor.h"
+#include "accountmanager.h"
+#include <vmime/vmime.hpp> //TODO: move vmime somewhere better so this is a local include
 
 namespace favor{
-  //Forward declarations of manager subclasses so we can use their constructors
-  #ifdef FAVOR_EMAIL_MANAGER
   class EmailManager : public AccountManager {
   public:
     EmailManager(string accNm, string detailsJson);
@@ -23,6 +18,7 @@ namespace favor{
     long lastSentUidValidity;
     long lastReceivedUidValidity;
     string password;
+    vmime::utility::url serverURL;
     
     void saveFetchMetadata();
     shared_ptr<vmime::net::store> login();
@@ -34,9 +30,6 @@ namespace favor{
     std::pair< std::shared_ptr<vmime::net::folder>, std::shared_ptr<vmime::net::folder>> findSentRecFolder(favor::shared_ptr<vmime::net::store> st);
     void fetchFromFolder(favor::shared_ptr< vmime::net::folder > folder, const favor::vector< favor::string >& addresses);
   };
-  #endif
-  //class LineManager : public AccountManager {public: LineManager(string accNm, string detailsJson);}; //etc
-  
 }
 
 #endif
