@@ -20,7 +20,7 @@ IF(FAVOR_EMAIL_MANAGER)
   LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/managers/emailmanager.cpp)
   add_definitions(-DFAVOR_EMAIL_MANAGER)
   
-  find_library(VMIME_LOCATION libvmime.so) #TODO: if this fails (VMIME_LOCATION-NOTFOUND), check for a user submitted path
+  find_library(VMIME_LOCATION libvmime.so PATHS ${favor_SOURCE_DIR}/src/lib/vmime/lib NO_DEFAULT_PATH) #TODO: if this fails (VMIME_LOCATION-NOTFOUND), check for a vmime installation? Just drop NO_DEFAULT_PATH
   add_library(libvmime SHARED IMPORTED)
   set_target_properties(libvmime PROPERTIES IMPORTED_LOCATION ${VMIME_LOCATION})
 

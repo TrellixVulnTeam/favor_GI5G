@@ -4,4 +4,6 @@ Makefile
 cmake_install.cmake
 install_manifest.txt
 build/*
+src/lib/*
+!src/lib/fetch_dependencies.py
 *.db

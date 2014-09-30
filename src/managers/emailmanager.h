@@ -3,7 +3,7 @@
 
 #include "favor.h"
 #include "accountmanager.h"
-#include <vmime/vmime.hpp> //TODO: move vmime somewhere better so this is a local include
+#include "vmime/include/vmime/vmime.hpp"
 
 namespace favor{
   class EmailManager : public AccountManager {
