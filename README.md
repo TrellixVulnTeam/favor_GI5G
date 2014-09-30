@@ -1,8 +1,8 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - Going to have to start figuring out how we'll deal with encodings soon, as well as HTML/XTMl in messages. Probably need libxml2 for this, on PC and Android, which immediately means: 
- stripping html, converting html character entities to unicode, computing unicode string length (this [should be easy](http://stackoverflow.com/a/4063229) )
+ - Stripping html, and dealing with [optional closing tags](http://stackoverflow.com/questions/10079451/html-parsing-using-pugixml-or-an-actual-html-parser) in HTML
+ - Dealing with encodings better, computing unicode string length (this [should be easy](http://stackoverflow.com/a/4063229) )
  - g++ 4.9 on Android? Necessary for <regex> implementations
  - Verify our exceptions as inherting from runtime_error work on Android
  - Basic unit tests

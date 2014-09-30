@@ -17,6 +17,17 @@ using namespace std;
 namespace favor {
     namespace email { 
       
+      string stripXML(const pugi::xml_document& doc){
+	string withoutHTML;
+	pugi::xpath_node_set ns = doc.select_nodes("//text()");
+	if (ns.type() != pugi::xpath_node_set::type_sorted) ns.sort();
+	for (size_t i = 0; i < ns.size(); ++i) {
+	  withoutHTML += ns[i].node().value();
+	  if (i < (ns.size()-1)) withoutHTML += " ";
+	}
+	return withoutHTML;
+      }
+      
       const unordered_map<string, string> imapServers({{"gmail.com", "imaps://imap.gmail.com:993"}});
       /*
       * If you need to do more complex verifications on certificates, you will
@@ -50,6 +61,7 @@ namespace favor {
 	shared_ptr <vmime::net::tracer> create (shared_ptr <vmime::net::service> serv, const int connectionId) override{
 	  return make_shared<InfoTracer>(serv, connectionId);
 	}
+	
       };
       
       
@@ -182,12 +194,13 @@ namespace favor {
 	    pugi::xml_document doc;
 	    pugi::xml_parse_result res = doc.load(body);
 	    if (res){
-	      
+	      //TODO: we're almost there. this handles most of the important stuff, but we're still getting &nbsp; and such
+	      //see: http://stackoverflow.com/questions/19974909/xml-non-breaking-space
+	      body.str(email::stripXML(doc));
 	    }
 	    else {
-	      //TODO: what do we do here, even? Maybe we should look at errors more closely? do we just throw the message out?
+	      //TODO: what do we do if we fail to parse the xml? Maybe we should look at errors more closely? do we just throw the message out?
 	    }
-	    //TODO: strip the HTML, and more importantly, convert HTML-encoded characters into appropriate unicode
 	  }
 	  //TODO: handle encoding, at least insofar as figuring out which of our constants we pass down
 	  cout << "encoding: " << htp->getText()->getEncoding().getName() << endl;
