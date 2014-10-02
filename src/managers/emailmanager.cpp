@@ -194,6 +194,8 @@ namespace favor {
 	    pugi::xml_document doc;
 	    pugi::xml_parse_result res = doc.load(body);
 	    if (res){
+	      TidyDoc tdoc = tidyCreate();      
+	      bool ok = tidyOptSetBool( tdoc, TidyXhtmlOut, yes );  // Tell tidy to convert to xtml
 	      //TODO: we're almost there. this handles most of the important stuff, but we're still getting &nbsp; and such
 	      //see: http://stackoverflow.com/questions/19974909/xml-non-breaking-space
 	      body.str(email::stripXML(doc));

@@ -20,11 +20,17 @@ IF(FAVOR_EMAIL_MANAGER)
   LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/managers/emailmanager.cpp)
   add_definitions(-DFAVOR_EMAIL_MANAGER)
   
+  #VMIME
   find_library(VMIME_LOCATION libvmime.so PATHS ${favor_SOURCE_DIR}/src/lib/vmime/lib NO_DEFAULT_PATH) #TODO: if this fails (VMIME_LOCATION-NOTFOUND), check for a vmime installation? Just drop NO_DEFAULT_PATH
   add_library(libvmime SHARED IMPORTED)
   set_target_properties(libvmime PROPERTIES IMPORTED_LOCATION ${VMIME_LOCATION})
-
   LIST(APPEND compilation_libraries libvmime)
+  
+  #TIDY (TODO: we may use this for everyone, and it does compile on Android, but for now it's email only)
+  find_library(TIDY_LOCATION libtidy.a PATHS ${favor_SOURCE_DIR}/src/lib/tidy-html5/ NO_DEFAULT_PATH)
+  add_library(libtidy STATIC IMPORTED)
+  set_target_properties(libtidy PROPERTIES IMPORTED_LOCATION ${TIDY_LOCATION})
+  list(APPEND compilation_libraries libtidy)
 ENDIF()
 
 # Include Line

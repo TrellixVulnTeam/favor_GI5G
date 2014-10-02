@@ -4,6 +4,8 @@
 #include "favor.h"
 #include "accountmanager.h"
 #include "vmime/include/vmime/vmime.hpp"
+#include "tidy-html5/tidy.h"
+#include "tidy-html5/buffio.h"
 
 namespace favor{
   class EmailManager : public AccountManager {
