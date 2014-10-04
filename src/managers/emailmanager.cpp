@@ -28,6 +28,43 @@ namespace favor {
 	return withoutHTML;
       }
       
+      string toXML(const string& html){
+	//TODO: In a perfect world, we would eventually avoid copying here and be more clever with memory. In a perfect world.
+	TidyBuffer output = {0};
+	TidyBuffer errbuf = {0};
+	int rc = -1;
+
+	TidyDoc tdoc = tidyCreate();                     // Initialize "document";
+
+	tidyOptSetBool( tdoc, TidyXhtmlOut, yes );  // Tell tidy to convert to xtml
+	tidyOptSetBool( tdoc, TidyDropFontTags, yes); //Slight efficiency
+	tidyOptSetBool( tdoc, TidyHideComments, yes);
+	tidyOptSetValue(tdoc, TidyCharEncoding, "UTF8");
+	tidyOptSetBool(tdoc, TidyQuoteNbsp, no);
+	rc = tidySetErrorBuffer( tdoc, &errbuf );      // This just sets up someplace for error messages
+	if ( rc >= 0 ) rc = tidyParseString( tdoc, html.c_str() );           // Parse the input string
+	if ( rc >= 0 ) rc = tidyCleanAndRepair( tdoc );               // Execute the actual cleaning and repairing after configuring and parsing
+	if ( rc >= 0 ) rc = tidyRunDiagnostics( tdoc );               // Kvetch
+	if ( rc > 1 ) rc = ( tidyOptSetBool(tdoc, TidyForceOutput, yes) ? rc : -1 );                            // If error, force output.
+	if ( rc >= 0 ) rc = tidySaveBuffer( tdoc, &output );          // Pretty Print
+
+	if ( rc >= 0 )
+	{
+	  if ( rc > 0 )
+	    logger::info("Diagnostics for converted HTML: "+string(reinterpret_cast<const char*>(errbuf.bp)));
+	}
+	else{
+	  //TODO: Something went very wrong and we can't parse this. What to do in a situation like this?
+	  logger::error("Unable to parse HTML");
+	}
+	string ret = reinterpret_cast<const char*>(output.bp);
+	tidyBufFree( &output );
+	tidyBufFree( &errbuf );
+	tidyRelease( tdoc );
+	return ret;
+      }
+      
+      
       const unordered_map<string, string> imapServers({{"gmail.com", "imaps://imap.gmail.com:993"}});
       /*
       * If you need to do more complex verifications on certificates, you will
@@ -159,6 +196,28 @@ namespace favor {
       }
       return false;
     }
+    
+    void EmailManager::handleHTML(vmime::utility::outputStream* out, stringstream* ss, shared_ptr<const vmime::htmlTextPart> part){
+	//If this HTML part has a plain text equivalent, use that
+	if (!part->getPlainText()->isEmpty()){
+	  part->getPlainText()->extract(*out);
+	  out->flush();
+	}
+	else {
+	  part->getText()->extract(*out);
+	  out->flush();
+	  //TODO: toXML and stripXMl can both fail. how do we handle these?
+	  ss->str(email::toXML(ss->str()));
+	  pugi::xml_document doc;
+	  pugi::xml_parse_result res = doc.load(*ss);
+	  if (res){
+	    ss->str(email::stripXML(doc));
+	  }
+	  else {
+	    //TODO: what do we do if we fail to parse the xml? Maybe we should look at errors more closely? do we just throw the message out?
+	  }
+	}
+      }
 
     void EmailManager::parseMessage(bool sent, shared_ptr<vmime::net::message> m){
       
@@ -180,39 +239,29 @@ namespace favor {
       
       const bool media = hasMedia(structure);
       
+      std::regex utf8regex("utf-8", std::regex::ECMAScript | std::regex::icase);
+      
+      
       for (int i = 0; i < mp.getTextPartCount(); ++i){
 	vmime::shared_ptr<const vmime::textPart> tp = mp.getTextPartAt(i);
 	if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_HTML){
-	  vmime::shared_ptr<const vmime::htmlTextPart> htp = dynamic_pointer_cast<const vmime::htmlTextPart>(tp);
-	  
-	  //If this HTML part has a plain text equivalent, use that
-	  if (!htp->getPlainText()->isEmpty()){
-	    htp->getPlainText()->extract(os);
+	  shared_ptr<const vmime::htmlTextPart> htp = dynamic_pointer_cast<const vmime::htmlTextPart>(tp);
+	  if (!regex_match(htp->getCharset().getName(), utf8regex)){
+	    //Encoding is supposedly handled by VMIME, but we'll need to look at charset
+	    //TODO: test this converting from a non utf-8 charset. Everybody seems to send everything already in UTF-8 these days
+	    logger::info("Converting mail with UID "+string(m->getUID())+" and charset "+htp->getCharset().getName()+" to utf-8");
+	    shared_ptr<vmime::charsetConverter> conv = vmime::charsetConverter::create(htp->getCharset(), vmime::charset("utf-8"));
+	    shared_ptr<vmime::utility::charsetFilteredOutputStream> out = conv->getFilteredOutputStream(os);
+	    handleHTML(&(*out), &body, htp);
 	  }
 	  else {
-	    htp->getText()->extract(os);
-	    pugi::xml_document doc;
-	    pugi::xml_parse_result res = doc.load(body);
-	    if (res){
-	      TidyDoc tdoc = tidyCreate();      
-	      bool ok = tidyOptSetBool( tdoc, TidyXhtmlOut, yes );  // Tell tidy to convert to xtml
-	      //TODO: we're almost there. this handles most of the important stuff, but we're still getting &nbsp; and such
-	      //see: http://stackoverflow.com/questions/19974909/xml-non-breaking-space
-	      body.str(email::stripXML(doc));
-	    }
-	    else {
-	      //TODO: what do we do if we fail to parse the xml? Maybe we should look at errors more closely? do we just throw the message out?
-	    }
+	    handleHTML(&os, &body, htp);
 	  }
-	  //TODO: handle encoding, at least insofar as figuring out which of our constants we pass down
-	  cout << "encoding: " << htp->getText()->getEncoding().getName() << endl;
-	  //vmime::encodingTypes::
 	}
 	else if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_PLAIN){
-	  cout << "encoding: " << tp->getText()->getEncoding().getName() << endl;
-	  tp->getText()->extract(os);
+	tp->getText()->extract(os);
 	}
-      }    
+      }
       
       
       //TODO: test exporting, especially for sent messages with multiple recipients
