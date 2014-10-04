@@ -7,3 +7,5 @@ build/*
 src/lib/*
 !src/lib/fetch_dependencies.py
 *.db
+*.kdev4
+test/lib/*
