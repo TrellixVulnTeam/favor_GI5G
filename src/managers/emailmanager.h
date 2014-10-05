@@ -4,6 +4,7 @@
 #include "favor.h"
 #include "accountmanager.h"
 #include "vmime/include/vmime/vmime.hpp"
+#include "vmime/include/vmime/net/imap/IMAPFolderStatus.hpp"
 #include "tidy-html5/tidy.h"
 #include "tidy-html5/buffio.h"
 
@@ -14,6 +15,7 @@ namespace favor{
   protected:
     void fetchMessages() override;
     void fetchContacts() override; 
+    void updateFetchData() override;
   private:
     long lastSentUid;
     long lastReceivedUid;
@@ -22,11 +24,10 @@ namespace favor{
     string password;
     vmime::utility::url serverURL;
     
-    void saveFetchMetadata();
     shared_ptr<vmime::net::store> login();
     string folderList(vector<shared_ptr<vmime::net::folder>> folders);
     void parseMessage(bool sent, favor::shared_ptr<vmime::net::message> m);
-    void handleHTML(vmime::utility::outputStream* out, std::stringstream* ss, shared_ptr<const vmime::htmlTextPart> part);
+    void handleHTML(vmime::utility::outputStream* out, std::stringstream& ss, shared_ptr<const vmime::htmlTextPart> part);
     bool hasMedia(shared_ptr<vmime::net::messageStructure> structure);
     std::time_t toTime(const vmime::datetime input);
     string searchCommand(bool sent, const favor::vector<favor::string>& addresses, long int uid);

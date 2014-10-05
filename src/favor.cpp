@@ -60,6 +60,14 @@ namespace favor{
     #endif
   }
   
+  string as_string(rapidjson::Document json){
+    //TODO: test this
+    rapidjson::StringBuffer buff;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buff);
+    json.Accept(writer);
+    return buff.GetString();
+  }
+  
   string as_string(message m){
     //TODO:
   }

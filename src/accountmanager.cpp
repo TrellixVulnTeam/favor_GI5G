@@ -32,12 +32,21 @@ namespace favor{
   {
     destroyTablesStatic(accountName, type);
   }
-
-    
-  void AccountManager::truncateTables()
+  
+  void AccountManager::truncateSentTable()
   {
     worker::exec("DELETE FROM " SENT_TABLE_NAME);
+  }
+  
+  void AccountManager::truncateReceivedTable()
+  {
     worker::exec("DELETE FROM " RECEIVED_TABLE_NAME);
+  }
+  
+  void AccountManager::truncateTables()
+  {
+    truncateSentTable();
+    truncateReceivedTable();
   }
   
   void AccountManager::deindexTables()
@@ -57,17 +66,40 @@ namespace favor{
     fetchContacts();
     //TODO: process results
   }
+  
+  void AccountManager::saveFetchData()
+  {
+    sqlite3_stmt *stmt;
+    //TODO: more hardcoded column names :(
+    //TODO: this may have to be delegated to worker because it would benefit from having a DB pointer
+//     const char sql[] = "UPDATE " ACCOUNT_TABLE " SET details_json=? WHERE name=? AND type=?;";
+//     sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
+//     //TODO: json to string
+//     //sqlv(sqlite3_bind_text(stmt, 1, json.
+//     sqlv(sqlite3_bind_text(stmt, 2, accountName.c_str(), accountName.length(), SQLITE_STATIC));
+//     sqlv(sqlite3_bind_int(stmt, 3, type));
+//     sqlv(sqlite3_step(stmt));
+//     sqlv(sqlite3_finalize(stmt));
+  }
+
+  
+  void AccountManager::saveHeldMessages()
+  {
+    //TODO: save the messages we have to the database
+  }
 
   void AccountManager::updateMessages()
   {
     fetchMessages();
-    //TODO: process results
+    updateFetchData();
+    saveHeldMessages();
+    saveFetchData();
   }
   
-  void AccountManager::holdMessage(const bool sent, const long int id, const std::time_t date, const string address, const bool media, const string msg, favor::Encoding enc)
+  void AccountManager::holdMessage(const bool sent, const long int id, const std::time_t date, const string address, const bool media, const string& msg, favor::Encoding enc)
   {
-    //TODO: actually export message, and give it a type based on the type of this manager
-    //TODO: handle encodings, and then after that, strip the string
+    //TODO: export (save to vector, likely of pointers), and give it a type based on the type of this manager. also eventually worry about encodings
+    //TODO: in one pass, strip any whitespace which is either consecutive or trailing, compute unicode string length, and copy the string
       cout << "---------------------------------------------------------" << endl;
       cout << "Message held with - sent: " << sent << ", id: " << id << ", date: " << date << ", address: " << address << ", media: " << media << endl << "...and Body:|" << msg << "|" << endl;
       cout << "Body　Length: " << msg.length() << ", Encoding: " << enc << endl;

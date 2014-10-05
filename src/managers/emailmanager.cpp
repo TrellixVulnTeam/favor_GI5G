@@ -28,8 +28,7 @@ namespace favor {
 	return withoutHTML;
       }
       
-      string toXML(const string& html){
-	//TODO: In a perfect world, we would eventually avoid copying here and be more clever with memory. In a perfect world.
+      bool toXML(stringstream& ss){
 	TidyBuffer output = {0};
 	TidyBuffer errbuf = {0};
 	int rc = -1;
@@ -42,7 +41,7 @@ namespace favor {
 	tidyOptSetValue(tdoc, TidyCharEncoding, "UTF8");
 	tidyOptSetBool(tdoc, TidyQuoteNbsp, no);
 	rc = tidySetErrorBuffer( tdoc, &errbuf );      // This just sets up someplace for error messages
-	if ( rc >= 0 ) rc = tidyParseString( tdoc, html.c_str() );           // Parse the input string
+	if ( rc >= 0 ) rc = tidyParseString( tdoc, ss.str().c_str() );           // Parse the input string
 	if ( rc >= 0 ) rc = tidyCleanAndRepair( tdoc );               // Execute the actual cleaning and repairing after configuring and parsing
 	if ( rc >= 0 ) rc = tidyRunDiagnostics( tdoc );               // Kvetch
 	if ( rc > 1 ) rc = ( tidyOptSetBool(tdoc, TidyForceOutput, yes) ? rc : -1 );                            // If error, force output.
@@ -50,31 +49,21 @@ namespace favor {
 
 	if ( rc >= 0 )
 	{
-	  if ( rc > 0 )
-	    logger::info("Diagnostics for converted HTML: "+string(reinterpret_cast<const char*>(errbuf.bp)));
+	  if ( rc > 0 ) logger::info("Diagnostics for converted HTML: "+string(reinterpret_cast<const char*>(errbuf.bp)));
 	}
-	else{
-	  //TODO: Something went very wrong and we can't parse this. What to do in a situation like this?
-	  logger::error("Unable to parse HTML");
+	else {
+	  logger::warning("Unable to parse HTML, TidyLib has errno "+as_string(rc)+" and says: \""+string(reinterpret_cast<const char*>(errbuf.bp))+"\"" );
+	  return false;
 	}
-	string ret = reinterpret_cast<const char*>(output.bp);
+	ss.str(reinterpret_cast<const char*>(output.bp));
 	tidyBufFree( &output );
 	tidyBufFree( &errbuf );
 	tidyRelease( tdoc );
-	return ret;
       }
       
       
       const unordered_map<string, string> imapServers({{"gmail.com", "imaps://imap.gmail.com:993"}});
-      /*
-      * If you need to do more complex verifications on certificates, you will
-      * have to write your own verifier. Your verifier should inherit from the
-      * vmime::security::cert::certificateVerifier class and implement the method
-      * verify(). Then, if the specified certificate chain is trusted, simply return from the function,
-      * or else throw a certificate verification exception.
-      */
-      // Certificate verifier (TLS/SSL)
-      //TODO: We might want to actually verify something here. See the VMIME documentation
+
       
       class InfoTracer : public vmime::net::tracer
       {
@@ -124,7 +113,6 @@ namespace favor {
     {
       if (json.HasMember("password")) password = json["password"].GetString();
       else throw badAccountDataException("EmailManager missing password");
-      //TODO: Check to make sure the username is a valid email, else except
       
       //http://www.regular-expressions.info/email.html
       std::regex emailRegex("[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}", std::regex::ECMAScript | std::regex::icase);
@@ -168,7 +156,7 @@ namespace favor {
 
     
     std::time_t EmailManager::toTime(const vmime::datetime input){
-      //TODO: verify this works properly
+      //TODO: test this to verify this works properly
       struct tm timeinfo;
       const vmime::datetime time = vmime::utility::datetimeUtils::toUniversalTime(input);
       timeinfo.tm_sec = time.getSecond();
@@ -197,7 +185,7 @@ namespace favor {
       return false;
     }
     
-    void EmailManager::handleHTML(vmime::utility::outputStream* out, stringstream* ss, shared_ptr<const vmime::htmlTextPart> part){
+    void EmailManager::handleHTML(vmime::utility::outputStream* out, stringstream& ss, shared_ptr<const vmime::htmlTextPart> part){
 	//If this HTML part has a plain text equivalent, use that
 	if (!part->getPlainText()->isEmpty()){
 	  part->getPlainText()->extract(*out);
@@ -206,15 +194,14 @@ namespace favor {
 	else {
 	  part->getText()->extract(*out);
 	  out->flush();
-	  //TODO: toXML and stripXMl can both fail. how do we handle these?
-	  ss->str(email::toXML(ss->str()));
+	  bool xmlSuccess = email::toXML(ss);
 	  pugi::xml_document doc;
-	  pugi::xml_parse_result res = doc.load(*ss);
-	  if (res){
-	    ss->str(email::stripXML(doc));
-	  }
+	  pugi::xml_parse_result res = doc.load(ss);
+	  if (res) ss.str(email::stripXML(doc));
 	  else {
-	    //TODO: what do we do if we fail to parse the xml? Maybe we should look at errors more closely? do we just throw the message out?
+	    if (xmlSuccess) logger::error("PugiXML could not parse HTML despite tidying and transformation to XML");
+	    else logger::error("HTML could not be tidied or parsed. Likely malformed");
+	    throw badMessageDataException("Unable to process HTML in email message");
 	  }
 	}
       }
@@ -245,6 +232,7 @@ namespace favor {
       for (int i = 0; i < mp.getTextPartCount(); ++i){
 	vmime::shared_ptr<const vmime::textPart> tp = mp.getTextPartAt(i);
 	if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_HTML){
+	  //TODO: handleHTMl can fail, and except. how do we handle that?
 	  shared_ptr<const vmime::htmlTextPart> htp = dynamic_pointer_cast<const vmime::htmlTextPart>(tp);
 	  if (!regex_match(htp->getCharset().getName(), utf8regex)){
 	    //Encoding is supposedly handled by VMIME, but we'll need to look at charset
@@ -252,10 +240,10 @@ namespace favor {
 	    logger::info("Converting mail with UID "+string(m->getUID())+" and charset "+htp->getCharset().getName()+" to utf-8");
 	    shared_ptr<vmime::charsetConverter> conv = vmime::charsetConverter::create(htp->getCharset(), vmime::charset("utf-8"));
 	    shared_ptr<vmime::utility::charsetFilteredOutputStream> out = conv->getFilteredOutputStream(os);
-	    handleHTML(&(*out), &body, htp);
+	    handleHTML(&(*out), body, htp);
 	  }
 	  else {
-	    handleHTML(&os, &body, htp);
+	    handleHTML(&os, body, htp);
 	  }
 	}
 	else if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_PLAIN){
@@ -340,7 +328,7 @@ namespace favor {
       string addressField = sent ? "TO" : "FROM";
       for (int i = 1; i < addresses.size(); ++i){cmd+="OR ";} //One less "OR " than the number of addresses is important, so we start from 1 here
       for (int i = 0; i < addresses.size(); ++i){cmd+=(addressField+" \""+addresses[i]+"\" ");}
-      cmd+=("UID "+to_string(uid)+":*");
+      cmd+=("UID "+as_string(uid)+":*");
       return cmd;
     }
     
@@ -384,8 +372,22 @@ namespace favor {
     
     void EmailManager::fetchFromFolder(shared_ptr<vmime::net::folder> folder, const vector<string>& addresses){
       bool sent = (folder->getName().getBuffer() != "INBOX");
+      long& lastUid = sent ? lastSentUid : lastReceivedUid;
+      long& lastUidValidity = sent? lastSentUidValidity : lastSentUidValidity;
       
-      string cmd = searchCommand(sent, addresses, 1); //UIDS always from 1
+      //TODO: test uidvalidity change stuff
+      shared_ptr<vmime::net::imap::IMAPFolderStatus> status = dynamic_pointer_cast<vmime::net::imap::IMAPFolderStatus>(folder->getStatus());
+      long uidValidity = status->getUIDValidity();
+      if (lastUidValidity == -1) lastUidValidity = uidValidity;
+      if (uidValidity == 0) logger::warning("Server does not support UID validity");
+      else if (lastUidValidity != uidValidity) {
+	logger::warning("UID Validity in folder "+folder->getName().getBuffer()+" has changed from "+as_string(lastUidValidity)+" to "+as_string(uidValidity));
+	//Drop the database, and reset our last UID as well because it's moot now. Eventual todo: pun about base dropping
+	if (sent) truncateSentTable();
+	else truncateReceivedTable();
+	lastUid = 1; //UIDs always from 1
+      }
+      string cmd = searchCommand(sent, addresses, lastUid);
       if (!folder->isOpen()) folder->open(vmime::net::folder::MODE_READ_ONLY);
       else logger::warning("Folder \""+folder->getName().getBuffer()+"\" already open before fetch. This should not happen.");
       
@@ -396,12 +398,17 @@ namespace favor {
       else for (unsigned int i = 0; i < messages.size(); ++i) parseMessage(false, messages[i]);  
     }
     
+    void EmailManager::updateFetchData(){
+      //TODO: write our updated UIDS and last UID validities to the JSON doc
+    }
+    
     void EmailManager::fetchMessages(){
       
-      //TODO: If there are no addresses to fetch, just return here
-      //Dummy data
+      //TODO: get actual data from the database
       vector<string> addresses;
       addresses.push_back("favor.t@null.net");
+      
+      if (addresses.size() == 0) return;
       
       try{
 	vmime::shared_ptr<vmime::net::store> st = login();
@@ -411,19 +418,19 @@ namespace favor {
 	fetchFromFolder(sentRecFolders.second, addresses); //Receied folder
       }
       catch (vmime::exceptions::connection_error& e){
-	//TODO: this should specify the URL, which we should be computing before we connect based on stoerd JSON information
- 	logger::error("Error connecting this can mean a bad host or no internet connectivity");
+ 	logger::error("Error connecting to "+serverURL.getHost()+". This can mean a bad host or no internet connectivity");
  	throw networkConnectionException("Connectivity error or bad host");
       }
       catch (vmime::exception& e){
 	logger::error("Unhandled VMIME exception, says: "+string(e.what()));
 	throw emailException();
       }
+      updateFetchData();
    
     }
     
     void EmailManager::fetchContacts(){
-      
+      //TODO: this
     }
     
 }

@@ -1,14 +1,14 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - Stripping html, and dealing with [optional closing tags](http://stackoverflow.com/questions/10079451/html-parsing-using-pugixml-or-an-actual-html-parser) in HTML
+ - Contact fetching at least for the EmailManager. I think that realistically, we should compute just off of recent sent, since that best represents user intent
  - Dealing with encodings better, computing unicode string length (this [should be easy](http://stackoverflow.com/a/4063229) )
  - g++ 4.9 on Android? Necessary for <regex> implementations
  - Verify our exceptions as inherting from runtime_error work on Android
  - Basic unit tests
- - Integrate rapidjson, use it to parse account details. We can probably just use it for our int->string conversions as well
- - Sort out our license, based on what we want and limitations from what we're already using (GPL...)
+ - What do we when we can't parse a message for whatever reason? Have a specific method to export as much data as possible?
  - Start on threadsafety as described below
+ - Sort out our license, based on what we want and limitations from what we're already using (GPL...)
  
 Presentation Principles
 ==

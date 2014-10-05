@@ -15,14 +15,18 @@ namespace favor{
     rapidjson::Document json;
     
   private:
-    void exportHeldMessages();
+    void saveHeldMessages();
     
   protected:
     AccountManager(string accNm, MessageType typ, string detailsJson);
     AccountManager(const AccountManager& that) = delete; //This shouldn't ever be copied. 
-    void holdMessage(const bool sent, const long id, const std::time_t date, const string address, const bool media, const string msg, Encoding enc = ASCII);
+    void truncateSentTable();
+    void truncateReceivedTable();
+    void holdMessage(const bool sent, const long int id, const std::time_t date, const favor::string address, const bool media, const favor::string& msg, favor::Encoding enc = ASCII);
     virtual void fetchMessages() = 0;
     virtual void fetchContacts() = 0;
+    virtual void updateFetchData() = 0;
+    void saveFetchData();
   public:
     //Database
     void buildTables();

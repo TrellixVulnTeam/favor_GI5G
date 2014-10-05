@@ -34,6 +34,12 @@ namespace favor{
     badAccountDataException() : exception("Crucial account metadata missing") {}
   };
   
+  class badMessageDataException : public exception{
+  public:
+    badMessageDataException(const std::string& e) : exception(e) {}
+    badMessageDataException() : exception("Unhandleable message data received") {}
+  };
+  
   #ifdef FAVOR_EMAIL_MANAGER
   class emailException : public exception{
   public:  

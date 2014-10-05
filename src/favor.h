@@ -17,6 +17,8 @@
 #include "sqlite/sqlite3.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
 #include "pugixml/pugixml.hpp"
 
 //Favor core headers
@@ -34,6 +36,7 @@ namespace favor{
   string as_string(int i);
   string as_string(long l);
   string as_string(message m);
+  string as_string(rapidjson::Document json);
 }
 
 #endif
