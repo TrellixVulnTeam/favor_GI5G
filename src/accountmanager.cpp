@@ -69,17 +69,7 @@ namespace favor{
   
   void AccountManager::saveFetchData()
   {
-    sqlite3_stmt *stmt;
-    //TODO: more hardcoded column names :(
-    //TODO: this may have to be delegated to worker because it would benefit from having a DB pointer
-//     const char sql[] = "UPDATE " ACCOUNT_TABLE " SET details_json=? WHERE name=? AND type=?;";
-//     sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
-//     //TODO: json to string
-//     //sqlv(sqlite3_bind_text(stmt, 1, json.
-//     sqlv(sqlite3_bind_text(stmt, 2, accountName.c_str(), accountName.length(), SQLITE_STATIC));
-//     sqlv(sqlite3_bind_int(stmt, 3, type));
-//     sqlv(sqlite3_step(stmt));
-//     sqlv(sqlite3_finalize(stmt));
+    worker::updateAccountDetails(accountName, type, as_string(json));
   }
 
   
@@ -90,7 +80,7 @@ namespace favor{
 
   void AccountManager::updateMessages()
   {
-    fetchMessages();
+    //fetchMessages(); //TODO: only commented out for testing
     updateFetchData();
     saveHeldMessages();
     saveFetchData();

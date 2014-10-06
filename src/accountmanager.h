@@ -3,6 +3,18 @@
 
 #include "favor.h"
 
+//I agree processor macros as functions are bad, but it's too convenient to just be able to use these variable's names as strings directly, and
+//in this case actually ends up with us being less bug prone
+#define setJsonLong(name) if (json.HasMember(#name)) json[#name].SetInt64(name);\
+      else {\
+	rapidjson::Value val;\
+	val.SetInt64(name);\
+	json.AddMember(#name, val, json.GetAllocator());\
+      }
+      
+      
+#define getJsonLong(name, default) name = json.HasMember(#name) ? json[#name].GetInt64() : default;
+
 namespace favor{
   
   

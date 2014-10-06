@@ -17,6 +17,7 @@ namespace favor{
     void exec(string sql);
     void addAccount(string name, MessageType type, string detailsJson);
     void removeAccount(string name, MessageType type);
+    void updateAccountDetails(string name, favor::MessageType type, favor::string detailsJson);
   }
 }
 

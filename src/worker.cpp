@@ -44,6 +44,18 @@ namespace favor{
      sqlv(sqlite3_finalize(stmt));
      AccountManager::destroyTablesStatic(name, type);
     }
+    
+    void updateAccountDetails(string name, MessageType type, string detailsJson){
+      sqlite3_stmt *stmt;
+      //TODO: more hardcoded column names :(
+      const char sql[] = "UPDATE " ACCOUNT_TABLE " SET details_json=? WHERE name=? AND type=?;";
+      sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL))
+      sqlv(sqlite3_bind_text(stmt, 1, detailsJson.c_str(), detailsJson.length(), SQLITE_STATIC));
+      sqlv(sqlite3_bind_text(stmt, 2, name.c_str(), name.length(), SQLITE_STATIC));
+      sqlv(sqlite3_bind_int(stmt, 3, type));
+      sqlv(sqlite3_step(stmt));
+      sqlv(sqlite3_finalize(stmt));
+    }
 
     
     void buildDatabase(){

@@ -115,7 +115,7 @@ namespace favor {
       else throw badAccountDataException("EmailManager missing password");
       
       //http://www.regular-expressions.info/email.html
-      std::regex emailRegex("[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}", std::regex::ECMAScript | std::regex::icase);
+      std::regex emailRegex("[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}", std::regex::ECMAScript | std::regex::icase); //TODO: this is failing on my personal email. wut???
       if (!regex_match( accountName, emailRegex)) logger::warning("Account name "+accountName+" for email manager does not match email regex");
       
       size_t atSign = accountName.find_first_of("@");
@@ -145,13 +145,10 @@ namespace favor {
 	}
       }
       
-      
-      
-      lastReceivedUid = json.HasMember("lastReceivedUid") ? json["lastReceivedUid"].GetInt64() : 1; //Uids start from 1, always
-      lastSentUid = json.HasMember("lastSentUid") ? json["lastSentUid"].GetInt64() : 1;
-      
-      lastReceivedUidValidity = json.HasMember("lastReceivedUidValidity") ? json["lastReceivedUidValidity"].GetInt64() : -1; // <0 if we don't know
-      lastSentUidValidity = json.HasMember("lastSentUidValidity") ? json["lastSentUidValidity"].GetInt64() : -1;
+      getJsonLong(lastReceivedUid, 1); //Uids start from 1, always
+      getJsonLong(lastSentUid, 1);
+      getJsonLong(lastReceivedUidValidity, -1); // <0 if we don't know
+      getJsonLong(lastSentUidValidity, -1);
     }
 
     
@@ -207,6 +204,7 @@ namespace favor {
       }
 
     void EmailManager::parseMessage(bool sent, shared_ptr<vmime::net::message> m){
+      long& lastUid = sent ? lastSentUid : lastReceivedUid;
       
       shared_ptr<vmime::message> parsedMessage = m->getParsedMessage();
       vmime::messageParser mp(parsedMessage);
@@ -223,6 +221,7 @@ namespace favor {
       const time_t date = toTime(mp.getDate());
  
       const long uid = stoi(m->getUID()); //stoi function may not be implemented on Android but this mail client is dekstop-only anyway
+      lastUid = (uid > lastUid) ? uid : lastUid; //Update our last UID to this new one if it's larger (which it almost always should be)
       
       const bool media = hasMedia(structure);
       
@@ -373,12 +372,12 @@ namespace favor {
     void EmailManager::fetchFromFolder(shared_ptr<vmime::net::folder> folder, const vector<string>& addresses){
       bool sent = (folder->getName().getBuffer() != "INBOX");
       long& lastUid = sent ? lastSentUid : lastReceivedUid;
-      long& lastUidValidity = sent? lastSentUidValidity : lastSentUidValidity;
+      long& lastUidValidity = sent ? lastSentUidValidity : lastReceivedUidValidity;
       
       //TODO: test uidvalidity change stuff
       shared_ptr<vmime::net::imap::IMAPFolderStatus> status = dynamic_pointer_cast<vmime::net::imap::IMAPFolderStatus>(folder->getStatus());
       long uidValidity = status->getUIDValidity();
-      if (lastUidValidity == -1) lastUidValidity = uidValidity;
+      if (lastUidValidity < 0) lastUidValidity = uidValidity;
       if (uidValidity == 0) logger::warning("Server does not support UID validity");
       else if (lastUidValidity != uidValidity) {
 	logger::warning("UID Validity in folder "+folder->getName().getBuffer()+" has changed from "+as_string(lastUidValidity)+" to "+as_string(uidValidity));
@@ -399,7 +398,10 @@ namespace favor {
     }
     
     void EmailManager::updateFetchData(){
-      //TODO: write our updated UIDS and last UID validities to the JSON doc
+      setJsonLong(lastReceivedUid);
+      setJsonLong(lastSentUid);
+      setJsonLong(lastReceivedUidValidity);
+      setJsonLong(lastSentUidValidity);
     }
     
     void EmailManager::fetchMessages(){

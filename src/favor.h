@@ -35,8 +35,8 @@ namespace favor{
   void sqlite3_validate(int result, sqlite3 *db);
   string as_string(int i);
   string as_string(long l);
-  string as_string(message m);
-  string as_string(rapidjson::Document json);
+  string as_string(const favor::message& m);
+  string as_string(const rapidjson::Document& json);
 }
 
 #endif
