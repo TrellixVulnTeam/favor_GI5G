@@ -15,6 +15,9 @@ namespace favor{
   enum Encoding {ASCII, UTF8, UTF16, UTF32};
 }
 
+//Constants
+#define CONTACT_CHECK_MESSAGE_COUNT 500
+
 //Database
 #define DB_NAME "favor.db"
 

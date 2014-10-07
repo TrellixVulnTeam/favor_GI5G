@@ -17,6 +17,13 @@ using namespace std;
 namespace favor {
     namespace email { 
       
+      const char* emailRegex = "[a-zA-Z0-9_%+-]+[a-zA-Z0-9._%+-]+[a-zA-Z0-9_%+-]+@[a-zA-Z0-9.-]+[a-zA-Z0-9-]+\\.[a-zA-Z]{2,4}"; 
+      //A poorly expanded version of this: http://www.regular-expressions.info/email.html
+      //Added a-z to things because case insensitive compilation wasn't handling character rangers properly (I.E., A-Z -> a-z wasn't happening)
+      //also added insulations to avoid consecutive periods and make sure the email doesn't start with one. This made it much longer, and I'm sure
+      //could be done much better by someone more experienced with regular expressions than I. The aaddresses given
+      //here: http://stackoverflow.com/questions/297420/list-of-email-addresses-that-can-be-used-to-test-a-javascript-validation-script are a good resource
+      
       string stripXML(const pugi::xml_document& doc){
 	string withoutHTML;
 	pugi::xpath_node_set ns = doc.select_nodes("//text()");
@@ -115,7 +122,7 @@ namespace favor {
       else throw badAccountDataException("EmailManager missing password");
       
       //http://www.regular-expressions.info/email.html
-      std::regex emailRegex("[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}", std::regex::ECMAScript | std::regex::icase); //TODO: this is failing on my personal email. wut???
+      std::regex emailRegex(email::emailRegex, std::regex::ECMAScript | std::regex::icase);
       if (!regex_match( accountName, emailRegex)) logger::warning("Account name "+accountName+" for email manager does not match email regex");
       
       size_t atSign = accountName.find_first_of("@");
@@ -327,7 +334,7 @@ namespace favor {
       string addressField = sent ? "TO" : "FROM";
       for (int i = 1; i < addresses.size(); ++i){cmd+="OR ";} //One less "OR " than the number of addresses is important, so we start from 1 here
       for (int i = 0; i < addresses.size(); ++i){cmd+=(addressField+" \""+addresses[i]+"\" ");}
-      cmd+=("UID "+as_string(uid)+":*");
+      cmd+=("UID "+as_string(uid+1)+":*"); //Have to add one here or we'll keep getting the last message we fetched
       return cmd;
     }
     
@@ -375,8 +382,7 @@ namespace favor {
       long& lastUidValidity = sent ? lastSentUidValidity : lastReceivedUidValidity;
       
       //TODO: test uidvalidity change stuff
-      shared_ptr<vmime::net::imap::IMAPFolderStatus> status = dynamic_pointer_cast<vmime::net::imap::IMAPFolderStatus>(folder->getStatus());
-      long uidValidity = status->getUIDValidity();
+      long uidValidity = dynamic_pointer_cast<vmime::net::imap::IMAPFolderStatus>(folder->getStatus())->getUIDValidity();
       if (lastUidValidity < 0) lastUidValidity = uidValidity;
       if (uidValidity == 0) logger::warning("Server does not support UID validity");
       else if (lastUidValidity != uidValidity) {
@@ -385,6 +391,7 @@ namespace favor {
 	if (sent) truncateSentTable();
 	else truncateReceivedTable();
 	lastUid = 1; //UIDs always from 1
+	lastUidValidity = uidValidity;
       }
       string cmd = searchCommand(sent, addresses, lastUid);
       if (!folder->isOpen()) folder->open(vmime::net::folder::MODE_READ_ONLY);
@@ -395,6 +402,8 @@ namespace favor {
 	  vmime::net::fetchAttributes::STRUCTURE | vmime::net::fetchAttributes::FULL_HEADER | vmime::net::fetchAttributes::UID);
       if (messages.size()==0) return;
       else for (unsigned int i = 0; i < messages.size(); ++i) parseMessage(false, messages[i]);  
+      
+      folder->close(false);
     }
     
     void EmailManager::updateFetchData(){
@@ -418,6 +427,9 @@ namespace favor {
 	pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
 	fetchFromFolder(sentRecFolders.first, addresses); //Sent folder
 	fetchFromFolder(sentRecFolders.second, addresses); //Receied folder
+	//st->disconnect(); //It seems like we'd want to call this, but the disconnect command is issued fine without it, and VMIME actually starts spitting out threading
+	//errors if we use it, so it's exempted from this and fetchContacts(). I suspect the reason is that something along these lines happens automatically when it falls
+	//out of scope
       }
       catch (vmime::exceptions::connection_error& e){
  	logger::error("Error connecting to "+serverURL.getHost()+". This can mean a bad host or no internet connectivity");
@@ -432,7 +444,25 @@ namespace favor {
     }
     
     void EmailManager::fetchContacts(){
-      //TODO: this
+      //TODO: this should all be in a try block
+      vmime::shared_ptr<vmime::net::store> st = login();
+      pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
+      shared_ptr<vmime::net::folder> sent = sentRecFolders.first;
+      sent->open(vmime::net::folder::MODE_READ_ONLY);
+      long nextUid = dynamic_pointer_cast<vmime::net::imap::IMAPFolderStatus>(sent->getStatus())->getUIDNext();
+      if (nextUid == 0){
+	//TODO: this sucks and I expect will realistically almost never happen, but we can probably do better than excepting. try using our last UID, maybe?
+	logger::error("Could not retrieve next UID, and so could not determine recent messages");
+	throw emailException("Server failed to provide next UID");
+      }
+      nextUid--; //To account for the fact that this UID doesn't actually exist yet
+      vmime::net::messageSet wantedMessages(vmime::net::messageSet::byUID(nextUid - CONTACT_CHECK_MESSAGE_COUNT, nextUid));
+      vmime::net::fetchAttributes attribs;
+      attribs.add("To");
+      vector<shared_ptr<vmime::net::message>> result = sent->getAndFetchMessages(wantedMessages, attribs);
+      result[0]->getHeader()->To();
+      sent->close(false);
+      //Looks good so far, now to compute an actual list. hash addresses to their counts and then order them by count
     }
     
 }

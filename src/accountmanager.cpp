@@ -80,7 +80,7 @@ namespace favor{
 
   void AccountManager::updateMessages()
   {
-    //fetchMessages(); //TODO: only commented out for testing
+    fetchMessages();
     updateFetchData();
     saveHeldMessages();
     saveFetchData();
