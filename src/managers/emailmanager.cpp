@@ -259,6 +259,8 @@ namespace favor {
       
       
       //TODO: test exporting, especially for sent messages with multiple recipients
+      //Definitely teset this because I don't remember what I was thinking when I wrote it but it suuuuuuuuuure seems
+      //like we're never going to get multiple recipients only grabbing the first person out of the recipient list...
       if (sent){
 	shared_ptr<const vmime::address> firstAddr = mp.getRecipients().getAddressAt(0);
 	shared_ptr<const vmime::mailbox> resultAddr;
@@ -460,7 +462,12 @@ namespace favor {
       vmime::net::fetchAttributes attribs;
       attribs.add("To");
       vector<shared_ptr<vmime::net::message>> result = sent->getAndFetchMessages(wantedMessages, attribs);
-      result[0]->getHeader()->To();
+      for(int i = 0; i < result.size(); ++i){
+	shared_ptr<const vmime::addressList> addrs = result[i]->getHeader()->To()->getValue<vmime::addressList>();
+	logger::info(addrs->getAddressAt(0)->generate());
+	//TODO: test our management of addresses in message parsing, get it right before we use it here
+      }
+      
       sent->close(false);
       //Looks good so far, now to compute an actual list. hash addresses to their counts and then order them by count
     }
