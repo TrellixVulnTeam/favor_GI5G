@@ -86,6 +86,16 @@ namespace favor{
     saveFetchData();
   }
   
+  void AccountManager::cleanWhitespace(string& s)
+  {
+    for (int i = 0; i < s.length(); ++i){
+      //TODO: go through, remove any whitespace at the beginning or end of the string or that comes after other whitespace.
+      //the issue is that if we include unicode whitespace, we can't just check one character. might just be better to go
+      //straigh tto the UTF library
+    }
+  }
+
+  
   void AccountManager::holdMessage(const bool sent, const long int id, const std::time_t date, const string address, const bool media, const string& msg, favor::Encoding enc)
   {
     //TODO: export (save to vector, likely of pointers), and give it a type based on the type of this manager. also eventually worry about encodings

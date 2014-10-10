@@ -24,6 +24,10 @@ namespace favor {
       //could be done much better by someone more experienced with regular expressions than I. The aaddresses given
       //here: http://stackoverflow.com/questions/297420/list-of-email-addresses-that-can-be-used-to-test-a-javascript-validation-script are a good resource
       
+      bool compareAddressPair(const pair<string, int>& l, const pair<string, int>& r){
+	return l.second < r.second;
+      }
+      
       string stripXML(const pugi::xml_document& doc){
 	string withoutHTML;
 	pugi::xpath_node_set ns = doc.select_nodes("//text()");
@@ -258,21 +262,23 @@ namespace favor {
       }
       
       
-      //TODO: test exporting, especially for sent messages with multiple recipients
-      //Definitely teset this because I don't remember what I was thinking when I wrote it but it suuuuuuuuuure seems
-      //like we're never going to get multiple recipients only grabbing the first person out of the recipient list...
       if (sent){
-	shared_ptr<const vmime::address> firstAddr = mp.getRecipients().getAddressAt(0);
-	shared_ptr<const vmime::mailbox> resultAddr;
-	if(firstAddr->isGroup()){
-	  shared_ptr<const vmime::mailboxGroup> grp = dynamic_pointer_cast<const vmime::mailboxGroup>(firstAddr);
-	  for (int i = 0; i < grp->getMailboxCount(); ++i){
-	    holdMessage(sent, uid, date, grp->getMailboxAt(i)->getEmail().toString(), media, body.str());
+	const vmime::addressList addrList = mp.getRecipients();
+	for (int i = 0; i < addrList.getAddressCount(); ++i){
+	  shared_ptr<const vmime::address> addr = addrList.getAddressAt(i);
+	  cout << "recipient: " << addr.get()->generate() << endl;
+	  shared_ptr<const vmime::mailbox> resultAddr;
+	  if(addr->isGroup()){
+	    //I don't think we'll actually ever get a group here given that multiple recipients seems to result in a longer addrList, but it's better safe than sorry
+	    shared_ptr<const vmime::mailboxGroup> grp = dynamic_pointer_cast<const vmime::mailboxGroup>(addr);
+	    for (int i = 0; i < grp->getMailboxCount(); ++i){
+	      holdMessage(sent, uid, date, grp->getMailboxAt(i)->getEmail().toString(), media, body.str());
+	    }
 	  }
-	}
-	else{
-	  resultAddr = dynamic_pointer_cast<const vmime::mailbox>(firstAddr);
-	  holdMessage(sent, uid, date, resultAddr->getEmail().toString(), media, body.str());
+	  else{
+	    resultAddr = dynamic_pointer_cast<const vmime::mailbox>(addr);
+	    holdMessage(sent, uid, date, resultAddr->getEmail().toString(), media, body.str());
+	  }
 	}
       }
       else {
@@ -331,12 +337,14 @@ namespace favor {
       return st;
     }
     
-    string EmailManager::searchCommand(bool sent, const vector<string>& addresses, long uid){
+    string EmailManager::searchCommand(bool sent, const vector<string>& addresses, long startUid, long endUid = -1){
       string cmd("");
       string addressField = sent ? "TO" : "FROM";
       for (int i = 1; i < addresses.size(); ++i){cmd+="OR ";} //One less "OR " than the number of addresses is important, so we start from 1 here
       for (int i = 0; i < addresses.size(); ++i){cmd+=(addressField+" \""+addresses[i]+"\" ");}
-      cmd+=("UID "+as_string(uid+1)+":*"); //Have to add one here or we'll keep getting the last message we fetched
+      //Have to add one to startUid here or we'll keep getting the last message we fetched
+      if (endUid != -1) cmd+=("UID "+as_string(startUid+1)+":"+as_string(endUid));
+      else cmd+=("UID "+as_string(startUid+1)+":*"); //In the case where we have no endUid, it is possible we will pick up a duplicate message. This is not ideal, but also not a catastrophe
       return cmd;
     }
     
@@ -384,18 +392,30 @@ namespace favor {
       long& lastUidValidity = sent ? lastSentUidValidity : lastReceivedUidValidity;
       
       //TODO: test uidvalidity change stuff
-      long uidValidity = dynamic_pointer_cast<vmime::net::imap::IMAPFolderStatus>(folder->getStatus())->getUIDValidity();
+      shared_ptr<vmime::net::imap::IMAPFolderStatus> status = dynamic_pointer_cast<vmime::net::imap::IMAPFolderStatus>(folder->getStatus());
+      
+      long uidValidity = status->getUIDValidity();
       if (lastUidValidity < 0) lastUidValidity = uidValidity;
       if (uidValidity == 0) logger::warning("Server does not support UID validity");
       else if (lastUidValidity != uidValidity) {
 	logger::warning("UID Validity in folder "+folder->getName().getBuffer()+" has changed from "+as_string(lastUidValidity)+" to "+as_string(uidValidity));
-	//Drop the database, and reset our last UID as well because it's moot now. Eventual todo: pun about base dropping
+	//Drop the database, and reset our last UID as well because it's moot now.
 	if (sent) truncateSentTable();
 	else truncateReceivedTable();
 	lastUid = 1; //UIDs always from 1
 	lastUidValidity = uidValidity;
       }
-      string cmd = searchCommand(sent, addresses, lastUid);
+      
+      long nextUid = status->getUIDNext();
+      string cmd;
+      if (nextUid != 0){
+	cmd = searchCommand(sent, addresses, lastUid, nextUid);
+      }
+      else {
+	logger::warning("Server would not provide next UID");
+	cmd = searchCommand(sent, addresses, lastUid);
+      }
+      
       if (!folder->isOpen()) folder->open(vmime::net::folder::MODE_READ_ONLY);
       else logger::warning("Folder \""+folder->getName().getBuffer()+"\" already open before fetch. This should not happen.");
       
@@ -403,7 +423,7 @@ namespace favor {
       vector<shared_ptr<vmime::net::message>> messages = folder->getAndFetchMessages(wantedMessages, 
 	  vmime::net::fetchAttributes::STRUCTURE | vmime::net::fetchAttributes::FULL_HEADER | vmime::net::fetchAttributes::UID);
       if (messages.size()==0) return;
-      else for (unsigned int i = 0; i < messages.size(); ++i) parseMessage(false, messages[i]);  
+      else for (unsigned int i = 0; i < messages.size(); ++i) parseMessage(sent, messages[i]);  
       
       folder->close(false);
     }
@@ -446,30 +466,63 @@ namespace favor {
     }
     
     void EmailManager::fetchContacts(){
-      //TODO: this should all be in a try block
-      vmime::shared_ptr<vmime::net::store> st = login();
-      pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
-      shared_ptr<vmime::net::folder> sent = sentRecFolders.first;
-      sent->open(vmime::net::folder::MODE_READ_ONLY);
-      long nextUid = dynamic_pointer_cast<vmime::net::imap::IMAPFolderStatus>(sent->getStatus())->getUIDNext();
-      if (nextUid == 0){
-	//TODO: this sucks and I expect will realistically almost never happen, but we can probably do better than excepting. try using our last UID, maybe?
-	logger::error("Could not retrieve next UID, and so could not determine recent messages");
-	throw emailException("Server failed to provide next UID");
+      try {
+	vmime::shared_ptr<vmime::net::store> st = login();
+	pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
+	shared_ptr<vmime::net::folder> sent = sentRecFolders.first;
+	sent->open(vmime::net::folder::MODE_READ_ONLY);
+	
+	long nextUid = dynamic_pointer_cast<vmime::net::imap::IMAPFolderStatus>(sent->getStatus())->getUIDNext();
+	if (nextUid == 0){
+	  //TODO: this sucks and I expect will realistically almost never happen, but we can probably do better than excepting. try using our last UID, maybe?
+	  logger::error("Could not retrieve next UID, and so could not determine recent messages");
+	  throw emailException("Server failed to provide next UID");
+	}
+	
+	nextUid--; //To account for the fact that this UID doesn't actually exist yet
+	vmime::net::messageSet wantedMessages(vmime::net::messageSet::byUID(nextUid - CONTACT_CHECK_MESSAGE_COUNT, nextUid));
+	vmime::net::fetchAttributes attribs;
+	attribs.add("To");
+	vector<shared_ptr<vmime::net::message>> result = sent->getAndFetchMessages(wantedMessages, attribs);
+	sent->close(false);
+	
+	unordered_map<string, int> addrCounts;
+	
+	for(int i = 0; i < result.size(); ++i){
+	  shared_ptr<const vmime::addressList> addrList = result[i]->getHeader()->To()->getValue<vmime::addressList>();
+	  
+	  //TODO: This can eventually use a more complex data structure and we can keep the names that come in associated with email addresses
+	  //to use them as suggestions for users. 
+	  for (int i = 0; i < addrList->getAddressCount(); ++i){
+	    shared_ptr<const vmime::address> addr = addrList->getAddressAt(i);
+	    string address;
+	    if (addr->isGroup()) address = dynamic_pointer_cast<const vmime::mailboxGroup>(addr)->getMailboxAt(0)->getEmail().toString();
+	    else address = dynamic_pointer_cast<const vmime::mailbox>(addr)->getEmail().toString();
+	    //TODO: yeah this does too good a job with new elements, because we're getting a bunch of duplicates now
+	    addrCounts[address]++; //unordered_map [] operator creats the value with default (for int, 0 I hope) if it doesn't exist
+	  }
+	}
+	
+	list<pair<string, int>> addrResultList;
+	for (unordered_map<string, int>::const_iterator it = addrCounts.begin(); it != addrCounts.end(); it++){
+	  addrResultList.push_back(*it);
+	}
+	
+	addrResultList.sort(email::compareAddressPair);
+	
+	for (list<pair<string, int>>::const_iterator it = addrResultList.begin(); it != addrResultList.end(); it++){
+	  logger::info(it->first+":"+as_string(it->second));
+	}
       }
-      nextUid--; //To account for the fact that this UID doesn't actually exist yet
-      vmime::net::messageSet wantedMessages(vmime::net::messageSet::byUID(nextUid - CONTACT_CHECK_MESSAGE_COUNT, nextUid));
-      vmime::net::fetchAttributes attribs;
-      attribs.add("To");
-      vector<shared_ptr<vmime::net::message>> result = sent->getAndFetchMessages(wantedMessages, attribs);
-      for(int i = 0; i < result.size(); ++i){
-	shared_ptr<const vmime::addressList> addrs = result[i]->getHeader()->To()->getValue<vmime::addressList>();
-	logger::info(addrs->getAddressAt(0)->generate());
-	//TODO: test our management of addresses in message parsing, get it right before we use it here
+      catch (vmime::exceptions::connection_error& e){
+ 	logger::error("Error connecting to "+serverURL.getHost()+". This can mean a bad host or no internet connectivity");
+ 	throw networkConnectionException("Connectivity error or bad host");
+      }
+      catch (vmime::exception& e){
+	logger::error("Unhandled VMIME exception, says: "+string(e.what()));
+	throw emailException();
       }
       
-      sent->close(false);
-      //Looks good so far, now to compute an actual list. hash addresses to their counts and then order them by count
     }
     
 }

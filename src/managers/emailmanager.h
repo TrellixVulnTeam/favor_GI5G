@@ -30,7 +30,7 @@ namespace favor{
     void handleHTML(vmime::utility::outputStream* out, std::stringstream& ss, shared_ptr<const vmime::htmlTextPart> part);
     bool hasMedia(shared_ptr<vmime::net::messageStructure> structure);
     std::time_t toTime(const vmime::datetime input);
-    string searchCommand(bool sent, const favor::vector<favor::string>& addresses, long int uid);
+    string searchCommand(bool sent, const favor::vector< favor::string >& addresses, long int startUid, long int endUid);
     std::pair< std::shared_ptr<vmime::net::folder>, std::shared_ptr<vmime::net::folder>> findSentRecFolder(favor::shared_ptr<vmime::net::store> st);
     void fetchFromFolder(favor::shared_ptr< vmime::net::folder > folder, const favor::vector< favor::string >& addresses);
   };

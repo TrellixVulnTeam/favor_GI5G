@@ -28,6 +28,7 @@ namespace favor{
     
   private:
     void saveHeldMessages();
+    void cleanWhitespace(string& s);
     
   protected:
     AccountManager(string accNm, MessageType typ, string detailsJson);
