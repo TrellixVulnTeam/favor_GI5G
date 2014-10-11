@@ -39,25 +39,25 @@ namespace favor {
 
     //On Android, these methods will not behave well with numbers whose digit count exceeds the DIGIT_MAX
     string as_string(long int l) {
-#ifdef ANDROID
+    #ifdef ANDROID
     #define LONG_DIGIT_MAX 20
     char result[LONG_DIGIT_MAX] = {0};
     sprintf(result, "%ld", l);
     return string(result);
     #else
         return to_string(l);
-#endif
+    #endif
     }
 
     string as_string(int i) {
-#ifdef ANDROID
+    #ifdef ANDROID
     #define INT_DIGIT_MAX 10
     char result[INT_DIGIT_MAX] = {0};
     sprintf(result, "%d", i);
     return string(result);
     #else
         return to_string(i);
-#endif
+    #endif
     }
 
     string as_string(const rapidjson::Document &json) {

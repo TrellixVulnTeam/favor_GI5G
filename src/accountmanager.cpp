@@ -101,10 +101,10 @@ namespace favor {
 
     shared_ptr<AccountManager> AccountManager::buildManager(string accNm, favor::MessageType typ, string detailsJson) {
         switch (typ) {
-#ifdef FAVOR_EMAIL_MANAGER
+            #ifdef FAVOR_EMAIL_MANAGER
             case TYPE_EMAIL:
                 return make_shared<EmailManager>(accNm, detailsJson);
-#endif
+            #endif
             case TYPE_ANDROIDTEXT:
                 break;
             default:
