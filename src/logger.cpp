@@ -13,33 +13,36 @@
 #endif
 
 using namespace std;
-namespace favor{
-  namespace logger{
-    namespace {
-      enum LogPriority {LOG_INFO, LOG_WARN, LOG_ERROR};
-      inline void log(string s, LogPriority l){
-	//TODO: this should check verbosity level vs log priority and write to an actual log file
-	
-	//dd/mm/yyyy hh:mm:ss
-	char timestring[20];
-	time_t t = time(NULL);
-	strftime(timestring, sizeof(timestring), "%d/%m/%y %H:%M:%S", localtime(&t));
-	cout << "[" << timestring << "] " << s << endl;
-      }
-    }
-    void error(string s)
-    {
-      LOGE(s);
-    }
-    void warning(string s)
-    {
-      LOGW(s);
-    }
-    void info(string s)
-    {
-     LOGI(s); 
-    }
+namespace favor {
+    namespace logger {
+        namespace {
+            enum LogPriority {
+                LOG_INFO, LOG_WARN, LOG_ERROR
+            };
 
-    
-  }
+            inline void log(string s, LogPriority l) {
+                //TODO: this should check verbosity level vs log priority and write to an actual log file
+
+                //dd/mm/yyyy hh:mm:ss
+                char timestring[20];
+                time_t t = time(NULL);
+                strftime(timestring, sizeof(timestring), "%d/%m/%y %H:%M:%S", localtime(&t));
+                cout << "[" << timestring << "] " << s << endl;
+            }
+        }
+
+        void error(string s) {
+            LOGE(s);
+        }
+
+        void warning(string s) {
+            LOGW(s);
+        }
+
+        void info(string s) {
+            LOGI(s);
+        }
+
+
+    }
 }

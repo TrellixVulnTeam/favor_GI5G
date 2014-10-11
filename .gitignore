@@ -9,3 +9,5 @@ src/lib/*
 *.db
 *.kdev4
 test/lib/*
+.kdev4
+.idea

@@ -9,10 +9,14 @@
  */
 #define sqlv(arg1) sqlite3_validate(arg1, db);
 //Types
-namespace favor{
-  enum MessageType {TYPE_EMAIL, TYPE_ANDROIDTEXT, TYPE_LINE, TYPE_SKYPE, NUMBER_OF_TYPES};
-  extern const char* MessageTypeName[];
-  enum Encoding {ASCII, UTF8, UTF16, UTF32};
+namespace favor {
+    enum MessageType {
+        TYPE_EMAIL, TYPE_ANDROIDTEXT, TYPE_LINE, TYPE_SKYPE, NUMBER_OF_TYPES
+    };
+    extern const char *MessageTypeName[];
+    enum Encoding {
+        ASCII, UTF8, UTF16, UTF32
+    };
 }
 
 //Constants
@@ -58,7 +62,7 @@ namespace favor{
  * In this case, if address was not first, we could not even use the index at all. Also, queries are
  * sorted DESC.
  */
-#define MESSAGE_INDEX_SCHEMA "(address DESC, date DESC)" 
+#define MESSAGE_INDEX_SCHEMA "(address DESC, date DESC)"
 
 
 #endif

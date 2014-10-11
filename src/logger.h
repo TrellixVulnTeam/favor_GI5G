@@ -3,12 +3,14 @@
 
 #include "favor.h"
 
-namespace favor{
-  namespace logger{
-    void error(string s);
-    void warning(string s);
-    void info(string s);
-  }  
+namespace favor {
+    namespace logger {
+        void error(string s);
+
+        void warning(string s);
+
+        void info(string s);
+    }
 }
 
 #endif

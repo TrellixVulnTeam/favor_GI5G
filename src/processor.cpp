@@ -1,7 +1,5 @@
-#include "processor.h"
+namespace favor {
+    namespace processor {
 
-namespace favor{
-  namespace processor{
-    
-  }
+    }
 }

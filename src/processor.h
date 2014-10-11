@@ -3,10 +3,10 @@
 
 #include "favor.h"
 
-namespace favor{
-  namespace processor{
-    
-  }
+namespace favor {
+    namespace processor {
+
+    }
 }
 
 #endif
