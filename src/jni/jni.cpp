@@ -1,4 +1,7 @@
 #include <jni.h>
+#include <vector>
+#include "../favor.h"
+#include <string>
 
 
 int testFunction() {

@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
     favor::reader::refreshAll();
     favor::logger::info(favor::as_string(favor::reader::accountList().front()->type));
     favor::logger::info(favor::reader::accountList().front()->accountName);
-    //favor::reader::accountList().front()->updateMessages();
-    favor::reader::accountList().front()->updateContacts();
+    favor::reader::accountList().front()->updateMessages();
+    //favor::reader::accountList().front()->updateContacts();
     return 0;
 }

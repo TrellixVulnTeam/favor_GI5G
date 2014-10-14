@@ -80,10 +80,11 @@ def github_dependency(url, name, source_directories, preparatory_commands=[]):
     end_dependency(name, source_directories, version)
 
 
-def download_dependency(url, name, source_directories, version, preparatory_commands=[]):
+def download_dependency(url, name, source_directories, version, preparatory_commands=[], type=None):
     begin_dependency(name)
 
-    type = '.'+url.split(".")[-1]
+    if not type:
+        type = '.'+url.split(".")[-1]
     urllib.request.urlretrieve(url, name+type)
     directory = name+'_all'
     if type == '.zip':
@@ -104,6 +105,9 @@ if __name__ == "__main__":
     if not os.path.exists(DIRNAME):
         os.makedirs(DIRNAME)
     os.chdir(DIRNAME)
+
+    download_dependency('https://docs.google.com/uc?export=download&id=0B9ZUy-jroUhzdGhwUUNhaFBXXzA', 'utf8cpp', ['source'],
+                        '2.3.4', type='.zip')
 
     github_dependency('https://github.com/Mindful/tidy-html5', 'tidy-html5', ['lib', 'include'],
                       ['cd build/gmake/', 'make', 'cd ../..'])

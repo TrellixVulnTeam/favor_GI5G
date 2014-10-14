@@ -78,20 +78,36 @@ namespace favor {
     }
 
     void AccountManager::cleanWhitespace(string &s) {
-        for (int i = 0; i < s.length(); ++i) {
-            //TODO: go through, remove any whitespace at the beginning or end of the string or that comes after other whitespace.
-            //the issue is that if we include unicode whitespace, we can't just check one character. might just be better to go
-            //straigh tto the UTF library
-        }
+        //http://en.wikipedia.org/wiki/Whitespace_character
+        bool prevWhitespace = false;
+        //utf8::next
+        //TODO: this function
     }
 
+    //TODO: &msg should really be const. There's just no reason for it not to be. Either solve the root issue here (which is the utf8 library
+    //not liking a const iterator) or if we end up having to copy the string - say to remove whitespace efficiently - we should just do the UTF8
+    //checks afterwards
+    void AccountManager::holdMessage(bool sent, long int id, time_t date, string address, bool media, string msg) {
+        //Must be UTF8
+        string::iterator utf8End = utf8::find_invalid(msg.begin(), msg.end());
+        if (utf8End != msg.end()){
+            logger::warning("Message body with invalid formatting detected.");
+            //TODO: log the valid/invalid portions separately
+            string temp;
+            utf8::replace_invalid(msg.begin(), msg.end(), std::back_inserter(temp));
+            msg = temp;
+        }
+        size_t length = utf8::distance(msg.begin(), msg.end());
 
-    void AccountManager::holdMessage(const bool sent, const long int id, const std::time_t date, const string address, const bool media, const string &msg, favor::Encoding enc) {
-        //TODO: export (save to vector, likely of pointers), and give it a type based on the type of this manager. also eventually worry about encodings
-        //TODO: in one pass, strip any whitespace which is either consecutive or trailing, compute unicode string length, and copy the string
+        message* export = new message(type, sent, id, date, address, media, msg, length);
+        heldMessages.push_back(export);
+
+        //TODO: strip whitespace
+
+        //TODO: export (save to vector, likely of pointers), and give it a type based on the type of this manager.
         cout << "---------------------------------------------------------" << endl;
         cout << "Message held with - sent: " << sent << ", id: " << id << ", date: " << date << ", address: " << address << ", media: " << media << endl << "...and Body:|" << msg << "|" << endl;
-        cout << "Body　Length: " << msg.length() << ", Encoding: " << enc << endl;
+        cout << "Body　Length: " << length << endl;
         cout << "---------------------------------------------------------" << endl << endl;
 
     }

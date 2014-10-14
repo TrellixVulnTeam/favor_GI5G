@@ -15,7 +15,7 @@ namespace favor {
     };
     extern const char *MessageTypeName[];
     enum Encoding {
-        ASCII, UTF8, UTF16, UTF32
+        ASCII, UTF8, UTF16
     };
 }
 

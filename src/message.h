@@ -14,8 +14,9 @@ namespace favor {
         const string address;
         const bool media;
         const string body;
+        const size_t charCount;
 
-        message(MessageType t, bool s, long i, std::time_t d, string a, bool m, string b);
+        message(MessageType t, bool s, long int i, std::time_t d, string a, bool m, const string& b, size_t cc);
 
         string prettyDate();
 

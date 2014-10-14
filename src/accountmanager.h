@@ -2,6 +2,7 @@
 #define favor_accountmanager_include
 
 #include "favor.h"
+#include "message.h"
 
 //I agree processor macros as functions are bad, but it's too convenient to just be able to use these variable's names as strings directly, and
 //in this case actually ends up with us being less bug prone
@@ -27,8 +28,8 @@ namespace favor {
         rapidjson::Document json;
 
     private:
+        std::vector<favor::message*> heldMessages;
         void saveHeldMessages();
-
         void cleanWhitespace(string &s);
 
     protected:
@@ -39,7 +40,7 @@ namespace favor {
 
         void truncateReceivedTable();
 
-        void holdMessage(const bool sent, const long int id, const std::time_t date, const favor::string address, const bool media, const favor::string &msg, favor::Encoding enc = ASCII);
+        void holdMessage(bool sent, long int id, time_t date, string address, bool media, string msg);
 
         virtual void fetchMessages() = 0;
 

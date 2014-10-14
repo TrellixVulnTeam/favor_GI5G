@@ -20,6 +20,7 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 #include "pugixml/pugixml.hpp"
+#include "utf8cpp/utf8.h"
 
 //Favor core headers
 #include "definitions.h"
