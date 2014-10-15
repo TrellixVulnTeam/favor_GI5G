@@ -267,7 +267,6 @@ namespace favor {
             const vmime::addressList addrList = mp.getRecipients();
             for (int i = 0; i < addrList.getAddressCount(); ++i) {
                 shared_ptr<const vmime::address> addr = addrList.getAddressAt(i);
-                cout << "recipient: " << addr.get()->generate() << endl;
                 shared_ptr<const vmime::mailbox> resultAddr;
                 if (addr->isGroup()) {
                     //I don't think we'll actually ever get a group here given that multiple recipients seems to result in a longer addrList, but it's better safe than sorry

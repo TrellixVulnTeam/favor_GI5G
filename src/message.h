@@ -19,6 +19,7 @@ namespace favor {
         message(MessageType t, bool s, long int i, std::time_t d, string a, bool m, const string& b, size_t cc);
 
         string prettyDate();
+        string logString();
 
     };
 }

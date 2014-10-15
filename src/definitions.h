@@ -1,7 +1,18 @@
 #ifndef favor_def_include
 #define favor_def_include
 
+/*
+Definitions we use:
+ANDROID - This is pretty obvious, it's true if we're compiling for Android phones
+DEBUG - Also pretty obvious, it's true when we're building for debug
+ */
+
 //Macros
+#ifdef DEBUG
+#define D(x) x
+#else
+#define D(x)
+#endif
 /*
  * For ease of use reasons, everywhere we use SQLite in favor, there should be an
  * sqlite* variable available named "db". If there's an exception to this rule, the 
@@ -14,9 +25,6 @@ namespace favor {
         TYPE_EMAIL, TYPE_ANDROIDTEXT, TYPE_LINE, TYPE_SKYPE, NUMBER_OF_TYPES
     };
     extern const char *MessageTypeName[];
-    enum Encoding {
-        ASCII, UTF8, UTF16
-    };
 }
 
 //Constants

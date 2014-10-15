@@ -67,7 +67,14 @@ namespace favor {
 
 
     void AccountManager::saveHeldMessages() {
-        //TODO: save the messages we have to the database
+        cout << "save held messages, count: " << heldMessages.size() << endl;
+        for (int i = 0; i < heldMessages.size(); ++i){
+            //worker::something the message pointer
+            cout << "Current measured body size raw: " << heldMessages[i]->body.length() << endl;
+            cout << heldMessages[i]->logString() << endl;
+            delete heldMessages[i];
+        }
+        heldMessages.clear();
     }
 
     void AccountManager::updateMessages() {
@@ -77,11 +84,45 @@ namespace favor {
         saveFetchData();
     }
 
+    bool AccountManager::isWhitespace(uint32_t code){
+        if (code >= 9 && code <= 13) return true;
+        else if (code >= 8192 && code <= 8202) return true;
+        else switch (code){
+                case 32: return true;
+                case 133: return true;
+                case 160: return true;
+                case 5760: return true;
+                case 8232: return true;
+                case 8233: return true;
+                case 8239: return true;
+                case 8287: return true;
+                default: return false;
+            }
+    }
+
     void AccountManager::cleanWhitespace(string &s) {
         //http://en.wikipedia.org/wiki/Whitespace_character
-        bool prevWhitespace = false;
-        //utf8::next
-        //TODO: this function
+        //TODO: this copies the string into our result array, and then again in the string constructor, which is less than ideal
+
+        //TODO: also remove whitespace if it's the last character
+        const char result[s.length()] = {0};
+        char* current = (char*) result;
+
+        char* start = (char*)s.c_str();
+        char* end = start+s.length();
+
+        bool prevWhitespace = true; //Sneaky way of removing whitespace at the beginning of the string
+        while (start != end) {
+            uint32_t code = utf8::next(start, end);
+            if (isWhitespace(code)) {
+                if (!prevWhitespace && start != end) current = utf8::append(code, current); //Append only if no prev whitespace, and not last iteration
+                prevWhitespace = true;
+            } else {
+                current = utf8::append(code, current);
+                prevWhitespace = false;
+            }
+        }
+        s = std::string(result, (const char*)current); //Very important we only copy up to the current iterator, as it's easy to accidentally grab garbage
     }
 
     //TODO: &msg should really be const. There's just no reason for it not to be. Either solve the root issue here (which is the utf8 library
@@ -97,19 +138,11 @@ namespace favor {
             utf8::replace_invalid(msg.begin(), msg.end(), std::back_inserter(temp));
             msg = temp;
         }
+        cleanWhitespace(msg);
         size_t length = utf8::distance(msg.begin(), msg.end());
 
-        message* export = new message(type, sent, id, date, address, media, msg, length);
-        heldMessages.push_back(export);
-
-        //TODO: strip whitespace
-
-        //TODO: export (save to vector, likely of pointers), and give it a type based on the type of this manager.
-        cout << "---------------------------------------------------------" << endl;
-        cout << "Message held with - sent: " << sent << ", id: " << id << ", date: " << date << ", address: " << address << ", media: " << media << endl << "...and Body:|" << msg << "|" << endl;
-        cout << "Body　Length: " << length << endl;
-        cout << "---------------------------------------------------------" << endl << endl;
-
+        message* ex = new message(type, sent, id, date, address, media, msg, length);
+        heldMessages.push_back(ex);
     }
 
     //Static methods

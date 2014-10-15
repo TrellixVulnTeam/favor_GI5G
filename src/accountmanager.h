@@ -30,7 +30,8 @@ namespace favor {
     private:
         std::vector<favor::message*> heldMessages;
         void saveHeldMessages();
-        void cleanWhitespace(string &s);
+        static bool isWhitespace(uint32_t code);
+        static void cleanWhitespace(string &s);
 
     protected:
         AccountManager(string accNm, MessageType typ, string detailsJson);
