@@ -1,7 +1,8 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - Contact fetching at least for the EmailManager. I think that realistically, we should compute just off of recent sent, since that best represents user intent
+ - A global bool/setting and/or compile option to determine whether or not we save message bodies. Update code not to even hold them if we don't need them, and otherwise to
+ both hold them and save them. Additionally, consider whether it's really worth all this work to avoid saving them...
  - Dealing with encodings better, computing unicode string length (this [should be easy](http://stackoverflow.com/a/4063229) ). Also see [here](http://utfcpp.sourceforge.net/) for utf-8 in general
  - g++ 4.9 on Android? Necessary for <regex> implementations
  - Verify our exceptions as inherting from runtime_error work on Android

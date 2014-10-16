@@ -17,65 +17,68 @@
 #define getJsonLong(name, default) name = json.HasMember(#name) ? json[#name].GetInt64() : default;
 
 namespace favor {
+    namespace worker {
 
+        class AccountManager {
+        public:
+            const MessageType type;
+            const string accountName;
 
-    class AccountManager {
-    public:
-        const MessageType type;
-        const string accountName;
+        protected:
+            rapidjson::Document json;
 
-    protected:
-        rapidjson::Document json;
+        private:
+            std::vector<favor::message *> heldMessages;
 
-    private:
-        std::vector<favor::message*> heldMessages;
-        void saveHeldMessages();
-        static bool isWhitespace(uint32_t code);
-        static void cleanWhitespace(string &s);
+            void saveHeldMessages();
 
-    protected:
-        AccountManager(string accNm, MessageType typ, string detailsJson);
+            static bool isWhitespace(uint32_t code);
 
-        AccountManager(const AccountManager &that) = delete; //This shouldn't ever be copied.
-        void truncateSentTable();
+            static void cleanWhitespace(string &s);
 
-        void truncateReceivedTable();
+        protected:
+            AccountManager(string accNm, MessageType typ, string detailsJson);
 
-        void holdMessage(bool sent, long int id, time_t date, string address, bool media, string msg);
+            AccountManager(const AccountManager &that) = delete; //This shouldn't ever be copied.
+            void truncateSentTable();
 
-        virtual void fetchMessages() = 0;
+            void truncateReceivedTable();
 
-        virtual void fetchContacts() = 0;
+            void holdMessage(bool sent, long int id, time_t date, string address, bool media, string msg);
 
-        virtual void updateFetchData() = 0;
+            virtual void fetchMessages() = 0;
 
-        void saveFetchData();
+            virtual void fetchContacts() = 0;
 
-    public:
-        //Database
-        void buildTables();
+            virtual void updateFetchData() = 0;
 
-        void destroyTables();
+            void saveFetchData();
 
-        void truncateTables();
+        public:
+            //Database
+            void buildTables();
 
-        void indexTables();
+            void destroyTables();
 
-        void deindexTables();
+            void truncateTables();
 
-        //Work
-        void updateMessages();
+            void indexTables();
 
-        void updateContacts();
+            void deindexTables();
 
-        //Static methods
-        static shared_ptr<AccountManager> buildManager(string accNm, MessageType typ, string detailsJson);
+            //Work
+            void updateMessages();
 
-        static void buildTablesStatic(string accountName, MessageType type);
+            void updateContacts();
 
-        static void destroyTablesStatic(string accountName, MessageType type);
-    };
+            //Static methods
+            static shared_ptr<AccountManager> buildManager(string accNm, MessageType typ, string detailsJson);
 
+            static void buildTablesStatic(string accountName, MessageType type);
+
+            static void destroyTablesStatic(string accountName, MessageType type);
+        };
+
+    }
 }
-
 #endif

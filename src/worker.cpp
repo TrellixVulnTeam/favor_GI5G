@@ -7,6 +7,18 @@ namespace favor {
             sqlite3 *db;
         }
 
+        //This does compile, so we can get at db from inside the account manager like this
+//        void AccountManager::saveHeldMessages() {
+//            bool sent;
+//            if (heldMessages.size() == 0) return;
+//            else sent = heldMessages[0]->sent;
+//            //id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL
+//            //TODO: yeah, it's silly that we generate a string here but we only need to make it once. I'm starting to think
+//            //we should just move the AccountManager into the worker namespace; this would solve a lot of issues both with
+//            //encapsulation and with presentation because the accountmanager does a lot of writing anyway
+//            db;
+//        }
+
         void initialize() {
             sqlv(sqlite3_open(DB_NAME, &db));
             exec("PRAGMA foreign_keys = ON;");
@@ -18,6 +30,22 @@ namespace favor {
 
         void exec(string sql) {
             sqlv(sqlite3_exec(db, sql.c_str(), NULL, NULL, NULL));
+        }
+
+        void saveMessage(message* m, const string& sql){
+            //TODO: test me
+            sqlite3_stmt* stmt;
+            //id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL
+            //TODO: yes, taking the actual sql statement and then doing the binding here is getting silly. Encapsulation issue
+            //we're basically hitting an OOP design flaw here because AccountManagers are too much in need of the DB pointer
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            sqlv(sqlite3_bind_int64(stmt, 1, m->id));
+            sqlv(sqlite3_bind_text(stmt, 2, m->address.c_str(), m->address.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_int64(stmt, 3, m->date));
+            sqlv(sqlite3_bind_int64(stmt, 4, m->charCount));
+            sqlv(sqlite3_bind_int(stmt, 5, m->media));
+            sqlv(sqlite3_step(stmt));
+            sqlv(sqlite3_finalize(stmt));
         }
 
         void addAccount(string name, MessageType type, string detailsJson) {
@@ -49,7 +77,7 @@ namespace favor {
             sqlite3_stmt *stmt;
             //TODO: more hardcoded column names :(
             const char sql[] = "UPDATE " ACCOUNT_TABLE " SET details_json=? WHERE name=? AND type=?;";
-            sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL))
+            sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
             sqlv(sqlite3_bind_text(stmt, 1, detailsJson.c_str(), detailsJson.length(), SQLITE_STATIC));
             sqlv(sqlite3_bind_text(stmt, 2, name.c_str(), name.length(), SQLITE_STATIC));
             sqlv(sqlite3_bind_int(stmt, 3, type));

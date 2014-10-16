@@ -18,7 +18,7 @@ DEBUG - Also pretty obvious, it's true when we're building for debug
  * sqlite* variable available named "db". If there's an exception to this rule, the 
  * perpetrator can call sqlite3_validate directly...
  */
-#define sqlv(arg1) sqlite3_validate(arg1, db);
+#define sqlv(arg1) sqlite3_validate(arg1, db)
 //Types
 namespace favor {
     enum MessageType {
