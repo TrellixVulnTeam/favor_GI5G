@@ -39,7 +39,7 @@ namespace favor {
         protected:
             AccountManager(string accNm, MessageType typ, string detailsJson);
 
-            AccountManager(const AccountManager &that) = delete; //This shouldn't ever be copied.
+            AccountManager(const AccountManager &that) = delete; //AccountManager shouldn't ever be copied.
             void truncateSentTable();
 
             void truncateReceivedTable();
@@ -54,8 +54,15 @@ namespace favor {
 
             void saveFetchData();
 
+            void validateJson(const string& json);
+
         public:
+
             //Database
+            static void addAccount(string name, MessageType type, string detailsJson);
+
+            void destroy();
+
             void buildTables();
 
             void destroyTables();
@@ -73,10 +80,6 @@ namespace favor {
 
             //Static methods
             static shared_ptr<AccountManager> buildManager(string accNm, MessageType typ, string detailsJson);
-
-            static void buildTablesStatic(string accountName, MessageType type);
-
-            static void destroyTablesStatic(string accountName, MessageType type);
         };
 
     }

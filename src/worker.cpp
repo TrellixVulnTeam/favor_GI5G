@@ -32,23 +32,46 @@ namespace favor {
             sqlv(sqlite3_exec(db, sql.c_str(), NULL, NULL, NULL));
         }
 
-        void saveMessage(message* m, const string& sql){
-            //TODO: test me
-            sqlite3_stmt* stmt;
+        void AccountManager::saveHeldMessages() {
+            bool sent;
+            if (heldMessages.size() == 0) return;
+            else sent = heldMessages[0]->sent;
             //id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL
-            //TODO: yes, taking the actual sql statement and then doing the binding here is getting silly. Encapsulation issue
-            //we're basically hitting an OOP design flaw here because AccountManagers are too much in need of the DB pointer
-            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-            sqlv(sqlite3_bind_int64(stmt, 1, m->id));
-            sqlv(sqlite3_bind_text(stmt, 2, m->address.c_str(), m->address.length(), SQLITE_STATIC));
-            sqlv(sqlite3_bind_int64(stmt, 3, m->date));
-            sqlv(sqlite3_bind_int64(stmt, 4, m->charCount));
-            sqlv(sqlite3_bind_int(stmt, 5, m->media));
+            sqlite3_stmt* stmt;
+            message* m;
+            string sql = "INSERT INTO " + (sent ? SENT_TABLE_NAME : RECEIVED_TABLE_NAME) + " VALUES(?,?,?,?,?)";
+            for (int i = 0; i < heldMessages.size(); ++i) {
+                //TODO: 1# untested 2# can we reuse this sqlite statement somehow, compiling it only once and just binding multiple times?
+                m = heldMessages[i];
+                sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+                sqlv(sqlite3_bind_int64(stmt, 1, m->id));
+                sqlv(sqlite3_bind_text(stmt, 2, m->address.c_str(), m->address.length(), SQLITE_STATIC));
+                sqlv(sqlite3_bind_int64(stmt, 3, m->date));
+                sqlv(sqlite3_bind_int64(stmt, 4, m->charCount));
+                sqlv(sqlite3_bind_int(stmt, 5, m->media));
+                sqlv(sqlite3_step(stmt));
+                sqlv(sqlite3_finalize(stmt));
+                std::cout << "Current measured body size raw: " << heldMessages[i]->body.length() << std::endl;
+                std::cout << heldMessages[i]->logString() << std::endl;
+                delete heldMessages[i];
+            }
+            heldMessages.clear();
+        }
+
+        void AccountManager::saveFetchData() {
+            string detailsJson = as_string(json);
+            sqlite3_stmt *stmt;
+            const char sql[] = "UPDATE " ACCOUNT_TABLE " SET details_json=? WHERE name=? AND type=?;";
+            sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
+            sqlv(sqlite3_bind_text(stmt, 1, detailsJson.c_str(), detailsJson.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_text(stmt, 2, accountName.c_str(), accountName.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_int(stmt, 3, type));
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_finalize(stmt));
         }
 
-        void addAccount(string name, MessageType type, string detailsJson) {
+        //TODO: addAccount and destroy should become static accountmanager methods
+        void AccountManager::addAccount(string name, MessageType type, string detailsJson) {
             //TODO: validate the JSON here first, or perhaps have this be slave to another method that performs JSON validation (latter seems better, something owned by accountManager)
             sqlite3_stmt *stmt;
             const char sql[] = "INSERT INTO " ACCOUNT_TABLE " VALUES(?,?,?);"; //Important this is an array and not a const char* so that sizeof() works properly
@@ -58,31 +81,18 @@ namespace favor {
             sqlv(sqlite3_bind_text(stmt, 3, detailsJson.c_str(), detailsJson.length(), SQLITE_STATIC));
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_finalize(stmt));
-            AccountManager::buildTablesStatic(name, type);
+            buildTablesStatic(name, type);
         }
 
-        void removeAccount(string name, MessageType type) {
+        void AccountManager::destroy() {
             sqlite3_stmt *stmt;
-            //TODO: hardcoded column names. :(
             const char sql[] = "DELETE FROM " ACCOUNT_TABLE " WHERE name=? AND type=?;";
             sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
-            sqlv(sqlite3_bind_text(stmt, 1, name.c_str(), name.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_text(stmt, 1, accountName.c_str(), accountName.length(), SQLITE_STATIC));
             sqlv(sqlite3_bind_int(stmt, 2, type));
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_finalize(stmt));
-            AccountManager::destroyTablesStatic(name, type);
-        }
-
-        void updateAccountDetails(string name, MessageType type, string detailsJson) {
-            sqlite3_stmt *stmt;
-            //TODO: more hardcoded column names :(
-            const char sql[] = "UPDATE " ACCOUNT_TABLE " SET details_json=? WHERE name=? AND type=?;";
-            sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
-            sqlv(sqlite3_bind_text(stmt, 1, detailsJson.c_str(), detailsJson.length(), SQLITE_STATIC));
-            sqlv(sqlite3_bind_text(stmt, 2, name.c_str(), name.length(), SQLITE_STATIC));
-            sqlv(sqlite3_bind_int(stmt, 3, type));
-            sqlv(sqlite3_step(stmt));
-            sqlv(sqlite3_finalize(stmt));
+            destroyTablesStatic(name, type);
         }
 
 

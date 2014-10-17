@@ -22,13 +22,6 @@ namespace favor {
         //Writing methods
         void exec(string sql);
 
-        void addAccount(string name, MessageType type, string detailsJson);
-
-        void removeAccount(string name, MessageType type);
-
-        void saveMessage(favor::message* m, const string& sql);
-
-        void updateAccountDetails(string name, favor::MessageType type, favor::string detailsJson);
     }
 }
 

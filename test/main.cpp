@@ -16,8 +16,8 @@ int main(int argc, char **argv) {
     
 
     //MessageType t, bool s, long int i, std::time_t d, string a, bool m, const string& b, size_t cc)
-    favor::message m(favor::TYPE_EMAIL, false, 5, 500, "test@test.com", true, "this is a test message", 25);
-    favor::worker::saveMessage(&m, testsql);
+    //favor::message m(favor::TYPE_EMAIL, false, 5, 500, "test@test.com", true, "this is a test message", 25);
+    //favor::worker::saveMessage(&m, testsql);
 
     /*
     This seem to be generally good, except it's hard to know because it seems like one of the emails I'm running tests on, after being processed for whitespace,

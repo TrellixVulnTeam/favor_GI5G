@@ -56,7 +56,16 @@ namespace favor {
 #define ADDRESS_INDEX_SCHEMA "(contact_name)"
 
 
-//Messages tables, name has to be determined at runtime from type and accountname
+/*Note:
+These are determined partially at runtime by using, among other things, the name of an account. They should never be necessary
+outside the scope of an AccountManager class, and (unless you whip up your own accountName variable) they will accordingly
+not even compile.
+ */
+#define SENT_TABLE_NAME "\""+accountName+"_"+MessageTypeName[type]+"_sent\""
+#define RECEIVED_TABLE_NAME "\""+accountName+"_"+MessageTypeName[type]+"_received\""
+
+#define SENT_INDEX_NAME "i_" SENT_TABLE_NAME
+#define RECEIVED_INDEX_NAME "i_" RECEIVED_TABLE_NAME
 /*Note:
  * http://www.sqlite.org/lang_createtable.html
  * "But the following declaration does not result in "x" being an alias for the rowid:
@@ -71,6 +80,7 @@ namespace favor {
  * sorted DESC.
  */
 #define MESSAGE_INDEX_SCHEMA "(address DESC, date DESC)"
+
 
 
 #endif
