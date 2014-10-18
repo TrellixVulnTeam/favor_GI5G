@@ -59,7 +59,7 @@ namespace favor {
         public:
 
             //Database
-            static void addAccount(string name, MessageType type, string detailsJson);
+            static AccountManager* addAccount(string name, MessageType type, string detailsJson);
 
             void destroy();
 
@@ -79,7 +79,7 @@ namespace favor {
             void updateContacts();
 
             //Static methods
-            static shared_ptr<AccountManager> buildManager(string accNm, MessageType typ, string detailsJson);
+            static AccountManager* buildManager(string accNm, MessageType typ, string detailsJson);
         };
 
     }

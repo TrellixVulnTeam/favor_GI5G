@@ -4,7 +4,7 @@ namespace favor {
     namespace reader {
         namespace { //Private members
             sqlite3 *db;
-            list<shared_ptr<AccountManager>> accounts;
+            list<AccountManager*> accounts;
         }
 
         void initialize() {
@@ -15,14 +15,21 @@ namespace favor {
             sqlv(sqlite3_close(db));
         }
 
-        list<shared_ptr<AccountManager>> accountList() {
-            //TODO: take reader lock
+        list<AccountManager*> accountList() {
+            //TODO: take reader lock, in case someone's writing
             return accounts;
             //TODO: release reader lock
         }
 
+        void removeAccount(AccountManager* account){
+            //TODO: writer lock
+            accounts.remove(account);
+            //TODO: release writer lock
+        }
+
         void refreshAll() {
             refreshAccountList();
+            //TODO: refresh metrics
         }
 
         void refreshAccountList() //TODO: test this code

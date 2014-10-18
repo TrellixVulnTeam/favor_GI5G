@@ -3,21 +3,9 @@
 
 namespace favor {
     namespace worker {
-        namespace {  //Private members
+        namespace {
             sqlite3 *db;
         }
-
-        //This does compile, so we can get at db from inside the account manager like this
-//        void AccountManager::saveHeldMessages() {
-//            bool sent;
-//            if (heldMessages.size() == 0) return;
-//            else sent = heldMessages[0]->sent;
-//            //id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL
-//            //TODO: yeah, it's silly that we generate a string here but we only need to make it once. I'm starting to think
-//            //we should just move the AccountManager into the worker namespace; this would solve a lot of issues both with
-//            //encapsulation and with presentation because the accountmanager does a lot of writing anyway
-//            db;
-//        }
 
         void initialize() {
             sqlv(sqlite3_open(DB_NAME, &db));
@@ -57,44 +45,6 @@ namespace favor {
             }
             heldMessages.clear();
         }
-
-        void AccountManager::saveFetchData() {
-            string detailsJson = as_string(json);
-            sqlite3_stmt *stmt;
-            const char sql[] = "UPDATE " ACCOUNT_TABLE " SET details_json=? WHERE name=? AND type=?;";
-            sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
-            sqlv(sqlite3_bind_text(stmt, 1, detailsJson.c_str(), detailsJson.length(), SQLITE_STATIC));
-            sqlv(sqlite3_bind_text(stmt, 2, accountName.c_str(), accountName.length(), SQLITE_STATIC));
-            sqlv(sqlite3_bind_int(stmt, 3, type));
-            sqlv(sqlite3_step(stmt));
-            sqlv(sqlite3_finalize(stmt));
-        }
-
-        //TODO: addAccount and destroy should become static accountmanager methods
-        void AccountManager::addAccount(string name, MessageType type, string detailsJson) {
-            //TODO: validate the JSON here first, or perhaps have this be slave to another method that performs JSON validation (latter seems better, something owned by accountManager)
-            sqlite3_stmt *stmt;
-            const char sql[] = "INSERT INTO " ACCOUNT_TABLE " VALUES(?,?,?);"; //Important this is an array and not a const char* so that sizeof() works properly
-            sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
-            sqlv(sqlite3_bind_text(stmt, 1, name.c_str(), name.length(), SQLITE_STATIC)); //Memory managed by containing string, so we tell SQLite it's static
-            sqlv(sqlite3_bind_int(stmt, 2, type));
-            sqlv(sqlite3_bind_text(stmt, 3, detailsJson.c_str(), detailsJson.length(), SQLITE_STATIC));
-            sqlv(sqlite3_step(stmt));
-            sqlv(sqlite3_finalize(stmt));
-            buildTablesStatic(name, type);
-        }
-
-        void AccountManager::destroy() {
-            sqlite3_stmt *stmt;
-            const char sql[] = "DELETE FROM " ACCOUNT_TABLE " WHERE name=? AND type=?;";
-            sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
-            sqlv(sqlite3_bind_text(stmt, 1, accountName.c_str(), accountName.length(), SQLITE_STATIC));
-            sqlv(sqlite3_bind_int(stmt, 2, type));
-            sqlv(sqlite3_step(stmt));
-            sqlv(sqlite3_finalize(stmt));
-            destroyTablesStatic(name, type);
-        }
-
 
         void buildDatabase() {
             exec("CREATE TABLE IF NOT EXISTS " ACCOUNT_TABLE ACCOUNT_TABLE_SCHEMA ";");
@@ -140,6 +90,51 @@ namespace favor {
             for (list<shared_ptr<AccountManager>>::iterator it = l.begin(); it != l.end(); ++it) {
                 (*it)->deindexTables();
             }
+        }
+
+        /* --------------------------------------------------------------------------------
+        Account manager methods from here down. Declared in this file because they require
+        direct db access
+         --------------------------------------------------------------------------------*/
+
+        void AccountManager::saveFetchData() {
+            string detailsJson = as_string(json);
+            sqlite3_stmt *stmt;
+            const char sql[] = "UPDATE " ACCOUNT_TABLE " SET details_json=? WHERE name=? AND type=?;";
+            sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
+            sqlv(sqlite3_bind_text(stmt, 1, detailsJson.c_str(), detailsJson.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_text(stmt, 2, accountName.c_str(), accountName.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_int(stmt, 3, type));
+            sqlv(sqlite3_step(stmt));
+            sqlv(sqlite3_finalize(stmt));
+        }
+
+        AccountManager* AccountManager::addAccount(string name, MessageType type, string detailsJson) {
+            AccountManager* manager = buildManager(name, type, detailsJson);
+            //Creating the manager first will validate the JSON for us before we go to save it
+            sqlite3_stmt *stmt;
+            const char sql[] = "INSERT INTO " ACCOUNT_TABLE " VALUES(?,?,?);"; //Important this is an array and not a const char* so that sizeof() works properly
+            sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
+            sqlv(sqlite3_bind_text(stmt, 1, name.c_str(), name.length(), SQLITE_STATIC)); //Memory managed by containing string, so we tell SQLite it's static
+            sqlv(sqlite3_bind_int(stmt, 2, type));
+            sqlv(sqlite3_bind_text(stmt, 3, detailsJson.c_str(), detailsJson.length(), SQLITE_STATIC));
+            sqlv(sqlite3_step(stmt));
+            sqlv(sqlite3_finalize(stmt));
+            manager->buildTables();
+            //TODO: VERY IMPORTANT, add this to the reader's list, else we can lose the pointer to it.
+            return manager;
+        }
+
+        void AccountManager::destroy() {
+            sqlite3_stmt *stmt;
+            const char sql[] = "DELETE FROM " ACCOUNT_TABLE " WHERE name=? AND type=?;";
+            sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
+            sqlv(sqlite3_bind_text(stmt, 1, accountName.c_str(), accountName.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_int(stmt, 2, type));
+            sqlv(sqlite3_step(stmt));
+            sqlv(sqlite3_finalize(stmt));
+            //TODO: remove it from the reader's list and then delete it
+            destroyTables();
         }
 
 

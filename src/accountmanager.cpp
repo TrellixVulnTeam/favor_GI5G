@@ -22,11 +22,14 @@ namespace favor {
         }
 
         void AccountManager::buildTables() {
-            buildTablesStatic(accountName, type);
+            //TODO: index if indexing is enabled
+            exec("CREATE TABLE IF NOT EXISTS " SENT_TABLE_NAME SENT_TABLE_SCHEMA ";");
+            exec("CREATE TABLE IF NOT EXISTS " RECEIVED_TABLE_NAME RECEIVED_TABLE_SCHEMA ";");
         }
 
         void AccountManager::destroyTables() {
-            destroyTablesStatic(accountName, type);
+            exec("DROP TABLE IF EXISTS " SENT_TABLE_NAME ";");
+            exec("DROP TABLE IF EXISTS " RECEIVED_TABLE_NAME ";");
         }
 
         void AccountManager::truncateSentTable() {
@@ -137,12 +140,13 @@ namespace favor {
 
         //Static methods
 
-
-        shared_ptr<AccountManager> AccountManager::buildManager(string accNm, favor::MessageType typ, string detailsJson) {
+        //AccountManagers are pretty lightweight so they don't need to be on the heap for memory reasons, but rather for
+        //quantity management reasons, as they should never be copied and there should only be one per account
+        AccountManager* AccountManager::buildManager(string accNm, favor::MessageType typ, string detailsJson) {
             switch (typ) {
                 #ifdef FAVOR_EMAIL_MANAGER
                 case TYPE_EMAIL:
-                    return make_shared<EmailManager>(accNm, detailsJson);
+                    return new EmailManager(accNm, detailsJson);
                 #endif
                 case TYPE_ANDROIDTEXT:
                     break;
@@ -151,17 +155,6 @@ namespace favor {
                     assert(false);
             }
 
-        }
-
-        void AccountManager::buildTablesStatic(string accountName, MessageType type) {
-            //TODO: index if indexing is enabled
-            exec("CREATE TABLE IF NOT EXISTS " SENT_TABLE_NAME SENT_TABLE_SCHEMA ";");
-            exec("CREATE TABLE IF NOT EXISTS " RECEIVED_TABLE_NAME RECEIVED_TABLE_SCHEMA ";");
-        }
-
-        void AccountManager::destroyTablesStatic(string accountName, MessageType type) {
-            exec("DROP TABLE IF EXISTS " SENT_TABLE_NAME ";");
-            exec("DROP TABLE IF EXISTS " RECEIVED_TABLE_NAME ";");
         }
 
     }

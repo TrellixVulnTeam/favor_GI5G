@@ -12,9 +12,11 @@ namespace favor {
         void cleanup();
 
         //Getters
-        list<shared_ptr<AccountManager>> accountList();
+        list<AccountManager*> accountList();
 
-        //Refreshers
+        //Writers
+        void removeAccount(AccountManager* account);
+
         void refreshAll();
 
         void refreshAccountList();
