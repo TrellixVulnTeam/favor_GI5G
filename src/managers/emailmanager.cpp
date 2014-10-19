@@ -486,29 +486,19 @@ namespace favor {
             vector<shared_ptr<vmime::net::message>> result = sent->getAndFetchMessages(wantedMessages, attribs);
             sent->close(false);
 
-            unordered_map<string, int> addrCounts;
-
             for (int i = 0; i < result.size(); ++i) {
                 shared_ptr<const vmime::addressList> addrList = result[i]->getHeader()->To()->getValue<vmime::addressList>();
 
-                //TODO: This can eventually use a more complex data structure and we can keep the names that come in associated with email addresses
-                //to use them as suggestions for users.
+                //TODO: Write some email-specific code to use the most common name for a given contact, because any other medium should have a
+                //very well defined mapping
                 for (int i = 0; i < addrList->getAddressCount(); ++i) {
                     shared_ptr<const vmime::address> addr = addrList->getAddressAt(i);
                     string address;
                     if (addr->isGroup()) address = dynamic_pointer_cast<const vmime::mailboxGroup>(addr)->getMailboxAt(0)->getEmail().toString();
                     else address = dynamic_pointer_cast<const vmime::mailbox>(addr)->getEmail().toString();
-                    //TODO: yeah this does too good a job with new elements, because we're getting a bunch of duplicates now
-                    addrCounts[address]++; //unordered_map [] operator creats the value with default (for int, 0 I hope) if it doesn't exist
+                    countContact(address);
                 }
             }
-
-            list<pair<string, int>> addrResultList;
-            for (unordered_map<string, int>::const_iterator it = addrCounts.begin(); it != addrCounts.end(); it++) {
-                addrResultList.push_back(*it);
-            }
-
-            addrResultList.sort(email::compareAddressPair);
 
             for (list<pair<string, int>>::const_iterator it = addrResultList.begin(); it != addrResultList.end(); it++) {
                 logger::info(it->first + ":" + as_string(it->second));

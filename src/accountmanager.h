@@ -29,8 +29,11 @@ namespace favor {
 
         private:
             std::vector<favor::message *> heldMessages;
+            std::unordered_map<string, std::pair<string, int>> countedContacts; //Address : <name, count>
 
             void saveHeldMessages();
+
+            void saveHeldContacts();
 
             static bool isWhitespace(uint32_t code);
 
@@ -46,6 +49,10 @@ namespace favor {
 
             void holdMessage(bool sent, long int id, time_t date, string address, bool media, string msg);
 
+            void countContact(const string& address);
+
+            void setCountedContactName(const string& address, const string& name);
+
             virtual void fetchMessages() = 0;
 
             virtual void fetchContacts() = 0;
@@ -53,8 +60,6 @@ namespace favor {
             virtual void updateFetchData() = 0;
 
             void saveFetchData();
-
-            void validateJson(const string& json);
 
         public:
 

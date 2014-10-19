@@ -24,7 +24,14 @@ namespace favor {
         void removeAccount(AccountManager* account){
             //TODO: writer lock
             accounts.remove(account);
+            delete account; //If the reader doesn't have it, no one should
             //TODO: release writer lock
+        }
+
+        void addAccount(AccountManager* account){
+            //TODO: writer lock
+            accounts.push_back(account);
+            //TODO: release wrtier lock
         }
 
         void refreshAll() {

@@ -16,6 +16,7 @@ namespace favor {
 
         //Writers
         void removeAccount(AccountManager* account);
+        void addAccount(AccountManager* account);
 
         void refreshAll();
 

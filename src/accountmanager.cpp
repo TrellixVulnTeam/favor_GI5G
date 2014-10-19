@@ -97,7 +97,6 @@ namespace favor {
             //http://en.wikipedia.org/wiki/Whitespace_character
             //TODO: this copies the string into our result array, and then again in the string constructor, which is less than ideal
 
-            //TODO: also remove whitespace if it's the last character
             const char result[s.length()] = {0};
             char *current = (char *) result;
 
@@ -136,6 +135,21 @@ namespace favor {
 
             message *ex = new message(type, sent, id, date, address, media, msg, length);
             heldMessages.push_back(ex);
+        }
+
+        void AccountManager::countContact(const string& address){
+            countedContacts[address].second++;
+            //unordered_map [] operator creats the value with default (0 for int, empty str for str) if it doesn't exist
+        }
+
+        void AccountManager::setCountedContactName(const string& address, const string& name){
+            //TODO: finish me
+            list<pair<string, pair<string, int>>> contactResultList;
+            for (unordered_map<string, pair<string, int>>::const_iterator it = countedContacts.begin(); it != countedContacts.end(); it++) {
+                contactResultList.push_back(*it);
+            }
+
+            contactResultList.sort(email::compareAddressPair);
         }
 
         //Static methods
