@@ -384,8 +384,7 @@ namespace favor {
 
     void EmailManager::fetchFromFolder(shared_ptr<vmime::net::folder> folder, const vector<string> &addresses) {
         bool sent = (folder->getName().getBuffer() != "INBOX");
-        //long &lastUid = sent ? lastSentUid : lastReceivedUid; //TODO: commented out for testing only
-        long lastUid = 1; //TODO: THIS LINE ALSO TESTING
+        long &lastUid = sent ? lastSentUid : lastReceivedUid;
         long &lastUidValidity = sent ? lastSentUidValidity : lastReceivedUidValidity;
 
         //TODO: test uidvalidity change stuff

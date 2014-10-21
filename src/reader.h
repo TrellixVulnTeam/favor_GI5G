@@ -14,6 +14,8 @@ namespace favor {
         //Getters
         list<AccountManager*> accountList();
 
+        list<favor::contact> contacts(const MessageType& t);
+
         //Writers
         void removeAccount(AccountManager* account);
         void addAccount(AccountManager* account);

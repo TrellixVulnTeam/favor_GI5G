@@ -146,6 +146,16 @@ namespace favor {
             contactNames[address] = name;
         }
 
+        void AccountManager::saveHeldMessages() {
+            for (int i = 0; i < heldMessages.size(); ++i) {
+                saveMessage(heldMessages[i]);
+                std::cout << "Current measured body size raw: " << heldMessages[i]->body.length() << std::endl;
+                std::cout << heldMessages[i]->logString() << std::endl;
+                delete heldMessages[i];
+            }
+            heldMessages.clear();
+        }
+
 
         //AccountManagers are pretty lightweight so they don't need to be on the heap for memory reasons, but rather for
         //quantity management reasons, as they should never be copied and there should only be one per account

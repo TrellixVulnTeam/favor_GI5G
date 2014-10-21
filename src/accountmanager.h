@@ -37,6 +37,8 @@ namespace favor {
 
             void saveHeldContacts();
 
+            void saveMessage(const message* m);
+
             static bool isWhitespace(uint32_t code);
 
             static void cleanWhitespace(string &s);

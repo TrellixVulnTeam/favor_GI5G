@@ -72,8 +72,7 @@ namespace favor {
     }
 
     string lowercase(const string &s){
-        string ret;
-        ret.reserve(s.length());
+        string ret = s;
         transform(s.begin(), s.end(), ret.begin(), ::tolower); //Only compiles specifically with "::tolower"
         return ret;
     }

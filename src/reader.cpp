@@ -59,6 +59,20 @@ namespace favor {
             //TODO: release writer lock
         }
 
+        list<favor::contact> contacts(const MessageType& t){
+            sqlite3_stmt *stmt;
+            string sql = "SELECT * FROM " CONTACT_TABLE(t) ";";
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            int result;
+            list<contacts> ret;
+            while ((result = sqlite3_step(stmt)) == SQLITE_ROW){
+                //TODO: read contacts table, etc. Before that though, we have to update the contacts table schema
+                //ret.push_back(contact())
+            }
+
+
+        }
+
 
     }
 }

@@ -72,30 +72,18 @@ namespace favor {
         direct db access
          --------------------------------------------------------------------------------*/
 
-        void AccountManager::saveHeldMessages() {
-            bool sent;
-            if (heldMessages.size() == 0) return;
-            else sent = heldMessages[0]->sent;
+        void AccountManager::saveMessage(const message* m){
             //id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL
+            string sql = "INSERT INTO " + (m->sent ? SENT_TABLE_NAME : RECEIVED_TABLE_NAME) + " VALUES(?,?,?,?,?)";
             sqlite3_stmt* stmt;
-            message* m;
-            string sql = "INSERT INTO " + (sent ? SENT_TABLE_NAME : RECEIVED_TABLE_NAME) + " VALUES(?,?,?,?,?)";
-            for (int i = 0; i < heldMessages.size(); ++i) {
-                //TODO: 1# untested 2# can we reuse this sqlite statement somehow, compiling it only once and just binding multiple times?
-                m = heldMessages[i];
-                sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-                sqlv(sqlite3_bind_int64(stmt, 1, m->id));
-                sqlv(sqlite3_bind_text(stmt, 2, m->address.c_str(), m->address.length(), SQLITE_STATIC));
-                sqlv(sqlite3_bind_int64(stmt, 3, m->date));
-                sqlv(sqlite3_bind_int64(stmt, 4, m->charCount));
-                sqlv(sqlite3_bind_int(stmt, 5, m->media));
-                sqlv(sqlite3_step(stmt));
-                sqlv(sqlite3_finalize(stmt));
-                std::cout << "Current measured body size raw: " << heldMessages[i]->body.length() << std::endl;
-                std::cout << heldMessages[i]->logString() << std::endl;
-                delete heldMessages[i];
-            }
-            heldMessages.clear();
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            sqlv(sqlite3_bind_int64(stmt, 1, m->id));
+            sqlv(sqlite3_bind_text(stmt, 2, m->address.c_str(), m->address.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_int64(stmt, 3, m->date));
+            sqlv(sqlite3_bind_int64(stmt, 4, m->charCount));
+            sqlv(sqlite3_bind_int(stmt, 5, m->media));
+            sqlv(sqlite3_step(stmt));
+            sqlv(sqlite3_finalize(stmt));
         }
 
         void AccountManager::saveHeldContacts(){
