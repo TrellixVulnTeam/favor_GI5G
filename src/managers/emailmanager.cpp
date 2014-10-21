@@ -267,18 +267,19 @@ namespace favor {
                 if (addr->isGroup()) {
                     //I don't think we'll actually ever get a group here given that multiple recipients seems to result in a longer addrList, but it's better safe than sorry
                     shared_ptr<const vmime::mailboxGroup> grp = dynamic_pointer_cast<const vmime::mailboxGroup>(addr);
+                    //Remember email addresses should be converted to lowercase first
                     for (int i = 0; i < grp->getMailboxCount(); ++i) {
-                        holdMessage(sent, uid, date, grp->getMailboxAt(i)->getEmail().toString(), media, body.str());
+                        holdMessage(sent, uid, date, lowercase(grp->getMailboxAt(i)->getEmail().toString()), media, body.str());
                     }
                 }
                 else {
                     resultAddr = dynamic_pointer_cast<const vmime::mailbox>(addr);
-                    holdMessage(sent, uid, date, resultAddr->getEmail().toString(), media, body.str());
+                    holdMessage(sent, uid, date, lowercase(resultAddr->getEmail().toString()), media, body.str());
                 }
             }
         }
         else {
-            holdMessage(sent, uid, date, mp.getExpeditor().getEmail().toString(), media, body.str());
+            holdMessage(sent, uid, date, lowercase(mp.getExpeditor().getEmail().toString()), media, body.str());
         }
     }
 
@@ -384,7 +385,7 @@ namespace favor {
     void EmailManager::fetchFromFolder(shared_ptr<vmime::net::folder> folder, const vector<string> &addresses) {
         bool sent = (folder->getName().getBuffer() != "INBOX");
         //long &lastUid = sent ? lastSentUid : lastReceivedUid; //TODO: commented out for testing only
-        long lastUid = 1;
+        long lastUid = 1; //TODO: THIS LINE ALSO TESTING
         long &lastUidValidity = sent ? lastSentUidValidity : lastReceivedUidValidity;
 
         //TODO: test uidvalidity change stuff
@@ -492,13 +493,9 @@ namespace favor {
                     string address;
                     if (addr->isGroup()) address = dynamic_pointer_cast<const vmime::mailboxGroup>(addr)->getMailboxAt(0)->getEmail().toString();
                     else address = dynamic_pointer_cast<const vmime::mailbox>(addr)->getEmail().toString();
-                    countContact(address);
+                    countContact(lowercase(address)); //Have to lowercase email addresses
                 }
             }
-
-//            for (list<pair<string, int>>::const_iterator it = addrResultList.begin(); it != addrResultList.end(); it++) {
-//                logger::info(it->first + ":" + as_string(it->second));
-//            }
         }
         catch (vmime::exceptions::connection_error &e) {
             logger::error("Error connecting to " + serverURL.getHost() + ". This can mean a bad host or no internet connectivity");

@@ -1,5 +1,6 @@
 #include "worker.h"
 #include "reader.h"
+#include "logger.h"
 
 namespace favor {
     namespace worker {
@@ -97,8 +98,18 @@ namespace favor {
             heldMessages.clear();
         }
 
-        void AccountManager::saveHeldContacts() {
+        void AccountManager::saveHeldContacts(){
+            list<contact> contactResultList;
+            for (std::unordered_map<string, int>::const_iterator it = countedContacts.begin(); it != countedContacts.end(); it++) {
+                contactResultList.push_back(contact(it->first, contactNames[it->first], it->second));
+            }
 
+            contactResultList.sort(); //TODO: make sure sorting works with contact's overloaded operators
+            //TODO: figure out what contacts we don't need and save the ones we do. will definitely require hitting the DB
+
+            for (list<contact>::const_iterator it = contactResultList.begin(); it != contactResultList.end(); it++) {
+                logger::info("Addr: "+it->address+" SuggName: "+it->suggestedName+" Count: "+as_string(it->count));
+            }
         }
 
         void AccountManager::saveFetchData() {

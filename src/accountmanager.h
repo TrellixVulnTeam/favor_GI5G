@@ -30,7 +30,8 @@ namespace favor {
 
         private:
             std::vector<favor::message *> heldMessages;
-            std::unordered_map<favor::contact> countedContacts; //Address : <name, count>
+            std::unordered_map<std::string, int> countedContacts; //Address : count
+            std::unordered_map<std::string, std::string> contactNames; //Address : suggestedName
 
             void saveHeldMessages();
 

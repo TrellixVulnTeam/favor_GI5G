@@ -12,6 +12,7 @@
 #include <iostream>
 #include <utility>
 #include <unordered_map>
+#include <algorithm>
 
 //External libraries
 #include "sqlite/sqlite3.h"
@@ -37,6 +38,8 @@ namespace favor {
 
     //Utility
     void sqlite3_validate(int result, sqlite3 *db);
+
+    string lowercase(const string& s);
 
     string as_string(int i);
 

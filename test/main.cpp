@@ -11,8 +11,9 @@ int main(int argc, char **argv) {
     favor::reader::refreshAll();
     favor::logger::info(favor::as_string(favor::reader::accountList().front()->type));
     favor::logger::info(favor::reader::accountList().front()->accountName);
-    //favor::reader::accountList().front()->updateMessages();
-    //favor::reader::accountList().front()->updateContacts();
+    favor::reader::accountList().front()->truncateTables();
+    favor::reader::accountList().front()->updateMessages();
+    favor::reader::accountList().front()->updateContacts();
     
 
     //MessageType t, bool s, long int i, std::time_t d, string a, bool m, const string& b, size_t cc)
