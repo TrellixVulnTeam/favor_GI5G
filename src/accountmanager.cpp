@@ -138,21 +138,24 @@ namespace favor {
         }
 
         void AccountManager::countContact(const string& address){
-            countedContacts[address].second++;
+            countedContacts[address].second.second++;
             //unordered_map [] operator creats the value with default (0 for int, empty str for str) if it doesn't exist
         }
 
         void AccountManager::setCountedContactName(const string& address, const string& name){
-            //TODO: finish me
+            countedContacts[address].second.first = name;
+        }
+
+        void AccountManager::saveHeldContacts(){
             list<pair<string, pair<string, int>>> contactResultList;
             for (unordered_map<string, pair<string, int>>::const_iterator it = countedContacts.begin(); it != countedContacts.end(); it++) {
                 contactResultList.push_back(*it);
             }
 
-            contactResultList.sort(email::compareAddressPair);
+            contactResultList.sort(); //TODO: make sure sorting works with contact's overloaded operators
+            //TODO: figure out what contacts we don't need and save the ones we do. will definitely require hitting the DB
         }
 
-        //Static methods
 
         //AccountManagers are pretty lightweight so they don't need to be on the heap for memory reasons, but rather for
         //quantity management reasons, as they should never be copied and there should only be one per account

@@ -24,10 +24,6 @@ namespace favor {
         //could be done much better by someone more experienced with regular expressions than I. The aaddresses given
         //here: http://stackoverflow.com/questions/297420/list-of-email-addresses-that-can-be-used-to-test-a-javascript-validation-script are a good resource
 
-        bool compareAddressPair(const pair<string, int> &l, const pair<string, int> &r) {
-            return l.second < r.second;
-        }
-
         string stripXML(const pugi::xml_document &doc) {
             string withoutHTML;
             pugi::xpath_node_set ns = doc.select_nodes("//text()");
@@ -500,9 +496,9 @@ namespace favor {
                 }
             }
 
-            for (list<pair<string, int>>::const_iterator it = addrResultList.begin(); it != addrResultList.end(); it++) {
-                logger::info(it->first + ":" + as_string(it->second));
-            }
+//            for (list<pair<string, int>>::const_iterator it = addrResultList.begin(); it != addrResultList.end(); it++) {
+//                logger::info(it->first + ":" + as_string(it->second));
+//            }
         }
         catch (vmime::exceptions::connection_error &e) {
             logger::error("Error connecting to " + serverURL.getHost() + ". This can mean a bad host or no internet connectivity");
