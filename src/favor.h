@@ -29,7 +29,9 @@
 #include "types.h"
 
 namespace favor {
-    class message;
+    class Message;
+    class Address;
+    class Contact;
 
     //Basic
     void initialize();
@@ -45,7 +47,12 @@ namespace favor {
 
     string as_string(long l);
 
-    string as_string(const favor::message &m);
+    string as_string(const Message& m);
+
+    string as_string(const Address& a);
+
+    string as_string(const Contact& c);
+
 
     string as_string(const rapidjson::Document &json);
 }

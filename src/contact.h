@@ -11,11 +11,14 @@ namespace favor {
         const string displayName;
 
         Contact(int ident, string name);
+        Contact(int ident, string name, const Address& addr);
         Contact(int ident, string name, const vector <Address> &addrs);
 
+        Contact(const Contact& c) = delete; //Like account manager, we don't really want these copied
+
         void addAddress(const Address& addr);
-        bool generated();
-        vector<Address>& getAddresses();
+        bool generated() const;
+        const vector<Address>& getAddresses() const;
 
 
     private:

@@ -16,7 +16,7 @@ namespace favor {
     protected:
         void fetchMessages() override;
 
-        void fetchContacts() override;
+        void fetchAddresses() override;
 
         void updateFetchData() override;
 

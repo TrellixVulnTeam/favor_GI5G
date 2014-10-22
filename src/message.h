@@ -4,7 +4,7 @@
 #include "favor.h"
 
 namespace favor {
-    class message {
+    class Message {
     public:
 
         const MessageType type;
@@ -16,10 +16,9 @@ namespace favor {
         const string body;
         const size_t charCount;
 
-        message(MessageType t, bool s, long int i, std::time_t d, string a, bool m, const string& b, size_t cc);
+        Message(MessageType t, bool s, long int i, std::time_t d, string a, bool m, const string& b, size_t cc);
 
-        string prettyDate();
-        string logString();
+        string prettyDate() const;
 
     };
 }

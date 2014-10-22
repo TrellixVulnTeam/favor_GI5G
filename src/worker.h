@@ -19,6 +19,13 @@ namespace favor {
 
         void deindexDatabase();
 
+
+        void beginTransaction();
+
+        void commitTransaction();
+
+        void rollbackTransaction();
+
         //Writing methods
         void exec(string sql);
 

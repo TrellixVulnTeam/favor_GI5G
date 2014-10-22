@@ -6,6 +6,7 @@ namespace favor {
     namespace worker {
         namespace {
             sqlite3 *db;
+            bool transacting = false;
         }
 
         void initialize() {
@@ -28,6 +29,24 @@ namespace favor {
                 exec("CREATE TABLE IF NOT EXISTS " ADDRESS_TABLE(i) ADDRESS_TABLE_SCHEMA(i) ";");
             }
             //We don't build per account here because there won't be any accounts right after we just built the database
+        }
+
+        void beginTransaction() {
+            if (transacting) throw sqliteException("Cannot begin transaction while transacting");
+            exec("BEGIN IMMEDIATE TRANSACTION;");
+            transacting = true;
+        }
+
+        void commitTransaction() {
+            if (!transacting) throw sqliteException("Cannot end transaction while not transacting");
+            exec("COMMIT TRANSACTION;");
+            transacting = false;
+        }
+
+        void rollbackTransaction() {
+            if (!transacting) 0; throw sqliteException("Cannot roll back transaction while not transacting");
+            exec("ROLLBACK TRANSACTION;");
+            transacting = false;
         }
 
         //TODO: test next 3 methods (truncateTables, deindexTables, indexTables)
@@ -72,7 +91,14 @@ namespace favor {
         direct db access
          --------------------------------------------------------------------------------*/
 
-        void AccountManager::saveMessage(const message* m){
+        void AccountManager::saveMessage(const Message * m){
+            //TODO: if we split the messages into sent and received groups, we could get a little efficiency here by
+            //only compiling our statements once for the sent table and once for the received table. See
+            //here: http://www.sqlite.org/c3ref/reset.html - compiling SQL takes some time, so this is probably
+            //worth doing, though it'll mean moving some logic back into the saveHeldMessages() method. Model it
+            //after the saveAddress method
+
+
             //id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL
             string sql = "INSERT INTO " + (m->sent ? SENT_TABLE_NAME : RECEIVED_TABLE_NAME) + " VALUES(?,?,?,?,?)";
             sqlite3_stmt* stmt;
@@ -86,21 +112,50 @@ namespace favor {
             sqlv(sqlite3_finalize(stmt));
         }
 
-        void AccountManager::saveHeldContacts(){
-            list<Address> contactResultList;
-            //TODO: we should pull up the other contacts first, and then construct the list as a union of both of them
-            //to avoid duplicates and also so that we can properly identify favorited contacts.
-            //also we need to be really smarth here about the distinction between an address and a contact.
-//            for (std::unordered_map<string, int>::const_iterator it = countedAddresses.begin(); it != countedAddresses.end(); it++) {
-//                contactResultList.push_back(contact(it->first, addressNames[it->first], it->second, false));
-//            }
+        void AccountManager::saveAddress(const Address &a, sqlite3_stmt* stmt) {
+            //TODO: method completely untested
+            sqlv(sqlite3_bind_text(stmt, 1, a.addr.c_str(), a.addr.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_int(stmt, 2, a.count));
+            //sqlv(sqlite3_bind_int(stmt, 3, a.contactId)); //TODO: bind null here (leave it unbound, I think) if it's -1
+            sqlv(sqlite3_step(stmt));
+            sqlv(sqlite3_reset(stmt));
+            sqlv(sqlite3_clear_bindings(stmt));
+            //I think we can just rebind without clearing bindings, but in this case we need at least #3 (id) to be NULL
+            //so we can leave it unbound when it's -1
 
-            contactResultList.sort(); //TODO: make sure sorting works with contact's overloaded operators
-            //TODO: figure out what contacts we don't need and save the ones we do. will definitely require hitting the DB
+        }
 
-//            for (list<address>::const_iterator it = contactResultList.begin(); it != contactResultList.end(); it++) {
-//                logger::info("Addr: "+it->address+" SuggName: "+it->suggestedName+" Count: "+as_string(it->count));
-//            }
+        void AccountManager::saveHeldAddresses() {
+            list<Address> addresses = reader::addresses(type);
+
+            for (auto it = countedAddresses.begin(); it != countedAddresses.end(); it++) {
+                addresses.push_back(Address (it->first, it->second, -1)); //Because currently unbound to any contact
+            }
+
+            addresses.sort(); //TODO: this actually needs to be sorted backward... make sure sorting works with contact's overloaded operators
+
+            auto itr = addresses.begin();
+            int i;
+            for (i = 0; i < MAX_ADDRESSES && itr != addresses.end(); ++i) ++itr;
+            if (i == MAX_ADDRESSES) addresses.erase(itr, addresses.end()); //Erase anything above our max if there are enough elements to need to
+
+            //TODO: eventually we can do some guessing about current contacts here with levenshtein distance on names
+
+            countedAddresses.clear();
+            addressNames.clear();
+
+            //TODO: truncate the table and rewrite everything
+            beginTransaction();
+            exec("DELETE FROM " ADDRESS_TABLE(type) ";");
+            string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES(?,?,?);";
+            sqlite3_stmt* stmt;
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            for (auto it = addresses.begin(); it != addresses.end(); ++it){
+                saveAddress(*it, stmt);
+                std::cout << as_string(*it) << std::endl;
+            }
+            sqlv(sqlite3_finalize(stmt)); //Finalizing it here is just cleanup
+            commitTransaction();
         }
 
         void AccountManager::saveFetchData() {

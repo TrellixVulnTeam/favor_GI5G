@@ -7,9 +7,6 @@
 namespace favor {
     class exception : public std::runtime_error {
     protected:
-        exception() : runtime_error("") {
-        }
-
         exception(const std::string &e) : runtime_error(e) {
         }
     };

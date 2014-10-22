@@ -30,15 +30,17 @@ namespace favor {
             rapidjson::Document json;
 
         private:
-            std::vector<favor::message *> heldMessages;
+            std::vector<favor::Message *> heldMessages;
             std::unordered_map<std::string, int> countedAddresses; //Address : count
             std::unordered_map<std::string, std::string> addressNames; //Address : suggestedName
 
             void saveHeldMessages();
 
-            void saveHeldContacts();
+            void saveHeldAddresses();
 
-            void saveMessage(const message* m);
+            void saveMessage(const Message * m);
+
+            void saveAddress(const Address& a, sqlite3_stmt* stmt);
 
             static bool isWhitespace(uint32_t code);
 
@@ -54,13 +56,13 @@ namespace favor {
 
             void holdMessage(bool sent, long int id, time_t date, string address, bool media, string msg);
 
-            void countContact(const string& address);
+            void countAddress(const string &address);
 
-            void setCountedContactName(const string& address, const string& name);
+            void setCountedAddressName(const string &address, const string &name);
 
             virtual void fetchMessages() = 0;
 
-            virtual void fetchContacts() = 0;
+            virtual void fetchAddresses() = 0;
 
             virtual void updateFetchData() = 0;
 

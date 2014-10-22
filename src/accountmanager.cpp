@@ -56,8 +56,8 @@ namespace favor {
         }
 
         void AccountManager::updateContacts() {
-            fetchContacts();
-            saveHeldContacts();
+            fetchAddresses();
+            saveHeldAddresses();
         }
 
         void AccountManager::updateMessages() {
@@ -97,7 +97,7 @@ namespace favor {
             //http://en.wikipedia.org/wiki/Whitespace_character
             //TODO: this copies the string into our result array, and then again in the string constructor, which is less than ideal
 
-            const char result[s.length()] = {0};
+            const char result[s.length()] = {0}; //TODO: this won't compile on android http://stackoverflow.com/questions/15013077/arrayn-vs-array10-initializing-array-with-variable-vs-real-number
             char *current = (char *) result;
 
             char *start = (char *) s.c_str();
@@ -133,26 +133,27 @@ namespace favor {
             cleanWhitespace(msg);
             size_t length = utf8::distance(msg.begin(), msg.end());
 
-            message *ex = new message(type, sent, id, date, address, media, msg, length);
+            Message *ex = new Message(type, sent, id, date, address, media, msg, length);
             heldMessages.push_back(ex);
         }
 
-        void AccountManager::countContact(const string& address){
+        void AccountManager::countAddress(const string &address){
             countedAddresses[address]++;
             //unordered_map [] operator creats the value with default (0 for int, empty str for str) if it doesn't exist
         }
 
-        void AccountManager::setCountedContactName(const string& address, const string& name){
+        void AccountManager::setCountedAddressName(const string &address, const string &name){
             addressNames[address] = name;
         }
 
         void AccountManager::saveHeldMessages() {
+            //TODO: test this with transactions
+            beginTransaction();
             for (int i = 0; i < heldMessages.size(); ++i) {
                 saveMessage(heldMessages[i]);
-                std::cout << "Current measured body size raw: " << heldMessages[i]->body.length() << std::endl;
-                std::cout << heldMessages[i]->logString() << std::endl;
                 delete heldMessages[i];
             }
+            commitTransaction();
             heldMessages.clear();
         }
 

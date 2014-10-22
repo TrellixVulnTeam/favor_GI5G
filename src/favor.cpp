@@ -67,8 +67,36 @@ namespace favor {
         return buff.GetString();
     }
 
-    string as_string(const message &m) {
-        //TODO:
+    string as_string(const Message &m) {
+        //TODO: use prettydate, and update this to account for missing values (which there will be sometimes when we pull from the DB)
+        const char* bar = "--------------------";
+        string result = bar;
+        result += "\n";
+        result += "Sent: "+as_string(m.sent) +"\n";
+        result += "Id: "+as_string(m.id) +"\n";
+        result += "Date: "+ as_string(m.date) +"\n";
+        result += "Address: "+m.address +"\n";
+        result += "Media: "+as_string(m.media)+"\n";
+        result += "Body: ----\n";
+        result += m.body;
+        result += "\n----------\n";
+        result += "Body length: " +as_string((long)m.charCount)+"\n";
+
+        result += bar;
+        return result;
+    }
+
+    string as_string(const Address& a){
+        return "[Address: "+a.addr+" | Count: " + as_string(a.count) + " | Contact ID: " + as_string(a.contactId)+"]";
+
+    }
+
+    string as_string(const Contact& c){
+        string result = "[Contact Display Name: " +c.displayName + " | ID: "+as_string(c.id)+"| Addresses: (";
+        for (int i = 0; i < c.getAddresses().size(); ++i){
+            if (i == c.getAddresses().size() - 1) result += as_string(c.getAddresses()[i]) + ")";
+            else result += as_string(c.getAddresses()[i]) + ", ";
+        }
     }
 
     string lowercase(const string &s){

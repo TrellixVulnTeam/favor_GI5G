@@ -446,7 +446,7 @@ namespace favor {
             fetchFromFolder(sentRecFolders.first, addresses); //Sent folder
             fetchFromFolder(sentRecFolders.second, addresses); //Receied folder
             //st->disconnect(); //It seems like we'd want to call this, but the disconnect command is issued fine without it, and VMIME actually starts spitting out threading
-            //errors if we use it, so it's exempted from this and fetchContacts(). I suspect the reason is that something along these lines happens automatically when it falls
+            //errors if we use it, so it's exempted from this and fetchAddresses(). I suspect the reason is that something along these lines happens automatically when it falls
             //out of scope
         }
         catch (vmime::exceptions::connection_error &e) {
@@ -461,7 +461,7 @@ namespace favor {
 
     }
 
-    void EmailManager::fetchContacts() {
+    void EmailManager::fetchAddresses() {
         try {
             vmime::shared_ptr<vmime::net::store> st = login();
             pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
@@ -476,7 +476,7 @@ namespace favor {
             }
 
             nextUid--; //To account for the fact that this UID doesn't actually exist yet
-            vmime::net::messageSet wantedMessages(vmime::net::messageSet::byUID(nextUid - CONTACT_CHECK_MESSAGE_COUNT, nextUid));
+            vmime::net::messageSet wantedMessages(vmime::net::messageSet::byUID(nextUid - ADDRESS_CHECK_MESSAGE_COUNT, nextUid));
             vmime::net::fetchAttributes attribs;
             attribs.add("To");
             vector<shared_ptr<vmime::net::message>> result = sent->getAndFetchMessages(wantedMessages, attribs);
@@ -492,7 +492,7 @@ namespace favor {
                     string address;
                     if (addr->isGroup()) address = dynamic_pointer_cast<const vmime::mailboxGroup>(addr)->getMailboxAt(0)->getEmail().toString();
                     else address = dynamic_pointer_cast<const vmime::mailbox>(addr)->getEmail().toString();
-                    countContact(lowercase(address)); //Have to lowercase email addresses
+                    countAddress(lowercase(address)); //Have to lowercase email addresses
                 }
             }
         }

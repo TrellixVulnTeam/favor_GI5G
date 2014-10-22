@@ -28,7 +28,8 @@ namespace favor {
 }
 
 //Constants
-#define CONTACT_CHECK_MESSAGE_COUNT 500
+#define ADDRESS_CHECK_MESSAGE_COUNT 500 //The number of recent sent messages we look at when determining what addresses to pull
+#define MAX_ADDRESSES 100 //Max addresses that we want to hold per type
 
 //Database
 #define DB_NAME "favor.db"
