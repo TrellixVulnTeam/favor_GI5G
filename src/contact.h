@@ -2,24 +2,24 @@
 #define favor_contact_include
 
 #include "favor.h"
+#include "address.h"
 
 namespace favor {
-    class contact{
+    class Contact {
     public:
-        const string address;
-        const string suggestedName;
-        const int count;
+        const int id;
+        const string displayName;
 
-        contact(string addr, string suggName, int c) : address(addr), suggestedName(suggName), count(c) {}
+        Contact(int ident, string name);
+        Contact(int ident, string name, const vector <Address> &addrs);
+
+        void addAddress(const Address& addr);
+        bool generated();
+        vector<Address>& getAddresses();
 
 
-        //The comparison and inequality operators are defined differently because we need them for different things
-        inline bool operator==(const contact& rhs){ return address == rhs.address; }
-        inline bool operator!=(const contact& rhs){return !operator==(rhs);}
-        inline bool operator< (const contact& rhs){ return count < rhs.count; }
-        inline bool operator> (const contact& rhs){return  count > rhs.count;}
-        inline bool operator<=(const contact& rhs){return !operator> (rhs);}
-        inline bool operator>=(const contact& rhs){return !operator< (rhs);}
+    private:
+        vector<Address> addresses;
 
     };
 }

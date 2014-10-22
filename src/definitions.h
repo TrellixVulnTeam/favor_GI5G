@@ -43,14 +43,20 @@ namespace favor {
  */
 
 //Contacts table
+/*Note:
+"explicit" is our way of specifying whether Favor is automatically generating a contact for a stranded address, or whether
+the contact has been explicitly specified as one (whether at Favor's suggestion or not) by the user.
+ */
 #define CONTACT_TABLE(type) "contacts_" + string(MessageTypeName[type]) + ""
-#define CONTACT_TABLE_SCHEMA "(name TEXT NOT NULL, display_name TEXT NOT NULL, PRIMARY KEY(name))"
-
-/* No need to index this table as its only element is its primary key */
+#define CONTACT_TABLE_SCHEMA "(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL)"
 
 //Addresses table
+/*Note:
+The foreign key here can be null, and this is intentional. In cases where it is null, there is no corresponding contact because
+the address is not attached to an explicit contact.
+ */
 #define ADDRESS_TABLE(type) "addresses_" +string(MessageTypeName[type]) + ""
-#define ADDRESS_TABLE_SCHEMA(type) "(address TEXT NOT NULL, contact_name TEXT NOT NULL REFERENCES " CONTACT_TABLE(type) "(name))"
+#define ADDRESS_TABLE_SCHEMA(type) "(address TEXT NOT NULL, count INTEGER NOT NULL, contact_id INTEGER REFERENCES " CONTACT_TABLE(type) "(id))"
 
 #define ADDRESS_INDEX "i_" ADDRESS_TABLE
 #define ADDRESS_INDEX_SCHEMA "(contact_name)"
@@ -66,6 +72,7 @@ not even compile.
 
 #define SENT_INDEX_NAME "i_" SENT_TABLE_NAME
 #define RECEIVED_INDEX_NAME "i_" RECEIVED_TABLE_NAME
+
 /*Note:
  * http://www.sqlite.org/lang_createtable.html
  * "But the following declaration does not result in "x" being an alias for the rowid:

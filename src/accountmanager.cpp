@@ -138,12 +138,12 @@ namespace favor {
         }
 
         void AccountManager::countContact(const string& address){
-            countedContacts[address]++;
+            countedAddresses[address]++;
             //unordered_map [] operator creats the value with default (0 for int, empty str for str) if it doesn't exist
         }
 
         void AccountManager::setCountedContactName(const string& address, const string& name){
-            contactNames[address] = name;
+            addressNames[address] = name;
         }
 
         void AccountManager::saveHeldMessages() {

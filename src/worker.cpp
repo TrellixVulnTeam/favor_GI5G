@@ -87,17 +87,20 @@ namespace favor {
         }
 
         void AccountManager::saveHeldContacts(){
-            list<contact> contactResultList;
-            for (std::unordered_map<string, int>::const_iterator it = countedContacts.begin(); it != countedContacts.end(); it++) {
-                contactResultList.push_back(contact(it->first, contactNames[it->first], it->second));
-            }
+            list<Address> contactResultList;
+            //TODO: we should pull up the other contacts first, and then construct the list as a union of both of them
+            //to avoid duplicates and also so that we can properly identify favorited contacts.
+            //also we need to be really smarth here about the distinction between an address and a contact.
+//            for (std::unordered_map<string, int>::const_iterator it = countedAddresses.begin(); it != countedAddresses.end(); it++) {
+//                contactResultList.push_back(contact(it->first, addressNames[it->first], it->second, false));
+//            }
 
             contactResultList.sort(); //TODO: make sure sorting works with contact's overloaded operators
             //TODO: figure out what contacts we don't need and save the ones we do. will definitely require hitting the DB
 
-            for (list<contact>::const_iterator it = contactResultList.begin(); it != contactResultList.end(); it++) {
-                logger::info("Addr: "+it->address+" SuggName: "+it->suggestedName+" Count: "+as_string(it->count));
-            }
+//            for (list<address>::const_iterator it = contactResultList.begin(); it != contactResultList.end(); it++) {
+//                logger::info("Addr: "+it->address+" SuggName: "+it->suggestedName+" Count: "+as_string(it->count));
+//            }
         }
 
         void AccountManager::saveFetchData() {

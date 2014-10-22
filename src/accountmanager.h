@@ -3,6 +3,7 @@
 
 #include "favor.h"
 #include "message.h"
+#include "address.h"
 #include "contact.h"
 
 //I agree processor macros as functions are bad, but it's too convenient to just be able to use these variable's names as strings directly, and
@@ -30,8 +31,8 @@ namespace favor {
 
         private:
             std::vector<favor::message *> heldMessages;
-            std::unordered_map<std::string, int> countedContacts; //Address : count
-            std::unordered_map<std::string, std::string> contactNames; //Address : suggestedName
+            std::unordered_map<std::string, int> countedAddresses; //Address : count
+            std::unordered_map<std::string, std::string> addressNames; //Address : suggestedName
 
             void saveHeldMessages();
 

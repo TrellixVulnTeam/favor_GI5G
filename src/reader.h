@@ -13,8 +13,9 @@ namespace favor {
 
         //Getters
         list<AccountManager*> accountList();
+        list<Contact*> contactList(const MessageType &t);
 
-        list<favor::contact> contacts(const MessageType& t);
+        list<favor::Address> addresses(const MessageType &t); //We should really only need this internally
 
         //Writers
         void removeAccount(AccountManager* account);
@@ -23,6 +24,7 @@ namespace favor {
         void refreshAll();
 
         void refreshAccountList();
+        void refreshContactList(const MessageType &t);
     }
 }
 
