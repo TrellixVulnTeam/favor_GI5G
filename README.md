@@ -3,7 +3,9 @@ Just getting things set up right now.
 Todo (in order):
  - A global bool/setting and/or compile option to determine whether or not we save message bodies. Update code not to even hold them if we don't need them, and otherwise to
  both hold them and save them. Additionally, consider whether it's really worth all this work to avoid saving them...
+ - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts')
  - g++ 4.9 on Android? Necessary for <regex> implementations. Also very our exceptions as inherting from runtime_error work on Android
+ - Fetch methods for specific contacts? What do we do when our "last fetch" id/date/whatever is up to date and someone adds a new address they want fetched
  - Basic unit tests
  - What do we when we can't parse a message for whatever reason? Have a specific method to export as much data as possible?
  - Start on threadsafety as described below

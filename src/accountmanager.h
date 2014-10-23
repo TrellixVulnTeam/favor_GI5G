@@ -68,6 +68,8 @@ namespace favor {
 
             void saveFetchData();
 
+            shared_ptr<list<Address>> contactAddresses();
+
         public:
 
             //Database

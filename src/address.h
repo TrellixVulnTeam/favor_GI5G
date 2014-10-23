@@ -9,12 +9,13 @@ namespace favor {
         const string addr;
         const int count;
         const int contactId;
+        const MessageType type;
 
-        Address(string addr, int c, int contact) : addr(addr), count(c), contactId(contact){}
+        Address(string addr, int c, int contact, MessageType t) : addr(addr), count(c), contactId(contact), type(t){}
 
 
         //The comparison and inequality operators are defined differently because we need them for different things
-        inline bool operator==(const Address & rhs){return addr == rhs.addr; }
+        inline bool operator==(const Address & rhs){return addr == rhs.addr;}
         inline bool operator!=(const Address & rhs){return !operator==(rhs);}
         inline bool operator<=(const Address & rhs){return !operator> (rhs);}
         inline bool operator>=(const Address & rhs){return !operator< (rhs);}

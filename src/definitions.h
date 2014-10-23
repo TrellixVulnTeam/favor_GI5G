@@ -53,8 +53,7 @@ the contact has been explicitly specified as one (whether at Favor's suggestion 
 
 //Addresses table
 /*Note:
-The foreign key here can be null, and this is intentional. In cases where it is null, there is no corresponding contact because
-the address is not attached to an explicit contact.
+The foreign key here can be null, and this is intentional. In cases where it is null, the address is not attached to a contact.
  */
 #define ADDRESS_TABLE(type) "addresses_" +string(MessageTypeName[type]) + ""
 #define ADDRESS_TABLE_SCHEMA(type) "(address TEXT NOT NULL, count INTEGER NOT NULL, contact_id INTEGER REFERENCES " CONTACT_TABLE(type) "(id))"

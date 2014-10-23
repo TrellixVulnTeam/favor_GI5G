@@ -1,3 +1,4 @@
+#include <reader.h>
 #include "accountmanager.h"
 #include "emailmanager.h"
 #include "logger.h"
@@ -333,11 +334,11 @@ namespace favor {
         return st;
     }
 
-    string EmailManager::searchCommand(bool sent, const vector<string> &addresses, long startUid, long endUid = -1) {
+    string EmailManager::searchCommand(bool sent, shared_ptr<const list<Address>> addresses, long startUid, long endUid = -1) {
         string cmd("");
         string addressField = sent ? "TO" : "FROM";
-        for (int i = 1; i < addresses.size(); ++i) {cmd += "OR ";} //One less "OR " than the number of addresses is important, so we start from 1 here
-        for (int i = 0; i < addresses.size(); ++i) {cmd += (addressField + " \"" + addresses[i] + "\" ");}
+        for (int i = 1; i < addresses->size(); ++i) {cmd += "OR ";} //One less "OR " than the number of addresses is important, so we start from 1 here
+        for (auto it = addresses->begin(); it != addresses->end(); ++it) {cmd += (addressField + " \"" + it->addr + "\" ");}
         //Have to add one to startUid here or we'll keep getting the last message we fetched
         if (endUid != -1) cmd += ("UID " + as_string(startUid + 1) + ":" + as_string(endUid));
         else cmd += ("UID " + as_string(startUid + 1) + ":*"); //In the case where we have no endUid, it is possible we will pick up a duplicate message. This is not ideal, but also not a catastrophe
@@ -382,7 +383,7 @@ namespace favor {
 
     }
 
-    void EmailManager::fetchFromFolder(shared_ptr<vmime::net::folder> folder, const vector<string> &addresses) {
+    void EmailManager::fetchFromFolder(shared_ptr<vmime::net::folder> folder, shared_ptr<const list<Address>> addresses) {
         bool sent = (folder->getName().getBuffer() != "INBOX");
         long &lastUid = sent ? lastSentUid : lastReceivedUid;
         long &lastUidValidity = sent ? lastSentUidValidity : lastReceivedUidValidity;
@@ -433,11 +434,9 @@ namespace favor {
 
     void EmailManager::fetchMessages() {
 
-        //TODO: get actual data from the database
-        vector<string> addresses;
-        addresses.push_back("favor.t@null.net");
+        shared_ptr<list<Address>> addresses  = contactAddresses();
 
-        if (addresses.size() == 0) return;
+        if (addresses->size() == 0) return;
 
         try {
             vmime::shared_ptr<vmime::net::store> st = login();

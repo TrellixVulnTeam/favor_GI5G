@@ -15,7 +15,7 @@ namespace favor {
         list<AccountManager*> accountList();
         list<Contact*> contactList(const MessageType &t);
 
-        list<favor::Address> addresses(const MessageType &t); //We should really only need this internally
+        shared_ptr<list<Address>> addresses(const MessageType &t); //We should really only need this internally
 
         //Writers
         void removeAccount(AccountManager* account);

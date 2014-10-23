@@ -66,6 +66,31 @@ namespace favor {
             }
         }
 
+        void createContact(const string& address, MessageType type, const string& displayName){
+
+        }
+
+        void createContactFromAddress(const Address& addr, const string& displayName){
+            //TODO: the first part of this method can be its own method returning the contact ID, and used for createContact as well
+            string contactSql = "INSERT INTO " CONTACT_TABLE(addr.type) "(display_name) VALUES(?)";
+            sqlite3_stmt* contactStmt;
+            sqlv(sqlite3_prepare_v2(db, contactSql.c_str(), contactSql.length(), &contactStmt, NULL));
+            sqlv(sqlite3_bind_text(contactStmt, 1, displayName.c_str(), displayName.length(), SQLITE_STATIC));
+            sqlv(sqlite3_step(contactStmt));
+            //TODO: probably, both this next variable and the ID parameters on contacts/addresses should be longs.
+            //when this is changed, remember to change the corresponding binding below
+            int contactId = sqlite3_last_insert_rowid(db);
+            sqlv(sqlite3_finalize(contactStmt));
+
+            string addressSql = "UPDATE " ADDRESS_TABLE(addr.type) " SET contact_id=? WHERE address=?";
+            sqlite3_stmt* addressStmt;
+            sqlv(sqlite3_prepare_v2(db, addressSql.c_str(), addressSql.length(), &addressStmt, NULL));
+            sqlv(sqlite3_bind_int(addressStmt, 1, contactId));
+            sqlv(sqlite3_bind_text(addressStmt, 2, addr.addr.c_str(), addr.addr.length(), SQLITE_STATIC));
+            sqlv(sqlite3_step(addressStmt));
+            sqlv(sqlite3_finalize(addressStmt));
+        }
+
         void indexDatabase() {
             for (int i = 0; i < NUMBER_OF_TYPES; ++i) {
                 exec("CREATE INDEX IF NOT EXISTS " ADDRESS_INDEX(i) " ON " ADDRESS_INDEX(i) ADDRESS_INDEX_SCHEMA ";");
@@ -135,18 +160,18 @@ namespace favor {
         }
 
         void AccountManager::saveHeldAddresses() {
-            list<Address> addresses = reader::addresses(type);
+            shared_ptr<list<Address>> addresses = reader::addresses(type);
 
             for (auto it = countedAddresses.begin(); it != countedAddresses.end(); it++) {
-                addresses.push_back(Address (it->first, it->second, -1)); //Because currently unbound to any contact
+                addresses->push_back(Address (it->first, it->second, -1, type)); //Because currently unbound to any contact
             }
 
-            addresses.sort(); //TODO: this actually needs to be sorted backward, also make sure sorting works with contact's overloaded operators
+            addresses->sort(); //TODO: this actually needs to be sorted backward, also make sure sorting works with contact's overloaded operators
 
-            auto itr = addresses.begin();
+            auto itr = addresses->begin();
             int i;
-            for (i = 0; i < MAX_ADDRESSES && itr != addresses.end(); ++i) ++itr;
-            if (i == MAX_ADDRESSES) addresses.erase(itr, addresses.end()); //Erase anything above our max if there are enough elements to need to
+            for (i = 0; i < MAX_ADDRESSES && itr != addresses->end(); ++i) ++itr;
+            if (i == MAX_ADDRESSES) addresses->erase(itr, addresses->end()); //Erase anything above our max if there are enough elements to need to
 
             //TODO: eventually we can do some guessing about current contacts here with levenshtein distance on names
 
@@ -158,7 +183,7 @@ namespace favor {
             string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES(?,?,?);";
             sqlite3_stmt* stmt;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-            for (auto it = addresses.begin(); it != addresses.end(); ++it){
+            for (auto it = addresses->begin(); it != addresses->end(); ++it){
                 saveAddress(*it, stmt);
             }
             sqlv(sqlite3_finalize(stmt)); //Finalizing it here is just cleanup

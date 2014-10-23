@@ -1,11 +1,12 @@
 #include "contact.h"
 
 namespace favor{
-    Contact::Contact(int ident, string name) : id(ident), displayName(name){}
-    Contact::Contact(int ident, string name, const Address &addr) : id(ident), displayName(name){
+    Contact::Contact(int ident, string name, MessageType t) : id(ident), displayName(name), type(t){}
+    Contact::Contact(int ident, string name, MessageType t,  const Address &addr) : id(ident), displayName(name), type(t) {
         addresses.push_back(addr);
     }
-    Contact::Contact(int ident, string name, const vector <Address> &addrs) : id(ident), displayName(name), addresses(addrs) {}
+    Contact::Contact(int ident, string name, MessageType t, const vector <Address> &addrs) : id(ident), displayName(name),
+                                                                                             type(t), addresses(addrs) {}
 
     const vector<Address>& Contact::getAddresses() const {
         return addresses;
@@ -13,9 +14,5 @@ namespace favor{
 
     void Contact::addAddress(const Address &addr) {
         addresses.push_back(addr);
-    }
-
-    bool Contact::generated() const {
-        return id == -1;
     }
 }

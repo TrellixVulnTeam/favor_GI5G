@@ -29,6 +29,9 @@ namespace favor {
         //Writing methods
         void exec(string sql);
 
+        void createContact(const string& address, MessageType type, const string& displayName);
+
+        void createContactFromAddress(const Address& addr, const string& displayName);
     }
 }
 

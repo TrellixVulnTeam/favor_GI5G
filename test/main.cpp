@@ -12,7 +12,9 @@ int main(int argc, char **argv) {
     favor::logger::info(favor::as_string(favor::reader::accountList().front()->type));
     favor::logger::info(favor::reader::accountList().front()->accountName);
     //favor::reader::accountList().front()->truncateTables();
-    //favor::reader::accountList().front()->updateMessages();
+    std::shared_ptr<std::list<favor::Address>> addresses = favor::reader::addresses(favor::TYPE_EMAIL);
+    std::cout << addresses->size() << std::endl;
+    favor::reader::accountList().front()->updateMessages();
     //favor::reader::accountList().front()->updateContacts();
     
 
