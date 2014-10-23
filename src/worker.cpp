@@ -44,7 +44,7 @@ namespace favor {
         }
 
         void rollbackTransaction() {
-            if (!transacting) 0; throw sqliteException("Cannot roll back transaction while not transacting");
+            if (!transacting) throw sqliteException("Cannot roll back transaction while not transacting");
             exec("ROLLBACK TRANSACTION;");
             transacting = false;
         }
@@ -91,32 +91,41 @@ namespace favor {
         direct db access
          --------------------------------------------------------------------------------*/
 
-        void AccountManager::saveMessage(const Message * m){
-            //TODO: if we split the messages into sent and received groups, we could get a little efficiency here by
-            //only compiling our statements once for the sent table and once for the received table. See
-            //here: http://www.sqlite.org/c3ref/reset.html - compiling SQL takes some time, so this is probably
-            //worth doing, though it'll mean moving some logic back into the saveHeldMessages() method. Model it
-            //after the saveAddress method
-
-
+        void AccountManager::saveHeldMessages() {
             //id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL
-            string sql = "INSERT INTO " + (m->sent ? SENT_TABLE_NAME : RECEIVED_TABLE_NAME) + " VALUES(?,?,?,?,?)";
-            sqlite3_stmt* stmt;
-            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            string sentSql = "INSERT INTO " SENT_TABLE_NAME " VALUES(?,?,?,?,?)";
+            string receivedSql = "INSERT INTO " RECEIVED_TABLE_NAME " VALUES(?,?,?,?,?)";
+            sqlite3_stmt* sentStmt;
+            sqlite3_stmt* receivedStmt;
+            sqlv(sqlite3_prepare(db, sentSql.c_str(), sentSql.length(), &sentStmt, NULL));
+            sqlv(sqlite3_prepare(db, receivedSql.c_str(), receivedSql.length(), &receivedStmt, NULL));
+
+            beginTransaction();
+            for (int i = 0; i < heldMessages.size(); ++i) {
+                if (heldMessages[i]->sent) saveMessage(heldMessages[i], sentStmt);
+                else saveMessage(heldMessages[i], receivedStmt);
+                delete heldMessages[i];
+            }
+            sqlv(sqlite3_finalize(sentStmt));
+            sqlv(sqlite3_finalize(receivedStmt));
+            commitTransaction();
+            heldMessages.clear();
+        }
+
+        void AccountManager::saveMessage(const Message *m, sqlite3_stmt* stmt) {
             sqlv(sqlite3_bind_int64(stmt, 1, m->id));
             sqlv(sqlite3_bind_text(stmt, 2, m->address.c_str(), m->address.length(), SQLITE_STATIC));
             sqlv(sqlite3_bind_int64(stmt, 3, m->date));
             sqlv(sqlite3_bind_int64(stmt, 4, m->charCount));
             sqlv(sqlite3_bind_int(stmt, 5, m->media));
             sqlv(sqlite3_step(stmt));
-            sqlv(sqlite3_finalize(stmt));
+            sqlv(sqlite3_reset(stmt));
         }
 
         void AccountManager::saveAddress(const Address &a, sqlite3_stmt* stmt) {
-            //TODO: method completely untested
             sqlv(sqlite3_bind_text(stmt, 1, a.addr.c_str(), a.addr.length(), SQLITE_STATIC));
             sqlv(sqlite3_bind_int(stmt, 2, a.count));
-            //sqlv(sqlite3_bind_int(stmt, 3, a.contactId)); //TODO: bind null here (leave it unbound, I think) if it's -1
+            if (a.contactId > -1) sqlv(sqlite3_bind_int(stmt, 3, a.contactId));
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_reset(stmt));
             sqlv(sqlite3_clear_bindings(stmt));
@@ -132,7 +141,7 @@ namespace favor {
                 addresses.push_back(Address (it->first, it->second, -1)); //Because currently unbound to any contact
             }
 
-            addresses.sort(); //TODO: this actually needs to be sorted backward... make sure sorting works with contact's overloaded operators
+            addresses.sort(); //TODO: this actually needs to be sorted backward, also make sure sorting works with contact's overloaded operators
 
             auto itr = addresses.begin();
             int i;
@@ -144,7 +153,6 @@ namespace favor {
             countedAddresses.clear();
             addressNames.clear();
 
-            //TODO: truncate the table and rewrite everything
             beginTransaction();
             exec("DELETE FROM " ADDRESS_TABLE(type) ";");
             string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES(?,?,?);";
@@ -152,7 +160,6 @@ namespace favor {
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             for (auto it = addresses.begin(); it != addresses.end(); ++it){
                 saveAddress(*it, stmt);
-                std::cout << as_string(*it) << std::endl;
             }
             sqlv(sqlite3_finalize(stmt)); //Finalizing it here is just cleanup
             commitTransaction();

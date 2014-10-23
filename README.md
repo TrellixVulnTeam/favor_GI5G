@@ -1,7 +1,6 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - The whitespace stripping method doesn't compile on Android, apparently because variable sized arrays are a G++ extension. Rewrite this (very carefully) to use some other method.
  - A global bool/setting and/or compile option to determine whether or not we save message bodies. Update code not to even hold them if we don't need them, and otherwise to
  both hold them and save them. Additionally, consider whether it's really worth all this work to avoid saving them...
  - g++ 4.9 on Android? Necessary for <regex> implementations. Also very our exceptions as inherting from runtime_error work on Android

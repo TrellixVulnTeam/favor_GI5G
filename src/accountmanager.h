@@ -38,7 +38,7 @@ namespace favor {
 
             void saveHeldAddresses();
 
-            void saveMessage(const Message * m);
+            void saveMessage(const Message* m, sqlite3_stmt* stmt);
 
             void saveAddress(const Address& a, sqlite3_stmt* stmt);
 

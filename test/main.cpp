@@ -8,17 +8,12 @@
 int main(int argc, char **argv) {
     favor::initialize();
     favor::worker::buildDatabase();
-    std::list<favor::Address> l = favor::reader::addresses((favor::MessageType)0);
-    std::cout << "List length:"+favor::as_string((long)l.size()) << std::endl;
-    for(auto it = l.begin(); it != l.end(); it++){
-        std::cout << favor::as_string(*it) << std::endl;
-    }
     favor::reader::refreshAll();
     favor::logger::info(favor::as_string(favor::reader::accountList().front()->type));
     favor::logger::info(favor::reader::accountList().front()->accountName);
     //favor::reader::accountList().front()->truncateTables();
     //favor::reader::accountList().front()->updateMessages();
-    favor::reader::accountList().front()->updateContacts();
+    //favor::reader::accountList().front()->updateContacts();
     
 
     //MessageType t, bool s, long int i, std::time_t d, string a, bool m, const string& b, size_t cc)

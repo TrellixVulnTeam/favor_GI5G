@@ -68,36 +68,32 @@ namespace favor {
         }
 
         bool AccountManager::isWhitespace(uint32_t code) {
+            //TODO: consult https://www.cs.tut.fi/~jkorpela/chars/spaces.html and http://www.fileformat.info/info/unicode/category/Zs/list.htm
+            //because I'm suddenly easy about the data wikipedia gave me. Should've seen that coming I guess
             if (code >= 9 && code <= 13) return true;
             else if (code >= 8192 && code <= 8202) return true;
             else
                 switch (code) {
-                    case 32:
-                        return true;
-                    case 133:
-                        return true;
-                    case 160:
-                        return true;
-                    case 5760:
-                        return true;
-                    case 8232:
-                        return true;
-                    case 8233:
-                        return true;
-                    case 8239:
-                        return true;
-                    case 8287:
-                        return true;
-                    default:
-                        return false;
+                    case 32: return true;
+                    case 133: return true;
+                    case 160: return true;
+                    case 5760: return true;
+                    case 8232: return true;
+                    case 8233: return true;
+                    case 8239: return true;
+                    case 8287: return true;
+                    case 12288: return true; //This is our Japanese space, even though it's not on the unicode wiki
+                    default: return false;
                 }
         }
 
         void AccountManager::cleanWhitespace(string &s) {
             //http://en.wikipedia.org/wiki/Whitespace_character
-            //TODO: this copies the string into our result array, and then again in the string constructor, which is less than ideal
+            //TODO: this copies the string into our result array, and then again in the string constructor, which is less than ideal. also the vector stuff is slightly sketch
 
-            const char result[s.length()] = {0}; //TODO: this won't compile on android http://stackoverflow.com/questions/15013077/arrayn-vs-array10-initializing-array-with-variable-vs-real-number
+            //const char result[s.length()] = {0}; //this won't compile on android http://stackoverflow.com/questions/15013077/arrayn-vs-array10-initializing-array-with-variable-vs-real-number
+            vector<char> buffer(s.size()); //So we get memory with a vector, which is fortunately gauranteed to be contiguous
+            const char* result = &buffer[0];  //and use a pointer to its head, instead of an array
             char *current = (char *) result;
 
             char *start = (char *) s.c_str();
@@ -144,17 +140,6 @@ namespace favor {
 
         void AccountManager::setCountedAddressName(const string &address, const string &name){
             addressNames[address] = name;
-        }
-
-        void AccountManager::saveHeldMessages() {
-            //TODO: test this with transactions
-            beginTransaction();
-            for (int i = 0; i < heldMessages.size(); ++i) {
-                saveMessage(heldMessages[i]);
-                delete heldMessages[i];
-            }
-            commitTransaction();
-            heldMessages.clear();
         }
 
 
