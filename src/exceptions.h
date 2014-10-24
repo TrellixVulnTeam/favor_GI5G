@@ -56,6 +56,16 @@ namespace favor {
         }
     };
 
+    class threadingException : public exception {
+    public:
+        threadingException(const std::string &e) : exception(e){
+        }
+
+        threadingException(): exception("Misuse of favor threading internals"){
+
+        }
+    };
+
 #ifdef FAVOR_EMAIL_MANAGER
 
     class emailException : public exception {

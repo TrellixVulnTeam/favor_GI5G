@@ -10,40 +10,46 @@ namespace favor {
     private:
         shared_ptr<std::lock_guard<std::mutex>> guard;
         T* data;
+        bool* threadVar;
 
     public:
 
         void invalidate() {
             data = NULL;
             guard.reset();
+            *threadVar = false;
         }
 
         bool valid() {
             return guard != NULL && data != NULL;
         }
 
-        //TODO: except if these operators are called when we're not valid
         T* operator->(){
+            if (!valid()) throw threadingException("Cannot reference invalid data lock");
             return data;
         }
 
         T operator*(){
+            if (!valid()) throw threadingException("Cannot reference invalid data lock");
             return *data;
         }
 
-        DataLock(std::mutex& mutex, T* protected_data) {
+        DataLock(std::mutex& mutex, bool* tvar, T* protected_data) {
             guard = std::make_shared<std::lock_guard<std::mutex>>(mutex);
             data = protected_data;
+            threadVar = tvar;
         }
 
         DataLock(const favor::DataLock<T> &other) {
             guard = other.guard;
             data = other.data;
+            threadVar = other.threadVar;
         }
 
         DataLock<T>& operator=(const favor::DataLock<T> &other) {
             guard = other.guard;
             data = other.data;
+            threadVar = other.threadVar;
         }
 
         ~DataLock() {

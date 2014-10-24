@@ -5,21 +5,20 @@ namespace favor {
         namespace { //Private members
             sqlite3 *db;
 
-            //TODO: if the current thread is already holding something, trying to get it should be an exception
             std::mutex accountMutex;
-            thread_local bool accountsHeld;
-            list<AccountManager*>* accounts; //Have to hold pointers for polymorphism, list is pointer for uniformity with other data
+            thread_local bool accountsHeld = false;
+            list<AccountManager*>* _accounts; //Have to hold pointers for polymorphism, list is pointer for uniformity with other data
 
-            std::mutex contactsMutices[NUMBER_OF_TYPES];
+            std::mutex contactsMutex[NUMBER_OF_TYPES];
             thread_local bool contactsHeld[NUMBER_OF_TYPES] = {false};
-            list<Contact>* contacts[NUMBER_OF_TYPES];
+            list<Contact>* _contacts[NUMBER_OF_TYPES];
         }
 
         void initialize() {
             sqlv(sqlite3_open_v2(DB_NAME, &db, SQLITE_OPEN_READONLY, NULL));
-            accounts = new std::list<AccountManager*>;
+            _accounts = new std::list<AccountManager*>;
             for (int i = 0; i < NUMBER_OF_TYPES; ++i){
-                contacts[i] = new std::list<Contact>;
+                _contacts[i] = new std::list<Contact>;
             }
         }
 
@@ -27,35 +26,28 @@ namespace favor {
             sqlv(sqlite3_close(db));
         }
 
-        list<AccountManager*>* accountList() {
-            //TODO: take reader lock, in case someone's writing
-            return accounts;
-            //TODO: release reader lock
+        DataLock<list<AccountManager*>> accountList() {
+            if (accountsHeld) throw threadingException("Cannot hold two locks on accounts in same thread");
+            else accountsHeld = true;
+            //The DataLock constructor will block if we can't get a lock.
+            return DataLock<list<AccountManager*>>(accountMutex, &accountsHeld, _accounts);
         }
 
-//        DataLock<list<AccountManager*>> accountList() {
-//            //TODO: take reader lock, in case someone's writing
-//            return DataLock<list<AccountManager*>>(accountMutex, accounts);
-//            //TODO: release reader lock
-//        }
 
-        list<Contact>* contactList(const MessageType& t){
-            //TODO: reader lock
-            return contacts[t];
-            //TODO: release reader lock
+        DataLock<list<Contact>> contactList(const MessageType& t){
+            if (contactsHeld[t]) throw threadingException("Cannot hold two locks on same type in same thread");
+            else contactsHeld[t] = true;
+            //The DataLock constructor will block if we can't get a lock.
+            return DataLock<list<Contact>>(contactsMutex[t], &contactsHeld[t], _contacts[t]);
         }
 
         void removeAccount(AccountManager* account){
-            //TODO: writer lock
-            accounts->remove(account);
+            accountList()->remove(account);
             delete account; //If the reader doesn't have it, no one should
-            //TODO: release writer lock
         }
 
         void addAccount(AccountManager* account){
-            //TODO: writer lock
-            accounts->push_back(account);
-            //TODO: release wrtier lock
+            accountList()->push_back(account);
         }
 
         void refreshAll() {
@@ -68,12 +60,11 @@ namespace favor {
         void refreshAccountList() {
             sqlite3_stmt *stmt;
             const char sql[] = "SELECT * FROM " ACCOUNT_TABLE ";"; //Important this is an array and not a const char* so that sizeof() works properly
-            //TODO: take writer lock
-            for (auto it = accounts->begin(); it != accounts->end(); it++) delete *it;
-            accounts->clear();
-
             sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
             int result;
+            auto accounts = accountList();
+            for (auto it = accounts->begin(); it != accounts->end(); it++) delete *it;
+            accounts->clear();
 
             while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
                 accounts->push_back(AccountManager::buildManager(
@@ -82,7 +73,6 @@ namespace favor {
                         reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2))));
             }
             sqlv(result); //Make sure we broke out of the loop with good results
-            //TODO: release writer lock
         }
 
         void refreshContactList(const MessageType &t){
@@ -91,7 +81,6 @@ namespace favor {
             int result;
             shared_ptr<list<Address>> addrs = addresses(t);
             std::unordered_map<int, Contact> contactHolder;
-            //TODO: writer lock
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
 
             while ((result = sqlite3_step(stmt)) == SQLITE_ROW){
@@ -102,7 +91,8 @@ namespace favor {
             }
             sqlv(result);
 
-            contacts[t]->clear();
+            auto contacts = contactList(t);
+            contacts->clear();
 
             for (auto it = addrs->begin(); it != addrs->end(); it++){
                 //TODO: this could conceivably, possible, throw an exception for being out of bounds, though it shouldn't
@@ -112,11 +102,8 @@ namespace favor {
 
             //Add canonical contacts in hash table to list
             for (auto it = contactHolder.begin(); it != contactHolder.end(); it++){
-                contacts[t]->push_back(it->second);
+                contacts->push_back(it->second);
             }
-
-
-            //TODO: drop writer lock
         }
 
         shared_ptr<list<Address>> addresses(const MessageType &t){

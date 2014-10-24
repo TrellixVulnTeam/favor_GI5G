@@ -13,8 +13,8 @@ namespace favor {
         void cleanup();
 
         //Getters
-        list<AccountManager*>* accountList();
-        list<Contact>* contactList(const MessageType &t);
+        DataLock<list<AccountManager*>> accountList();
+        DataLock<list<Contact>> contactList(const MessageType &t);
 
         shared_ptr<list<Address>> addresses(const MessageType &t); //We should really only need this internally
 
