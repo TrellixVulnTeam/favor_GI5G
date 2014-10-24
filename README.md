@@ -1,6 +1,7 @@
 Just getting things set up right now. 
 
 Todo (in order):
+ - TODOs in reader and datalock for exceptions in cases of gross misuse of threading functionalities
  - A global bool/setting and/or compile option to determine whether or not we save message bodies. Update code not to even hold them if we don't need them, and otherwise to
  both hold them and save them. Additionally, consider whether it's really worth all this work to avoid saving them...
  - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts')

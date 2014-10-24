@@ -144,7 +144,7 @@ namespace favor {
 
         shared_ptr<list<Address>> AccountManager::contactAddresses() {
             shared_ptr<list<Address>> ret = make_shared<list<Address>>();
-            list<Contact>* contacts = ::favor::reader::contactList(type);
+            list<Contact>* contacts = ::favor::reader::contactList(type); //TODO: this line won't compile on android ("reader" not delcared?) for reasons entirely beyond me
             for (auto it = contacts->begin(); it != contacts->end(); ++it){
                 for (int i = 0; i < it->getAddresses().size(); ++i){
                     ret->push_back(it->getAddresses()[i]);

@@ -22,6 +22,7 @@ namespace favor {
             return guard != NULL && data != NULL;
         }
 
+        //TODO: except if these operators are called when we're not valid
         T* operator->(){
             return data;
         }

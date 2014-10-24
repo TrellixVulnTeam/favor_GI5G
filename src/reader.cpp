@@ -5,10 +5,13 @@ namespace favor {
         namespace { //Private members
             sqlite3 *db;
 
+            //TODO: if the current thread is already holding something, trying to get it should be an exception
             std::mutex accountMutex;
+            thread_local bool accountsHeld;
             list<AccountManager*>* accounts; //Have to hold pointers for polymorphism, list is pointer for uniformity with other data
 
             std::mutex contactsMutices[NUMBER_OF_TYPES];
+            thread_local bool contactsHeld[NUMBER_OF_TYPES] = {false};
             list<Contact>* contacts[NUMBER_OF_TYPES];
         }
 
