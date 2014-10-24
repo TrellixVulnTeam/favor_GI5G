@@ -3,6 +3,7 @@
 
 #include "favor.h"
 #include "accountmanager.h"
+#include "datalock.h"
 
 namespace favor {
     namespace reader {
@@ -12,8 +13,8 @@ namespace favor {
         void cleanup();
 
         //Getters
-        list<AccountManager*> accountList();
-        list<Contact*> contactList(const MessageType &t);
+        list<AccountManager*>* accountList();
+        list<Contact>* contactList(const MessageType &t);
 
         shared_ptr<list<Address>> addresses(const MessageType &t); //We should really only need this internally
 

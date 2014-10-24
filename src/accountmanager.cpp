@@ -130,8 +130,7 @@ namespace favor {
             cleanWhitespace(msg);
             size_t length = utf8::distance(msg.begin(), msg.end());
 
-            Message *ex = new Message(type, sent, id, date, address, media, msg, length);
-            heldMessages.push_back(ex);
+            heldMessages->emplace_back(Message(type, sent, id, date, address, media, msg, length));
         }
 
         void AccountManager::countAddress(const string &address){
@@ -145,10 +144,10 @@ namespace favor {
 
         shared_ptr<list<Address>> AccountManager::contactAddresses() {
             shared_ptr<list<Address>> ret = make_shared<list<Address>>();
-            list<Contact*> contacts = reader::contactList(type);
-            for (auto it = contacts.begin(); it != contacts.end(); ++it){
-                for (int i = 0; i < (*it)->getAddresses().size(); ++i){
-                    ret->push_back((*it)->getAddresses()[i]);
+            list<Contact>* contacts = ::favor::reader::contactList(type);
+            for (auto it = contacts->begin(); it != contacts->end(); ++it){
+                for (int i = 0; i < it->getAddresses().size(); ++i){
+                    ret->push_back(it->getAddresses()[i]);
                 }
             }
         }

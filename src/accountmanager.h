@@ -30,7 +30,7 @@ namespace favor {
             rapidjson::Document json;
 
         private:
-            std::vector<favor::Message *> heldMessages;
+            std::vector<favor::Message>* heldMessages;
             std::unordered_map<std::string, int> countedAddresses; //Address : count
             std::unordered_map<std::string, std::string> addressNames; //Address : suggestedName
 
@@ -38,7 +38,7 @@ namespace favor {
 
             void saveHeldAddresses();
 
-            void saveMessage(const Message* m, sqlite3_stmt* stmt);
+            void saveMessage(const Message& m, sqlite3_stmt* stmt);
 
             void saveAddress(const Address& a, sqlite3_stmt* stmt);
 

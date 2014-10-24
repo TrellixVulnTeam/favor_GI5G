@@ -71,8 +71,8 @@ namespace favor {
                 exec("DELETE FROM " CONTACT_TABLE(i) ";");
                 exec("DELETE FROM " ADDRESS_TABLE(i) ";");
             }
-            list<AccountManager*> l = reader::accountList();
-            for (list<AccountManager*>::iterator it = l.begin(); it != l.end(); ++it) {
+            list<AccountManager*>* l = reader::accountList();
+            for (list<AccountManager*>::iterator it = l->begin(); it != l->end(); ++it) {
                 (*it)->truncateTables();
             }
         }
@@ -105,8 +105,8 @@ namespace favor {
             for (int i = 0; i < NUMBER_OF_TYPES; ++i) {
                 exec("CREATE INDEX IF NOT EXISTS " ADDRESS_INDEX(i) " ON " ADDRESS_INDEX(i) ADDRESS_INDEX_SCHEMA ";");
             }
-            list<AccountManager*> l = reader::accountList();
-            for (list<AccountManager*>::iterator it = l.begin(); it != l.end(); ++it) {
+            list<AccountManager*>* l = reader::accountList();
+            for (list<AccountManager*>::iterator it = l->begin(); it != l->end(); ++it) {
                 (*it)->indexTables();
             }
         }
@@ -115,8 +115,8 @@ namespace favor {
             for (int i = 0; i < NUMBER_OF_TYPES; ++i) {
                 exec("DROP INDEX IF EXISTS " ADDRESS_INDEX(i) ";");
             }
-            list<AccountManager*> l = reader::accountList();
-            for (list<AccountManager*>::iterator it = l.begin(); it != l.end(); ++it) {
+            list<AccountManager*>* l = reader::accountList();
+            for (list<AccountManager*>::iterator it = l->begin(); it != l->end(); ++it) {
                 (*it)->deindexTables();
             }
         }
@@ -136,23 +136,22 @@ namespace favor {
             sqlv(sqlite3_prepare(db, receivedSql.c_str(), receivedSql.length(), &receivedStmt, NULL));
 
             beginTransaction();
-            for (int i = 0; i < heldMessages.size(); ++i) {
-                if (heldMessages[i]->sent) saveMessage(heldMessages[i], sentStmt);
-                else saveMessage(heldMessages[i], receivedStmt);
-                delete heldMessages[i];
+            for (int i = 0; i < heldMessages->size(); ++i) {
+                if ((*heldMessages)[i].sent) saveMessage((*heldMessages)[i], sentStmt);
+                else saveMessage((*heldMessages)[i], receivedStmt);
             }
             sqlv(sqlite3_finalize(sentStmt));
             sqlv(sqlite3_finalize(receivedStmt));
             commitTransaction();
-            heldMessages.clear();
+            heldMessages->clear();
         }
 
-        void AccountManager::saveMessage(const Message *m, sqlite3_stmt* stmt) {
-            sqlv(sqlite3_bind_int64(stmt, 1, m->id));
-            sqlv(sqlite3_bind_text(stmt, 2, m->address.c_str(), m->address.length(), SQLITE_STATIC));
-            sqlv(sqlite3_bind_int64(stmt, 3, m->date));
-            sqlv(sqlite3_bind_int64(stmt, 4, m->charCount));
-            sqlv(sqlite3_bind_int(stmt, 5, m->media));
+        void AccountManager::saveMessage(const Message& m, sqlite3_stmt* stmt) {
+            sqlv(sqlite3_bind_int64(stmt, 1, m.id));
+            sqlv(sqlite3_bind_text(stmt, 2, m.address.c_str(), m.address.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_int64(stmt, 3, m.date));
+            sqlv(sqlite3_bind_int64(stmt, 4, m.charCount));
+            sqlv(sqlite3_bind_int(stmt, 5, m.media));
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_reset(stmt));
         }

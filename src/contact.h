@@ -15,9 +15,6 @@ namespace favor {
         Contact(long ident, string name, MessageType t, const Address& addr);
         Contact(long ident, string name, MessageType t, const vector <Address> &addrs);
 
-        NONCOPYABLE(Contact)
-        NONMOVEABLE(Contact)
-
         void addAddress(const Address& addr);
         const vector<Address>& getAddresses() const;
 
