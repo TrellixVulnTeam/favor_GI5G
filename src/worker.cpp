@@ -7,6 +7,17 @@ namespace favor {
         namespace {
             sqlite3 *db;
             bool transacting = false;
+
+            long createContact(const string& displayName, MessageType type){
+                string sql = "INSERT INTO " CONTACT_TABLE(type) "(display_name) VALUES(?)";
+                sqlite3_stmt* stmt;
+                sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+                sqlv(sqlite3_bind_text(stmt, 1, displayName.c_str(), displayName.length(), SQLITE_STATIC));
+                sqlv(sqlite3_step(stmt));
+                long contactId = sqlite3_last_insert_rowid(db);
+                sqlv(sqlite3_finalize(stmt));
+                return contactId;
+            }
         }
 
         void initialize() {
@@ -66,29 +77,28 @@ namespace favor {
             }
         }
 
-        void createContact(const string& address, MessageType type, const string& displayName){
+        //TODO: test next 2 methods for creating contacts
+        void createContactWithAddress(const string &address, MessageType type, const string &displayName){
+            long contactId = createContact(displayName, type);
 
+            string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES (?,?,?);";
+            sqlite3_stmt* stmt;
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            sqlv(sqlite3_bind_text(stmt, 1, address.c_str(), address.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_int(stmt, 2, 0));
+            sqlv(sqlite3_bind_int64(stmt, 3, contactId));
         }
 
         void createContactFromAddress(const Address& addr, const string& displayName){
-            //TODO: the first part of this method can be its own method returning the contact ID, and used for createContact as well
-            string contactSql = "INSERT INTO " CONTACT_TABLE(addr.type) "(display_name) VALUES(?)";
-            sqlite3_stmt* contactStmt;
-            sqlv(sqlite3_prepare_v2(db, contactSql.c_str(), contactSql.length(), &contactStmt, NULL));
-            sqlv(sqlite3_bind_text(contactStmt, 1, displayName.c_str(), displayName.length(), SQLITE_STATIC));
-            sqlv(sqlite3_step(contactStmt));
-            //TODO: probably, both this next variable and the ID parameters on contacts/addresses should be longs.
-            //when this is changed, remember to change the corresponding binding below
-            int contactId = sqlite3_last_insert_rowid(db);
-            sqlv(sqlite3_finalize(contactStmt));
+            long contactId = createContact(displayName, addr.type);
 
-            string addressSql = "UPDATE " ADDRESS_TABLE(addr.type) " SET contact_id=? WHERE address=?";
-            sqlite3_stmt* addressStmt;
-            sqlv(sqlite3_prepare_v2(db, addressSql.c_str(), addressSql.length(), &addressStmt, NULL));
-            sqlv(sqlite3_bind_int(addressStmt, 1, contactId));
-            sqlv(sqlite3_bind_text(addressStmt, 2, addr.addr.c_str(), addr.addr.length(), SQLITE_STATIC));
-            sqlv(sqlite3_step(addressStmt));
-            sqlv(sqlite3_finalize(addressStmt));
+            string sql = "UPDATE " ADDRESS_TABLE(addr.type) " SET contact_id=? WHERE address=?";
+            sqlite3_stmt* stmt;
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            sqlv(sqlite3_bind_int64(stmt, 1, contactId));
+            sqlv(sqlite3_bind_text(stmt, 2, addr.addr.c_str(), addr.addr.length(), SQLITE_STATIC));
+            sqlv(sqlite3_step(stmt));
+            sqlv(sqlite3_finalize(stmt));
         }
 
         void indexDatabase() {

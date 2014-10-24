@@ -13,6 +13,7 @@
 #include <utility>
 #include <unordered_map>
 #include <algorithm>
+#include <mutex>
 
 //External libraries
 #include "sqlite/sqlite3.h"

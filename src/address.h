@@ -8,10 +8,10 @@ namespace favor {
     public:
         const string addr;
         const int count;
-        const int contactId;
+        const long contactId;
         const MessageType type;
 
-        Address(string addr, int c, int contact, MessageType t) : addr(addr), count(c), contactId(contact), type(t){}
+        Address(string addr, long c, int contact, MessageType t) : addr(addr), count(c), contactId(contact), type(t){}
 
 
         //The comparison and inequality operators are defined differently because we need them for different things

@@ -7,7 +7,7 @@ ANDROID - This is pretty obvious, it's true if we're compiling for Android phone
 DEBUG - Also pretty obvious, it's true when we're building for debug
  */
 
-//Macros
+//Macros --------------------------------------------------------------------------------
 #ifdef DEBUG
 #define D(x) x
 #else
@@ -19,7 +19,15 @@ DEBUG - Also pretty obvious, it's true when we're building for debug
  * perpetrator can call sqlite3_validate directly...
  */
 #define sqlv(arg1) sqlite3_validate(arg1, db)
-//Types
+
+
+#define NONCOPYABLE(class) class(const class&) = delete;\
+class& operator=(const class&) = delete;
+
+#define NONMOVEABLE(class) class(const class&&) = delete;\
+class& operator=(const class&&) = delete;
+
+//Types --------------------------------------------------------------------------------
 namespace favor {
     enum MessageType {
         TYPE_EMAIL, TYPE_ANDROIDTEXT, TYPE_LINE, TYPE_SKYPE, NUMBER_OF_TYPES
@@ -27,11 +35,11 @@ namespace favor {
     extern const char *MessageTypeName[];
 }
 
-//Constants
+//Constants --------------------------------------------------------------------------------
 #define ADDRESS_CHECK_MESSAGE_COUNT 500 //The number of recent sent messages we look at when determining what addresses to pull
 #define MAX_ADDRESSES 100 //Max addresses that we want to hold per type
 
-//Database
+//Database --------------------------------------------------------------------------------
 #define DB_NAME "favor.db"
 
 

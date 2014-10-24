@@ -68,21 +68,9 @@ namespace favor {
     }
 
     string as_string(const Message &m) {
-        //TODO: use prettydate, and update this to account for missing values (which there will be sometimes when we pull from the DB)
-        const char* bar = "--------------------";
-        string result = bar;
-        result += "\n";
-        result += "Sent: "+as_string(m.sent) +"\n";
-        result += "Id: "+as_string(m.id) +"\n";
-        result += "Date: "+ as_string(m.date) +"\n";
-        result += "Address: "+m.address +"\n";
-        result += "Media: "+as_string(m.media)+"\n";
-        result += "Body: ----\n";
-        result += m.body;
-        result += "\n----------\n";
-        result += "Body length: " +as_string((long)m.charCount)+"\n";
-
-        result += bar;
+        //TODO: update this to account for missing values (which there will be sometimes when we pull from the DB)
+        string result = "[Message ID: "+as_string(m.id)+" | Sent? " + as_string(m.sent)+" | Date: "+m.prettyDate()+" | Address: "+m.address;
+        result += " | Media? "+as_string(m.media) + " | Body Length: "+as_string((long)m.charCount)+ "| Body: <<"+ m.body+">>]";;
         return result;
     }
 

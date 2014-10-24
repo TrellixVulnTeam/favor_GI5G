@@ -49,7 +49,9 @@ namespace favor {
         protected:
             AccountManager(string accNm, MessageType typ, string detailsJson);
 
-            AccountManager(const AccountManager &that) = delete; //AccountManager shouldn't ever be copied.
+            NONCOPYABLE(AccountManager)
+            NONMOVEABLE(AccountManager)
+
             void truncateSentTable();
 
             void truncateReceivedTable();

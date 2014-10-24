@@ -7,16 +7,16 @@
 namespace favor {
     class Contact {
     public:
-        //TODO: do contacts really need to know their ID?
-        const int id;
+        const long id;
         const string displayName;
         const MessageType type;
 
-        Contact(int ident, string name, MessageType t);
-        Contact(int ident, string name, MessageType t, const Address& addr);
-        Contact(int ident, string name, MessageType t, const vector <Address> &addrs);
+        Contact(long ident, string name, MessageType t);
+        Contact(long ident, string name, MessageType t, const Address& addr);
+        Contact(long ident, string name, MessageType t, const vector <Address> &addrs);
 
-        Contact(const Contact& c) = delete; //Like account manager, we don't really want these copied
+        NONCOPYABLE(Contact)
+        NONMOVEABLE(Contact)
 
         void addAddress(const Address& addr);
         const vector<Address>& getAddresses() const;
