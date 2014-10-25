@@ -11,6 +11,8 @@ namespace favor {
         }
     };
 
+    //TODO: get some exception inheritance going on; network and authentication can inherit from the same thing, as can
+    //bad user data and bad message data.
     class sqliteException : public exception {
     public:
         sqliteException(const std::string &e) : exception(e) {
@@ -38,12 +40,12 @@ namespace favor {
         }
     };
 
-    class badAccountDataException : public exception {
+    class badUserDataException : public exception {
     public:
-        badAccountDataException(const std::string &e) : exception(e) {
+        badUserDataException(const std::string &e) : exception(e) {
         }
 
-        badAccountDataException() : exception("Crucial account metadata missing") {
+        badUserDataException() : exception("Bad account, contact or address data") {
         }
     };
 

@@ -18,8 +18,13 @@ namespace favor {
             json.Parse(detailsJson.c_str());
             if (json.HasParseError()) {
                 logger::error("Parse error on json: \"" + detailsJson + "\". RapidJson says: " + rapidjson::GetParseError_En(json.GetParseError()));
-                throw badAccountDataException("Failed to parse JSON details");
+                throw badUserDataException("Failed to parse JSON details");
             }
+            heldMessages = new std::vector<favor::Message>;
+        }
+
+        AccountManager::~AccountManager(){
+            delete heldMessages;
         }
 
         void AccountManager::buildTables() {
@@ -66,6 +71,20 @@ namespace favor {
             updateFetchData();
             saveHeldMessages();
             saveFetchData();
+        }
+
+        bool AccountManager::compareAddress(const Address &lhs, const Address &rhs) {
+            //Results in a largest first array
+            if (lhs.contactId > -1){
+                if (rhs.contactId > -1){
+                    lhs.count == rhs.count ? lhs.addr > rhs.addr : lhs.count > rhs.count;
+                }
+                else return true;
+            }
+            else if (rhs.contactId > -1) return false;
+            else{
+                return lhs.count == rhs.count ? lhs.addr > rhs.addr : lhs.count > rhs.count;
+            }
         }
 
         bool AccountManager::isWhitespace(uint32_t code) {
@@ -150,6 +169,7 @@ namespace favor {
                     ret->push_back(it->getAddresses()[i]);
                 }
             }
+            return ret;
         }
 
 

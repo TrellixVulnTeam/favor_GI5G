@@ -90,7 +90,6 @@ namespace favor {
                 //Canonical contacts added to hash table
             }
             sqlv(result);
-
             auto contacts = contactList(t);
             contacts->clear();
 

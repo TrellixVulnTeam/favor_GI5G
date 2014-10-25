@@ -169,18 +169,18 @@ namespace favor {
         }
 
         void AccountManager::saveHeldAddresses() {
-            shared_ptr<list<Address>> addresses = reader::addresses(type);
+            shared_ptr<list<Address>> addrList = reader::addresses(type);
+            //Reverse sorted set does most of our work for us
+            std::set<Address, bool(*)(const Address&, const Address&)> addrSet = std::set<Address, bool(*)(const Address&, const Address&)>(addrList->begin(), addrList->end(), compareAddress);
 
             for (auto it = countedAddresses.begin(); it != countedAddresses.end(); it++) {
-                addresses->push_back(Address (it->first, it->second, -1, type)); //Because currently unbound to any contact
+                addrSet.insert(Address (it->first, it->second, -1, type)); //Because currently unbound to any contact
             }
 
-            addresses->sort(); //TODO: this actually needs to be sorted backward, also make sure sorting works with contact's overloaded operators
-
-            auto itr = addresses->begin();
+            auto itr = addrSet.begin();
             int i;
-            for (i = 0; i < MAX_ADDRESSES && itr != addresses->end(); ++i) ++itr;
-            if (i == MAX_ADDRESSES) addresses->erase(itr, addresses->end()); //Erase anything above our max if there are enough elements to need to
+            for (i = 0; i < MAX_ADDRESSES && itr != addrSet.end(); ++i) ++itr;
+            if (i == MAX_ADDRESSES) addrSet.erase(itr, addrSet.end()); //Erase anything above our max if there are enough elements to need to
 
             //TODO: eventually we can do some guessing about current contacts here with levenshtein distance on names
 
@@ -192,7 +192,7 @@ namespace favor {
             string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES(?,?,?);";
             sqlite3_stmt* stmt;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-            for (auto it = addresses->begin(); it != addresses->end(); ++it){
+            for (auto it = addrSet.begin(); it != addrSet.end(); ++it){
                 saveAddress(*it, stmt);
             }
             sqlv(sqlite3_finalize(stmt)); //Finalizing it here is just cleanup

@@ -46,6 +46,8 @@ namespace favor {
 
             static void cleanWhitespace(string &s);
 
+            static bool compareAddress(const Address& lhs, const Address& rhs);
+
         protected:
             AccountManager(string accNm, MessageType typ, string detailsJson);
 
@@ -73,6 +75,7 @@ namespace favor {
             shared_ptr<list<Address>> contactAddresses();
 
         public:
+            ~AccountManager();
 
             //Database
             static AccountManager* addAccount(string name, MessageType type, string detailsJson);

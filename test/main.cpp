@@ -5,17 +5,22 @@
 #include "../src/logger.h"
 //TODO: this should be replaced by a real testing framework ASAP
 
+using namespace std;
+using namespace favor;
+
 int main(int argc, char **argv) {
-    favor::initialize();
-    favor::worker::buildDatabase();
-    favor::reader::refreshAll();
+    initialize();
+    worker::buildDatabase();
+    reader::refreshAll();
     //favor::logger::info(favor::as_string(favor::reader::accountList().front()->type));
     //favor::logger::info(favor::reader::accountList().front()->accountName);
-    //favor::reader::accountList().front()->truncateTables();
+    //reader::accountList()->front()->truncateTables();
     std::shared_ptr<std::list<favor::Address>> addresses = favor::reader::addresses(favor::TYPE_EMAIL);
-    std::cout << addresses->size() << std::endl;
-    //favor::reader::accountList().front()->updateMessages();
-    //favor::reader::accountList().front()->updateContacts();
+    //worker::createContactFromAddress(addresses->front(), "Test Contact");
+    cout << addresses->front().addr << endl;
+
+    reader::accountList()->front()->updateMessages();
+    //reader::accountList()->front()->updateContacts();
     
 
     //MessageType t, bool s, long int i, std::time_t d, string a, bool m, const string& b, size_t cc)

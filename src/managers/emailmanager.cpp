@@ -121,7 +121,7 @@ namespace favor {
     EmailManager::EmailManager(string accNm, string detailsJson)
             : AccountManager(accNm, TYPE_EMAIL, detailsJson), serverURL("imap://bad.url:0") {
         if (json.HasMember("password")) password = json["password"].GetString();
-        else throw badAccountDataException("EmailManager missing password");
+        else throw badUserDataException("EmailManager missing password");
 
         //http://www.regular-expressions.info/email.html
         std::regex emailRegex(email::emailRegex, std::regex::ECMAScript | std::regex::icase);
@@ -130,7 +130,7 @@ namespace favor {
         size_t atSign = accountName.find_first_of("@");
         if (atSign == string::npos) {
             logger::error("Could not find \"@\" in \"" + accountName + "\"");
-            throw badAccountDataException("EmailManager initialized with bad email address");
+            throw badUserDataException("EmailManager initialized with bad email address");
         }
 
         string domain = accountName.substr(atSign + 1);
@@ -145,12 +145,12 @@ namespace favor {
                 }
                 catch (vmime::exceptions::malformed_url &e) {
                     logger::error("Attempted to use provided url \"" + string(json["url"].GetString()) + "\" but it was malformed");
-                    throw badAccountDataException("Provided url was malformed");
+                    throw badUserDataException("Provided url was malformed");
                 }
             }
             else {
                 logger::error("Could not determine url for email " + accountName + " and no alternative URL was provided");
-                throw badAccountDataException("Unable to determine URL for " + accountName);
+                throw badUserDataException("Unable to determine URL for " + accountName);
             }
         }
 
@@ -258,7 +258,6 @@ namespace favor {
                 tp->getText()->extract(os);
             }
         }
-
 
         if (sent) {
             const vmime::addressList addrList = mp.getRecipients();
