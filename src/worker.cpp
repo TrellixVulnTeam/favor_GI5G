@@ -81,12 +81,14 @@ namespace favor {
         void createContactWithAddress(const string &address, MessageType type, const string &displayName){
             long contactId = createContact(displayName, type);
 
-            string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES (?,?,?);";
+            string sql = "INSERT OR REPLACE INTO " ADDRESS_TABLE(type) " VALUES (?,?,?);";
             sqlite3_stmt* stmt;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             sqlv(sqlite3_bind_text(stmt, 1, address.c_str(), address.length(), SQLITE_STATIC));
             sqlv(sqlite3_bind_int(stmt, 2, 0));
             sqlv(sqlite3_bind_int64(stmt, 3, contactId));
+            sqlv(sqlite3_step(stmt));
+            sqlv(sqlite3_finalize(stmt));
         }
 
         void createContactFromAddress(const Address& addr, const string& displayName){
@@ -127,9 +129,9 @@ namespace favor {
          --------------------------------------------------------------------------------*/
 
         void AccountManager::saveHeldMessages() {
-            //id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL
-            string sentSql = "INSERT INTO " SENT_TABLE_NAME " VALUES(?,?,?,?,?)";
-            string receivedSql = "INSERT INTO " RECEIVED_TABLE_NAME " VALUES(?,?,?,?,?)";
+            //id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, body TEXT
+            string sentSql = "INSERT INTO " SENT_TABLE_NAME " VALUES(?,?,?,?,?,?)";
+            string receivedSql = "INSERT INTO " RECEIVED_TABLE_NAME " VALUES(?,?,?,?,?,?)";
             sqlite3_stmt* sentStmt;
             sqlite3_stmt* receivedStmt;
             sqlv(sqlite3_prepare(db, sentSql.c_str(), sentSql.length(), &sentStmt, NULL));
@@ -152,6 +154,7 @@ namespace favor {
             sqlv(sqlite3_bind_int64(stmt, 3, m.date));
             sqlv(sqlite3_bind_int64(stmt, 4, m.charCount));
             sqlv(sqlite3_bind_int(stmt, 5, m.media));
+            if (SAVE_BODY) sqlv(sqlite3_bind_text(stmt, 6, m.body.c_str(), m.body.length(), SQLITE_STATIC));
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_reset(stmt));
         }
@@ -170,17 +173,29 @@ namespace favor {
 
         void AccountManager::saveHeldAddresses() {
             shared_ptr<list<Address>> addrList = reader::addresses(type);
-            //Reverse sorted set does most of our work for us
-            std::set<Address, bool(*)(const Address&, const Address&)> addrSet = std::set<Address, bool(*)(const Address&, const Address&)>(addrList->begin(), addrList->end(), compareAddress);
 
+            list<Address> addrOutList = list<Address>();
+
+            for (auto it = addrList->begin(); it != addrList->end(); ++it){
+                //Insert, get state and remove from countedaddrs if exists
+                int count = it->count;
+                if (countedAddresses.count(it->addr)){
+                    //This is newer information, so we update the count and then remove what would be duplicate data later on
+                    count = countedAddresses.at(it->addr);
+                    countedAddresses.erase(it->addr);
+                }
+                addrOutList.push_back(Address(it->addr, count, it->contactId, type));
+            }
             for (auto it = countedAddresses.begin(); it != countedAddresses.end(); it++) {
-                addrSet.insert(Address (it->first, it->second, -1, type)); //Because currently unbound to any contact
+                addrOutList.push_back(Address(it->first, it->second, -1, type));
             }
 
-            auto itr = addrSet.begin();
+            addrOutList.sort(compareAddress);
+
+            auto itr = addrOutList.begin();
             int i;
-            for (i = 0; i < MAX_ADDRESSES && itr != addrSet.end(); ++i) ++itr;
-            if (i == MAX_ADDRESSES) addrSet.erase(itr, addrSet.end()); //Erase anything above our max if there are enough elements to need to
+            for (i = 0; i < MAX_ADDRESSES && itr != addrOutList.end(); ++i) ++itr;
+            if (i == MAX_ADDRESSES) addrOutList.erase(itr, addrOutList.end()); //Erase anything above our max if there are enough elements to need to
 
             //TODO: eventually we can do some guessing about current contacts here with levenshtein distance on names
 
@@ -192,7 +207,7 @@ namespace favor {
             string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES(?,?,?);";
             sqlite3_stmt* stmt;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-            for (auto it = addrSet.begin(); it != addrSet.end(); ++it){
+            for (auto it = addrOutList.begin(); it != addrOutList.end(); ++it){
                 saveAddress(*it, stmt);
             }
             sqlv(sqlite3_finalize(stmt)); //Finalizing it here is just cleanup

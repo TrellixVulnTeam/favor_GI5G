@@ -12,12 +12,6 @@ int main(int argc, char **argv) {
     initialize();
     worker::buildDatabase();
     reader::refreshAll();
-    //favor::logger::info(favor::as_string(favor::reader::accountList().front()->type));
-    //favor::logger::info(favor::reader::accountList().front()->accountName);
-    //reader::accountList()->front()->truncateTables();
-    std::shared_ptr<std::list<favor::Address>> addresses = favor::reader::addresses(favor::TYPE_EMAIL);
-    //worker::createContactFromAddress(addresses->front(), "Test Contact");
-    cout << addresses->front().addr << endl;
 
     reader::accountList()->front()->updateMessages();
     //reader::accountList()->front()->updateContacts();

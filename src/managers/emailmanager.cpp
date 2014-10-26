@@ -435,7 +435,10 @@ namespace favor {
 
         shared_ptr<list<Address>> addresses  = contactAddresses();
 
-        if (addresses->size() == 0) return;
+        if (addresses->size() == 0){
+            logger::info("Account "+accountName+" fetchMessages returned because no addresses found");
+            return;
+        }
 
         try {
             vmime::shared_ptr<vmime::net::store> st = login();

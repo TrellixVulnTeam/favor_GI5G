@@ -95,7 +95,7 @@ namespace favor {
 
             for (auto it = addrs->begin(); it != addrs->end(); it++){
                 //TODO: this could conceivably, possible, throw an exception for being out of bounds, though it shouldn't
-                //given the check we're making
+                //given the check we're making. we can catch it and rethrow it as bad data if it ever happens somehow though
                 if (it->belongsToContact()) contactHolder.at(it->contactId).addAddress(*it);
             }
 

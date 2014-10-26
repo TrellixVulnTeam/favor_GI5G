@@ -38,6 +38,7 @@ namespace favor {
 //Constants --------------------------------------------------------------------------------
 #define ADDRESS_CHECK_MESSAGE_COUNT 500 //The number of recent sent messages we look at when determining what addresses to pull
 #define MAX_ADDRESSES 100 //Max addresses that we want to hold per type
+#define SAVE_BODY true //TODO: this will eventually be a variable we get from settings or something and not a constant
 
 //Database --------------------------------------------------------------------------------
 #define DB_NAME "favor.db"
@@ -46,10 +47,6 @@ namespace favor {
 //Accounts table
 #define ACCOUNT_TABLE "accounts"
 #define ACCOUNT_TABLE_SCHEMA "(name TEXT NOT NULL, type INTEGER NOT NULL, details_json TEXT, PRIMARY KEY(name, type))"
-/*Note:
- * Frankly, the accounts table doesn't seem worth indexing. We almost exclusively read all the records from it anyway, and it's tiny.
- * The only performance gains would be on deletes, which are very infrequent.
- */
 
 //Contacts table
 /*Note:
@@ -64,7 +61,7 @@ the contact has been explicitly specified as one (whether at Favor's suggestion 
 The foreign key here can be null, and this is intentional. In cases where it is null, the address is not attached to a contact.
  */
 #define ADDRESS_TABLE(type) "addresses_" +string(MessageTypeName[type]) + ""
-#define ADDRESS_TABLE_SCHEMA(type) "(address TEXT NOT NULL, count INTEGER NOT NULL, contact_id INTEGER REFERENCES " CONTACT_TABLE(type) "(id))"
+#define ADDRESS_TABLE_SCHEMA(type) "(address TEXT NOT NULL UNIQUE, count INTEGER NOT NULL, contact_id INTEGER REFERENCES " CONTACT_TABLE(type) "(id))"
 
 #define ADDRESS_INDEX "i_" ADDRESS_TABLE
 #define ADDRESS_INDEX_SCHEMA "(contact_name)"
@@ -86,8 +83,8 @@ not even compile.
  * "But the following declaration does not result in "x" being an alias for the rowid:
  * CREATE TABLE t(x INTEGER PRIMARY KEY DESC, y, z);"
  */
-#define RECEIVED_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, PRIMARY KEY(id))"
-#define SENT_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, PRIMARY KEY(id, address))"
+#define RECEIVED_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, body TEXT, PRIMARY KEY(id))"
+#define SENT_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, body TEXT, PRIMARY KEY(id, address))"
 /*Note:
  * Date is more selective than address and in that sense might seem like a better candidate for
  * being first in the index, but we will commonly query specifying an address and no date at all.
