@@ -13,6 +13,7 @@ int main(int argc, char **argv) {
     worker::buildDatabase();
     reader::refreshAll();
 
+
     reader::accountList()->front()->updateMessages();
     //reader::accountList()->front()->updateContacts();
     

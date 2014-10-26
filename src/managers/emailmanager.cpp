@@ -192,12 +192,8 @@ namespace favor {
     }
 
     void EmailManager::handleHTML(vmime::utility::outputStream *out, stringstream &ss, shared_ptr<const vmime::htmlTextPart> part) {
-        //If this HTML part has a plain text equivalent, use that
-        if (!part->getPlainText()->isEmpty()) {
-            part->getPlainText()->extract(*out);
-            out->flush();
-        }
-        else {
+        //If vmime can't find a plaintext equivalent part, getPlainText() will be empty
+        if (part->getPlainText()->isEmpty()) {
             part->getText()->extract(*out);
             out->flush();
             bool xmlSuccess = email::toXML(ss);
@@ -210,12 +206,16 @@ namespace favor {
                 throw badMessageDataException("Unable to process HTML in email message");
             }
         }
+        //If there is a plaintext part, we have either already gotten it or will get it later in the iteration and this method doesn't
+        //need to do anything.
     }
+
 
     void EmailManager::parseMessage(bool sent, shared_ptr<vmime::net::message> m) {
         long &lastUid = sent ? lastSentUid : lastReceivedUid;
 
         shared_ptr<vmime::message> parsedMessage = m->getParsedMessage();
+
         vmime::messageParser mp(parsedMessage);
         shared_ptr<vmime::net::messageStructure> structure = m->getStructure();
         std::stringstream body;
@@ -236,7 +236,6 @@ namespace favor {
 
         std::regex utf8regex("utf-8", std::regex::ECMAScript | std::regex::icase);
 
-
         for (int i = 0; i < mp.getTextPartCount(); ++i) {
             vmime::shared_ptr<const vmime::textPart> tp = mp.getTextPartAt(i);
             if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_HTML) {
@@ -255,7 +254,11 @@ namespace favor {
                 }
             }
             else if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_PLAIN) {
-                tp->getText()->extract(os);
+                    tp->getText()->extract(os);
+                    os.flush();
+            }
+            else {
+                //Some formatting of text we don't know how to handle
             }
         }
 

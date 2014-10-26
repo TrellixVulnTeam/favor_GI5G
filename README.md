@@ -1,7 +1,6 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - Getting double bodies on messages sent to multiple people?
  - Fetch methods for specific contacts? What do we do when our "last fetch" id/date/whatever is up to date and someone adds a new address they want fetched
  - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts')
  - g++ 4.9 on Android? Necessary for <regex> implementations. Also very our exceptions as inherting from runtime_error work on Android
