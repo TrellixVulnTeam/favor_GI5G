@@ -154,6 +154,17 @@ namespace favor {
             }
         }
 
+        if (json.HasMember(addrListName)){
+            rapidjson::Value addrsVal = json[addrListName];
+            if (!addrsVal.IsArray()) throw badUserDataException("Managed addresses list improperly formatted in "+accountName +" json");
+            else {
+                for (auto it = addrsVal.Begin(); it!= addrsVal.End(); ++it){
+                    if (!regex_match(it->GetString(), emailRegex)) logger::warning("Managed address "+string(it->GetString())+" does not match email regex");
+                    managedAddresses.insert(it->GetString());
+                }
+            }
+        }
+
         getJsonLong(lastReceivedUid, 1); //Uids start from 1, always
         getJsonLong(lastSentUid, 1);
         getJsonLong(lastReceivedUidValidity, -1); // <0 if we don't know
@@ -432,15 +443,32 @@ namespace favor {
         setJsonLong(lastSentUid);
         setJsonLong(lastReceivedUidValidity);
         setJsonLong(lastSentUidValidity);
+        rapidjson::Value addrsVal;
+        addrsVal.SetArray(); //TODO: I assume this does what I think it does? It sure looks like it does
+        for (auto it = managedAddresses.begin(); it != managedAddresses.end(); ++it){
+            addrsVal.PushBack(it->c_str(), json.GetAllocator());
+        }
+        json.AddMember(addrListName, addrsVal, json.GetAllocator());
     }
 
     void EmailManager::fetchMessages() {
 
         shared_ptr<list<Address>> addresses  = contactAddresses();
 
+
         if (addresses->size() == 0){
             logger::info("Account "+accountName+" fetchMessages returned because no addresses found");
             return;
+        }
+
+        //TODO: get addresses, updated the managed address list and make note of any new ones so we can run a specific UID-unlimited fetch on them
+        //TODO: we should be careful here though, and maybe add stuff later, because we don't want to mark a contact as up to date if our UID-unlimited fetch fails
+        //though it shouldn't save if we fail, but the manager will still have state like this is an up to date address... think about this with more sleep.
+        for (auto it = addresses->begin(); it != addresses->end(); ++it){
+            if (managedAddresses.insert(it->addr).second){
+                logger::info("New address "+it->addr+" detected");
+                //If that was a fresh insert it means this is a newly managed address
+            }
         }
 
         try {

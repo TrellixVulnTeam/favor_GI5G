@@ -10,9 +10,9 @@
 //in this case actually ends up with us being less bug prone
 #define setJsonLong(name) if (json.HasMember(#name)) json[#name].SetInt64(name);\
     else {\
-        rapidjson::Value val;\
-        val.SetInt64(name);\
-        json.AddMember(#name, val, json.GetAllocator());\
+        rapidjson::Value addrsVal;\
+        addrsVal.SetInt64(name);\
+        json.AddMember(#name, addrsVal, json.GetAllocator());\
     }
 
 

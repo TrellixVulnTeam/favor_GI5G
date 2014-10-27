@@ -18,7 +18,7 @@ namespace favor {
             json.Parse(detailsJson.c_str());
             if (json.HasParseError()) {
                 logger::error("Parse error on json: \"" + detailsJson + "\". RapidJson says: " + rapidjson::GetParseError_En(json.GetParseError()));
-                throw badUserDataException("Failed to parse JSON details");
+                throw badUserDataException("Failed to parse JSON details for account "+accountName);
             }
             heldMessages = new std::vector<favor::Message>;
         }
