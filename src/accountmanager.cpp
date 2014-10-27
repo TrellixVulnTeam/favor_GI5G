@@ -1,12 +1,12 @@
 #include "accountmanager.h"
 #include "worker.h"
 #include "logger.h"
+#include "reader.h"
 
 //Managers
 #ifdef FAVOR_EMAIL_MANAGER
 
 #include "emailmanager.h"
-#include "reader.h"
 
 #endif
 
@@ -163,7 +163,7 @@ namespace favor {
 
         shared_ptr<list<Address>> AccountManager::contactAddresses() {
             shared_ptr<list<Address>> ret = make_shared<list<Address>>();
-            auto contacts = ::favor::reader::contactList(type); //TODO: this line won't compile on android ("reader" not delcared?) for reasons entirely beyond me
+            auto contacts = reader::contactList(type);
             for (auto it = contacts->begin(); it != contacts->end(); ++it){
                 for (int i = 0; i < it->getAddresses().size(); ++i){
                     ret->push_back(it->getAddresses()[i]);
@@ -173,8 +173,7 @@ namespace favor {
         }
 
 
-        //AccountManagers are pretty lightweight so they don't need to be on the heap for memory reasons, but rather for
-        //quantity management reasons, as they should never be copied and there should only be one per account
+        //AccountManagers are pretty lightweight so they don't need to be on the heap for memory reasons, but we have to use pointers for polymorphism
         AccountManager* AccountManager::buildManager(string accNm, favor::MessageType typ, string detailsJson) {
             switch (typ) {
                 #ifdef FAVOR_EMAIL_MANAGER
