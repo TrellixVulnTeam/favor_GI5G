@@ -117,6 +117,8 @@ namespace favor {
         };
     }
 
+    const char* EmailManager::addrListName  = "managedAddresses";
+
     //TODO: test this with bad URLS, and an unrecognized email+custom URL
     EmailManager::EmailManager(string accNm, string detailsJson)
             : AccountManager(accNm, TYPE_EMAIL, detailsJson), serverURL("imap://bad.url:0") {
@@ -155,7 +157,7 @@ namespace favor {
         }
 
         if (json.HasMember(addrListName)){
-            rapidjson::Value addrsVal = json[addrListName];
+            rapidjson::Value& addrsVal = json[addrListName];
             if (!addrsVal.IsArray()) throw badUserDataException("Managed addresses list improperly formatted in "+accountName +" json");
             else {
                 for (auto it = addrsVal.Begin(); it!= addrsVal.End(); ++it){
@@ -446,9 +448,11 @@ namespace favor {
         rapidjson::Value addrsVal;
         addrsVal.SetArray(); //TODO: I assume this does what I think it does? It sure looks like it does
         for (auto it = managedAddresses.begin(); it != managedAddresses.end(); ++it){
-            addrsVal.PushBack(it->c_str(), json.GetAllocator());
+            addrsVal.PushBack(rapidjson::Value(it->c_str(), json.GetAllocator()).Move(), json.GetAllocator());
         }
-        json.AddMember(addrListName, addrsVal, json.GetAllocator());
+        //TODO: I don't know if this assignment will work if it wasn't there to begin with; if not, the constructor
+        //should add it in cases where it's not there
+        json[addrListName] = addrsVal;
     }
 
     void EmailManager::fetchMessages() {

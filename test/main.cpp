@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
     cout << "test member count " << test.MemberCount() << endl;
     cout << "test has trackingAddresses " << test.HasMember("trackingAddresses") << endl;
     string name = "trackingAddresses";
-    vector<string>
+    //vector<string>
     if (test.HasMember(name.c_str())) {
 
     }

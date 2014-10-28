@@ -27,7 +27,7 @@ namespace favor {
         long lastReceivedUidValidity;
         string password;
         vmime::utility::url serverURL;
-        static char constexpr* addrListName = "managedAddresses";
+        static const char* addrListName;
         std::set<string> managedAddresses;
 
         shared_ptr<vmime::net::store> login();
