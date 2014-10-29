@@ -141,7 +141,7 @@ namespace favor {
             string::iterator utf8End = utf8::find_invalid(msg.begin(), msg.end());
             if (utf8End != msg.end()) {
                 logger::warning("Message body with invalid formatting detected.");
-                //TODO: log the valid/invalid portions separately
+                //TODO: log the valid/invalid portions separately. also potentially consider discarding this, because in many cases it's likely to be entirely unusable
                 string temp;
                 utf8::replace_invalid(msg.begin(), msg.end(), std::back_inserter(temp));
                 msg = temp;

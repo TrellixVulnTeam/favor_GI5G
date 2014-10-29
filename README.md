@@ -1,8 +1,8 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - Japanese support is going to require we handle the "shiftJIS" (and probably "big5") encoding, because VMIME is having none of it. Look into detecting this (and any other encodings that tidyhtml handles
- but vmime doesn't) and using TIDY to convert the text, trying to avoid any extra HTML work. It'd also be better if we knew tidy worked on Android so we could count on it for doing this in other
+ - Japanese support is going to require we handle the "shiftJIS" ("big5" won't hurt either while we're at it, though it's Chinese) encoding, because VMIME is having none of it. 
+ Look into detecting this (and any other encodings that tidyhtml handles but vmime doesn't) and using TIDY to convert the text, trying to avoid any extra HTML work. It'd also be better if we knew tidy worked on Android so we could count on it for doing this in other
  situations, but that just takes some testing.
  - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts')
  - g++ 4.9 on Android? Necessary for <regex> implementations. Also verify our exceptions as inherting from runtime_error work on Android
