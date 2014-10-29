@@ -13,28 +13,7 @@ int main(int argc, char **argv) {
     worker::buildDatabase();
     reader::refreshAll();
 
-    rapidjson::Document test;
-    test.Parse("{\"trackingAddresses\":[\"test1@email.com\", \"test2@email.com\"]}");
-    cout << "parse error? " << test.HasParseError() << endl;
-    cout << "test member count " << test.MemberCount() << endl;
-    cout << "test has trackingAddresses " << test.HasMember("trackingAddresses") << endl;
-    string name = "trackingAddresses";
-    //vector<string>
-    if (test.HasMember(name.c_str())) {
-
-    }
-
-
-    rapidjson::Value val;
-    val = test["trackingAddresses"];
-    cout << "trackingAddress array? " << val.IsArray() << endl;
-    cout << val.Size() << endl;
-    for (auto it = val.Begin(); it!= val.End(); ++it){
-        cout << it->GetString() << endl;
-    }
-
-
-    //reader::accountList()->front()->updateMessages();
+    reader::accountList()->front()->updateMessages();
     //reader::accountList()->front()->updateContacts();
     
 

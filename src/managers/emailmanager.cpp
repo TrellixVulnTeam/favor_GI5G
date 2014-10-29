@@ -166,6 +166,11 @@ namespace favor {
                 }
             }
         }
+        else {
+            rapidjson::Value addrsVal;
+            addrsVal.SetArray();
+            json.AddMember(rapidjson::Value(addrListName, json.GetAllocator()).Move(), addrsVal, json.GetAllocator());
+        }
 
         getJsonLong(lastReceivedUid, 1); //Uids start from 1, always
         getJsonLong(lastSentUid, 1);
@@ -354,11 +359,11 @@ namespace favor {
         string addressField = sent ? "TO" : "FROM";
         for (int i = 1; i < addresses->size(); ++i) {cmd += "OR ";} //One less "OR " than the number of addresses is important, so we start from 1 here
         for (auto it = addresses->begin(); it != addresses->end(); ++it) {cmd += (addressField + " \"" + it->addr + "\" ");}
-        //Have to add one to startUid here or we'll keep getting the last message we fetched
         if (endUid != -1) cmd += ("UID " + as_string(startUid + 1) + ":" + as_string(endUid));
-        else cmd += ("UID " + as_string(startUid + 1) + ":*"); //In the case where we have no endUid, it is possible we will pick up a duplicate message. This is not ideal, but also not a catastrophe
+        else cmd += ("UID " + as_string(startUid) + ":*"); //In the case where we have no endUid, it is possible we will pick up a duplicate message.
         return cmd;
     }
+
 
     pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> EmailManager::findSentRecFolder(shared_ptr<vmime::net::store> st) {
         vector<shared_ptr<vmime::net::folder>> folders = st->getRootFolder()->getFolders(true);
@@ -398,7 +403,7 @@ namespace favor {
 
     }
 
-    void EmailManager::fetchFromFolder(shared_ptr<vmime::net::folder> folder, shared_ptr<const list<Address>> addresses) {
+    void EmailManager::fetchFromFolder(shared_ptr<vmime::net::folder> folder, shared_ptr<const list<Address>> addresses, bool catchUp = false) {
         bool sent = (folder->getName().getBuffer() != "INBOX");
         long &lastUid = sent ? lastSentUid : lastReceivedUid;
         long &lastUidValidity = sent ? lastSentUidValidity : lastReceivedUidValidity;
@@ -420,12 +425,21 @@ namespace favor {
 
         long nextUid = status->getUIDNext();
         string cmd;
-        if (nextUid != 0) {
-            cmd = searchCommand(sent, addresses, lastUid, nextUid);
+        if (catchUp){
+            if (lastUid == 1) return; //There's no need for a catch up fetch if the normal one is going to get everything anyway
+            cmd = searchCommand(sent, addresses, 1, lastUid); //From the first message to the last one we're ignoring
         }
         else {
-            logger::warning("Server would not provide next UID");
-            cmd = searchCommand(sent, addresses, lastUid);
+            if (nextUid != 0) {
+                //Have to add one to startUid here or we'll keep getting the last message we fetched
+                cmd = searchCommand(sent, addresses, lastUid+1, nextUid);
+            }
+            else {
+                //This represents a case where we're likely to get the last item in the mailbox whether we like it or not,
+                //because we don't know what the largest UID is so we have to use *, meaning we are gauranteed to fetch at least the last message which may be a duplicate
+                logger::warning("Server would not provide next UID");
+                cmd = searchCommand(sent, addresses, lastUid+1);
+            }
         }
 
         if (!folder->isOpen()) folder->open(vmime::net::folder::MODE_READ_ONLY);
@@ -446,18 +460,17 @@ namespace favor {
         setJsonLong(lastReceivedUidValidity);
         setJsonLong(lastSentUidValidity);
         rapidjson::Value addrsVal;
-        addrsVal.SetArray(); //TODO: I assume this does what I think it does? It sure looks like it does
+        addrsVal.SetArray();
         for (auto it = managedAddresses.begin(); it != managedAddresses.end(); ++it){
             addrsVal.PushBack(rapidjson::Value(it->c_str(), json.GetAllocator()).Move(), json.GetAllocator());
         }
-        //TODO: I don't know if this assignment will work if it wasn't there to begin with; if not, the constructor
-        //should add it in cases where it's not there
         json[addrListName] = addrsVal;
     }
 
     void EmailManager::fetchMessages() {
 
         shared_ptr<list<Address>> addresses  = contactAddresses();
+        shared_ptr<list<Address>> newAddresses  = make_shared<list<Address>>();
 
 
         if (addresses->size() == 0){
@@ -465,20 +478,20 @@ namespace favor {
             return;
         }
 
-        //TODO: get addresses, updated the managed address list and make note of any new ones so we can run a specific UID-unlimited fetch on them
-        //TODO: we should be careful here though, and maybe add stuff later, because we don't want to mark a contact as up to date if our UID-unlimited fetch fails
-        //though it shouldn't save if we fail, but the manager will still have state like this is an up to date address... think about this with more sleep.
-        for (auto it = addresses->begin(); it != addresses->end(); ++it){
-            if (managedAddresses.insert(it->addr).second){
-                logger::info("New address "+it->addr+" detected");
-                //If that was a fresh insert it means this is a newly managed address
-            }
-        }
-
         try {
             vmime::shared_ptr<vmime::net::store> st = login();
 
             pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
+            for (auto it = addresses->begin(); it != addresses->end(); ++it){
+                if (!managedAddresses.count(it->addr)){
+                    logger::info("New address "+it->addr+" detected");
+                    newAddresses->push_back(*it);
+                }
+            }
+            if (newAddresses->size()){
+                fetchFromFolder(sentRecFolders.first, newAddresses, true);
+                fetchFromFolder(sentRecFolders.second, newAddresses, true);
+            }
             fetchFromFolder(sentRecFolders.first, addresses); //Sent folder
             fetchFromFolder(sentRecFolders.second, addresses); //Receied folder
             //st->disconnect(); //It seems like we'd want to call this, but the disconnect command is issued fine without it, and VMIME actually starts spitting out threading
@@ -493,6 +506,9 @@ namespace favor {
             logger::error("Unhandled VMIME exception, says: " + string(e.what()));
             throw emailException();
         }
+
+        //Many of these inserts will be redundant, but it's just our way of updating the fetch data
+        for (auto it = addresses->begin(); it != addresses->end(); ++it) managedAddresses.insert(it->addr);
         updateFetchData();
 
     }
