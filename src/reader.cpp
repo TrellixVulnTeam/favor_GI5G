@@ -15,7 +15,7 @@ namespace favor {
         }
 
         void initialize() {
-            sqlv(sqlite3_open_v2(DB_NAME, &db, SQLITE_OPEN_READONLY, NULL));
+            sqlv(sqlite3_open_v2(DB_PATH_FULL, &db, SQLITE_OPEN_READONLY, NULL));
             _accounts = new std::list<AccountManager*>;
             for (int i = 0; i < NUMBER_OF_TYPES; ++i){
                 _contacts[i] = new std::list<Contact>;

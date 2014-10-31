@@ -8,6 +8,7 @@ using namespace std;
 
 namespace favor {
     const char *MessageTypeName[] = {"email", "androidtext", "line", "skype"};
+    const char* dbPath = "."; //TODO: This can eventually be something else, but we'll need to ensure the directory exists in that case
 
     void initialize() {
         sqlite3_enable_shared_cache(1);

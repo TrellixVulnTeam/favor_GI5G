@@ -21,7 +21,7 @@ namespace favor {
         }
 
         void initialize() {
-            sqlv(sqlite3_open(DB_NAME, &db));
+            sqlv(sqlite3_open(DB_PATH_FULL, &db));
             exec("PRAGMA foreign_keys = ON;");
         }
 

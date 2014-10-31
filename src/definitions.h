@@ -41,7 +41,7 @@ namespace favor {
 #define SAVE_BODY true //TODO: this will eventually be a variable we get from settings or something and not a constant
 
 //Database --------------------------------------------------------------------------------
-#define DB_NAME "favor.db"
+#define DB_PATH_FULL (string(favor::dbPath)+"/favor.db").c_str()
 
 
 //Accounts table

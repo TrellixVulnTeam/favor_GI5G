@@ -35,6 +35,8 @@ namespace favor {
     class Address;
     class Contact;
 
+    extern const char* dbPath;
+
     //Basic
     void initialize();
 
