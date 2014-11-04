@@ -92,6 +92,8 @@ namespace favor {
 
             void deindexTables();
 
+            string getJson();
+
             //Work
             void updateMessages();
 

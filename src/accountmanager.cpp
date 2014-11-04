@@ -73,6 +73,10 @@ namespace favor {
             saveFetchData();
         }
 
+        string AccountManager::getJson() {
+            return as_string(json);
+        }
+
         bool AccountManager::compareAddress(const Address &lhs, const Address &rhs) {
             //Results in a largest first array
             if (lhs.contactId > -1){

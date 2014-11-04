@@ -13,6 +13,11 @@ DEBUG - Also pretty obvious, it's true when we're building for debug
 #else
 #define D(x)
 #endif
+
+#ifdef ANDROID
+#define CLASS_PATH "com/favor/library/"
+#endif
+
 /*
  * For ease of use reasons, everywhere we use SQLite in favor, there should be an
  * sqlite* variable available named "db". If there's an exception to this rule, the 

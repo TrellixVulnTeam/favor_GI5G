@@ -3,6 +3,7 @@
 
 #include "jni_reader.h"
 #include "jni_worker.h"
+#include "jni_accountmanager.h"
 #include "../logger.h"
 
 extern "C" {
@@ -10,10 +11,10 @@ extern "C" {
 //Java, then package name, then class name, then method name, separated by underscores (also underscores per "." in the package name)
 //Basically if you get an error calling this stuff, the solution is replacing every . in the error with an underscore
 
-#define CLASS_PATH "com/favor/library/"
 const char* coreClassPath = CLASS_PATH "Core";
 const char* readerClassPath = CLASS_PATH "Reader";
-const char* writerClasspath = CLASS_PATH "Writer";
+const char* writerClassPath = CLASS_PATH "Writer";
+const char* accountManagerClassPath = CLASS_PATH "AccountManager";
 
 JNIEXPORT jstring JNICALL helloWorld(JNIEnv* env, jobject obj){
     return env->NewStringUTF("Hello from Favor's native interface!");
@@ -58,16 +59,32 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 
     jclass core = env->FindClass(coreClassPath);
     jclass reader = env->FindClass(readerClassPath);
-    jclass writer = env->FindClass(writerClasspath);
+    jclass writer = env->FindClass(writerClassPath);
+    jclass accountManager = env->FindClass(accountManagerClassPath);
 
-    //TODO: write something here before we fail
-    if (!core) return -1;
-    if (!reader) return -1;
-    if (!writer) return -1;
-    // Get jclass with env->FindClass.
-    // Register methods with env->RegisterNatives.
+    if (!core){
+        favor::logger::error("JNI could not find core favor library class");
+        favor::jni::throwFavorException(env, "Could not initialize Favor: missing class");
+        return -1;
+    }
+    if (!reader){
+        favor::logger::error("JNI could not find reader favor library class");
+        favor::jni::throwFavorException(env, "Could not initialize Favor: missing class");
+        return -1;
+    }
+    if (!writer) {
+        favor::logger::error("JNI could not find writer favor library class");
+        favor::jni::throwFavorException(env, "Could not initialize Favor: missing class");
+        return -1;
+    }
+    if (!accountManager){
+        favor::logger::error("JNI could not find accountManager library class");
+        favor::jni::throwFavorException(env, "Could not initialize Favor: missing class");
+        return -1;
+    }
 
     env->RegisterNatives(core, coreMethodTable, sizeof(coreMethodTable) / sizeof(coreMethodTable[0]));
+    env->RegisterNatives(reader, favor::jni::readerMethodTable, sizeof(favor::jni::readerMethodTable) / sizeof (favor::jni::readerMethodTable[0]));
 
     return JNI_VERSION_1_6;
 }
