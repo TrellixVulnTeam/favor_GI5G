@@ -13,6 +13,8 @@ namespace favor {
         //Database
         void buildDatabase();
 
+        void dropDatabase();
+
         void truncateDatabase();
 
         void indexDatabase();

@@ -42,6 +42,13 @@ namespace favor {
             //We don't build per account here because there won't be any accounts right after we just built the database
         }
 
+        void dropDatabase() {
+            //TODO: This method screws up our DB connections, and needs some work before it's safe ot use normally.
+            logger::info(string("Removing ")+ DB_PATH_FULL);
+            int res = remove(DB_PATH_FULL);
+            if (res) logger::warning("Could not successfully delete database");
+        }
+
         void beginTransaction() {
             if (transacting) throw sqliteException("Cannot begin transaction while transacting");
             exec("BEGIN IMMEDIATE TRANSACTION;");
@@ -71,7 +78,6 @@ namespace favor {
                 exec("DELETE FROM " ADDRESS_TABLE(i) ";");
             }
             auto l = reader::accountList();
-            logger::info("PRELOOP, accountList size "+as_string((int)l->size()));
             for (auto it = l->begin(); it != l->end(); ++it) {
                 (*it)->truncateTables();
                 (*it)->destroy();

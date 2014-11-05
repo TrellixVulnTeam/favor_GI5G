@@ -1,4 +1,4 @@
-#include <reader.h>
+#include "reader.h"
 #include "accountmanager.h"
 #include "emailmanager.h"
 #include "logger.h"

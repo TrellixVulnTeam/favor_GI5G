@@ -10,6 +10,12 @@
 
 #endif
 
+#ifdef ANDROID
+
+#include "androidtextmanager.h"
+
+#endif
+
 using namespace std;
 namespace favor {
     namespace worker {
@@ -184,9 +190,10 @@ namespace favor {
                 case TYPE_EMAIL:
                     return new EmailManager(accNm, detailsJson);
                 #endif
+                #ifdef ANDROID
                 case TYPE_ANDROIDTEXT:
-                    //TODO: THIS NOT BEING IMPLEMENTED IS NO GOOD FOR ANDROID
-                    break;
+                    return new AndroidTextManager(accNm, detailsJson);
+                #endif
                 default:
                     logger::error("Attempt to initialize manager for unsupported type " + as_string(typ));
                     assert(false);

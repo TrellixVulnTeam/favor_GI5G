@@ -5,6 +5,7 @@
 #include "jni_worker.h"
 #include "jni_accountmanager.h"
 #include "../logger.h"
+#include "../managers/androidtextmanager.h"
 
 extern "C" {
 
@@ -82,6 +83,9 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
         favor::jni::throwFavorException(env, "Could not initialize Favor: missing class");
         return -1;
     }
+
+    //It's weird this can happen before init, but init may end up called in this method eventually and this is crucial in any case
+    favor::AndroidTextManager::setVM(vm);
 
     env->RegisterNatives(core, coreMethodTable, sizeof(coreMethodTable) / sizeof(coreMethodTable[0]));
     env->RegisterNatives(reader, favor::jni::readerMethodTable, sizeof(favor::jni::readerMethodTable) / sizeof (favor::jni::readerMethodTable[0]));

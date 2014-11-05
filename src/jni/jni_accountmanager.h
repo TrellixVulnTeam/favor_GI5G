@@ -23,6 +23,7 @@ namespace favor{
             string detailsJsonString(jsonChars);
             logger::info("Create account "+nameString+" of type "+MessageTypeName[(int)type]);
             try {
+                //TODO: MUCH TESTCODE, LOGGING AND TRUNCATION TO BE REMOVED
                 logger::info("BEFORE DB HIT, truncating tables");
                 worker::truncateDatabase();
                 logger::info("POST TRUNCATE");
