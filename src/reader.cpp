@@ -1,4 +1,5 @@
 #include "reader.h"
+#include "logger.h"
 
 namespace favor {
     namespace reader {

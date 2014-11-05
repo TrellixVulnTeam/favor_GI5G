@@ -85,6 +85,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 
     env->RegisterNatives(core, coreMethodTable, sizeof(coreMethodTable) / sizeof(coreMethodTable[0]));
     env->RegisterNatives(reader, favor::jni::readerMethodTable, sizeof(favor::jni::readerMethodTable) / sizeof (favor::jni::readerMethodTable[0]));
+    env->RegisterNatives(accountManager, favor::jni::accountManagerMethodTable, sizeof(favor::jni::accountManagerMethodTable) / sizeof(favor::jni::accountManagerMethodTable[0]));
 
     return JNI_VERSION_1_6;
 }

@@ -66,14 +66,15 @@ namespace favor {
             * When the WHERE is omitted from a DELETE statement and the table being deleted has no triggers,
             * SQLite uses an optimization to erase the entire table content without having to visit each row of the table individually.
             */
-            exec("DELETE FROM " ACCOUNT_TABLE);
             for (int i = 0; i < NUMBER_OF_TYPES; ++i) {
                 exec("DELETE FROM " CONTACT_TABLE(i) ";");
                 exec("DELETE FROM " ADDRESS_TABLE(i) ";");
             }
             auto l = reader::accountList();
+            logger::info("PRELOOP, accountList size "+as_string((int)l->size()));
             for (auto it = l->begin(); it != l->end(); ++it) {
                 (*it)->truncateTables();
+                (*it)->destroy();
             }
         }
 

@@ -185,6 +185,7 @@ namespace favor {
                     return new EmailManager(accNm, detailsJson);
                 #endif
                 case TYPE_ANDROIDTEXT:
+                    //TODO: THIS NOT BEING IMPLEMENTED IS NO GOOD FOR ANDROID
                     break;
                 default:
                     logger::error("Attempt to initialize manager for unsupported type " + as_string(typ));

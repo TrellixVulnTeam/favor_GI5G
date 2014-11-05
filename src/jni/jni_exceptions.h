@@ -5,7 +5,7 @@
 
 namespace favor{
     namespace jni{
-        jint throwFavorException(JNIEnv* env, char* message){
+        jint throwFavorException(JNIEnv* env, const char* message){
             jclass exClass = env->FindClass("com/favor/library/FavorException");
             if (exClass == NULL) {
                 //TODO: we're in trouble now. maybe fall back on some more generic runtime exception?
