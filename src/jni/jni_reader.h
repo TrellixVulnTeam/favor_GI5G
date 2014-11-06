@@ -9,25 +9,25 @@
 namespace favor{
     namespace jni{
 
-        //TODO: it seems to work for the most part, but we need to test it with stuff in the database.
+        //JNI helper method, though not actually exposed to the java layer
+        AccountManager* findAccountManager(const string& name, const MessageType type){
+            //This runs in N, which is objectively slow, but this doens't need to be performant
+            //and there should only ever be a tiny number of accounts anyway
+            auto accounts = reader::accountList();
+            for (auto it = accounts->begin(); it != accounts->end(); ++it){
+                if ((*it)->accountName == name && (*it)->type == type){
+                    return *it;
+                }
+            }
+            return NULL;
+        }
+
         JNIEXPORT jobjectArray JNICALL accountManagers(JNIEnv* env, jclass clss){
             jclass accountManager = env->FindClass("com/favor/library/AccountManager");
             jmethodID accountManagerConstructor = env->GetMethodID(accountManager, "<init>", "(Ljava/lang/String;I)V");
-            if (accountManager == NULL || accountManagerConstructor == NULL){
-                logger::error("Could not find Accountmanager class and/or its constructor");
-                env->ExceptionClear();
-                throwFavorException(env, "Could not find Accountmanager class and/or its constructor");
-                return NULL;
-            }
 
             jclass androidManager = env->FindClass("com/favor/library/AndroidTextManager");
             jmethodID androidManagerConstructor = env->GetMethodID(androidManager, "<init>", "(Ljava/lang/String;)V");
-            if (androidManager == NULL | androidManagerConstructor == NULL){
-                logger::error("Could not find AndroidTextManager class and/or its constructor");
-                env->ExceptionClear();
-                throwFavorException(env, "Could not find AndroidTextManager class and/or its constructor");
-                return NULL;
-            }
 
 
             auto accounts = reader::accountList();

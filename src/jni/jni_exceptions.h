@@ -3,6 +3,21 @@
 #include <jni.h>
 #include "../favor.h"
 
+#define jniExcept(x) try {\
+    x\
+}\
+catch (favor::exception &e){\
+    throwFavorException(env, e.what());\
+}\
+
+#define jniExceptReturnNull(x) try {\
+    x\
+}\
+catch (favor::exception &e){\
+    throwFavorException(env, e.what());\
+    return NULL;\
+}\
+
 namespace favor{
     namespace jni{
         jint throwFavorException(JNIEnv* env, const char* message){
