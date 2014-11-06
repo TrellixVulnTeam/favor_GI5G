@@ -5,7 +5,6 @@ Todo (in order):
  Look into detecting this (and any other encodings that tidyhtml handles but vmime doesn't) and using TIDY to convert the text, trying to avoid any extra HTML work. It'd also be better if we knew tidy worked on Android so we could count on it for doing this in other
  situations, but that just takes some testing.
  - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts')
- - g++ 4.9 on Android? Necessary for <regex> implementations. Also verify our exceptions as inherting from runtime_error work on Android
  - Basic unit tests
  - What do we when we can't parse a message for whatever reason? Have a specific method to export as much data as possible?
  - When account managers fail to save their held messages, they can end up with state that's potentially inconsistent - it might be wise to look at this and consider situations in which

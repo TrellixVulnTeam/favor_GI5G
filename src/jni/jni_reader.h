@@ -28,7 +28,7 @@ namespace favor{
 
             jclass androidManager = env->FindClass("com/favor/library/AndroidTextManager");
             jmethodID androidManagerConstructor = env->GetMethodID(androidManager, "<init>", "(Ljava/lang/String;)V");
-
+            
 
             auto accounts = reader::accountList();
             jobjectArray arr = (jobjectArray) env->NewObjectArray(accounts->size(), accountManager, 0);
