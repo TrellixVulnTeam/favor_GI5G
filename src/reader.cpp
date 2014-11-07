@@ -7,11 +7,11 @@ namespace favor {
             sqlite3 *db;
 
             std::mutex accountMutex;
-            thread_local bool accountsHeld = false;
+            thread_local int accountsHolderCount = 0;
             list<AccountManager*>* _accounts; //Have to hold pointers for polymorphism, list is pointer for uniformity with other data
 
             std::mutex contactsMutex[NUMBER_OF_TYPES];
-            thread_local bool contactsHeld[NUMBER_OF_TYPES] = {false};
+            thread_local int contactsHolderCount[NUMBER_OF_TYPES] = {0};
             list<Contact>* _contacts[NUMBER_OF_TYPES];
         }
 
@@ -28,18 +28,14 @@ namespace favor {
         }
 
         DataLock<list<AccountManager*>> accountList() {
-            if (accountsHeld) throw threadingException("Cannot hold two locks on accounts in same thread");
-            else accountsHeld = true;
             //The DataLock constructor will block if we can't get a lock.
-            return DataLock<list<AccountManager*>>(accountMutex, &accountsHeld, _accounts);
+            return DataLock<list<AccountManager*>>(&accountMutex, &accountsHolderCount, _accounts);
         }
 
 
         DataLock<list<Contact>> contactList(const MessageType& t){
-            if (contactsHeld[t]) throw threadingException("Cannot hold two locks on same type in same thread");
-            else contactsHeld[t] = true;
             //The DataLock constructor will block if we can't get a lock.
-            return DataLock<list<Contact>>(contactsMutex[t], &contactsHeld[t], _contacts[t]);
+            return DataLock<list<Contact>>(&contactsMutex[t], &contactsHolderCount[t], _contacts[t]);
         }
 
         void removeAccount(AccountManager* account){

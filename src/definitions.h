@@ -35,7 +35,7 @@ class& operator=(const class&&) = delete;
 //Types --------------------------------------------------------------------------------
 namespace favor {
     enum MessageType {
-        TYPE_EMAIL, TYPE_ANDROIDTEXT, TYPE_LINE, TYPE_SKYPE, NUMBER_OF_TYPES
+        TYPE_EMAIL = 0, TYPE_ANDROIDTEXT = 1, TYPE_LINE = 2, TYPE_SKYPE = 3, NUMBER_OF_TYPES = 4
     };
     extern const char *MessageTypeName[];
 }

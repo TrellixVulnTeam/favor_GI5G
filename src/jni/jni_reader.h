@@ -28,7 +28,7 @@ namespace favor{
 
             jclass androidManager = env->FindClass("com/favor/library/AndroidTextManager");
             jmethodID androidManagerConstructor = env->GetMethodID(androidManager, "<init>", "(Ljava/lang/String;)V");
-            
+
 
             auto accounts = reader::accountList();
             jobjectArray arr = (jobjectArray) env->NewObjectArray(accounts->size(), accountManager, 0);
@@ -42,6 +42,7 @@ namespace favor{
             int i = 0;
             for (auto it = accounts->begin(); it != accounts->end(); ++it){
                 if ((*it)->type == TYPE_ANDROIDTEXT){
+                    logger::info("MAKE ANDROID TEXT MANAGER");
                     jobject obj = env->NewObject(androidManager, androidManagerConstructor, env->NewStringUTF((*it)->accountName.c_str()));
                     env->SetObjectArrayElement(arr, i, obj);
                     if (obj == NULL || env->ExceptionOccurred()){
@@ -50,6 +51,7 @@ namespace favor{
                     }
                 }
                 else {
+                    logger::info("MAKE GENERIC MANAGER. ANDROID TEXT TYPE:"+as_string((int) TYPE_ANDROIDTEXT)+" MANAGER TYPE:"+as_string((int)(*it)->type));
                     jobject obj = env->NewObject(accountManager, accountManagerConstructor, env->NewStringUTF((*it)->accountName.c_str()), (*it)->type);
                     env->SetObjectArrayElement(arr, i, obj);
                     if (obj == NULL || env->ExceptionOccurred()){

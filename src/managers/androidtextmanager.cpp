@@ -1,29 +1,11 @@
 #include "androidtextmanager.h"
 
 namespace favor{
-    const char* AndroidTextManager::addrListName  = "managedAddresses";
     JavaVM* AndroidTextManager::vm = NULL;
 
-    AndroidTextManager::AndroidTextManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_EMAIL, detailsJson) {
-        if (json.HasMember(addrListName)){
-            rapidjson::Value& addrsVal = json[addrListName];
-            if (!addrsVal.IsArray()) throw badUserDataException("Managed addresses list improperly formatted in "+accountName +" json");
-            else {
-                for (auto it = addrsVal.Begin(); it!= addrsVal.End(); ++it){
-                    //TODO: check to make sure all of the addresses are properly formatted phone numbers
-                    managedAddresses.insert(it->GetString());
-                }
-            }
-        }
-        else {
-            rapidjson::Value addrsVal;
-            addrsVal.SetArray();
-            json.AddMember(rapidjson::Value(addrListName, json.GetAllocator()).Move(), addrsVal, json.GetAllocator());
-        }
-    }
+    AndroidTextManager::AndroidTextManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_ANDROIDTEXT, detailsJson) {}
 
     void AndroidTextManager::setVM(JavaVM* inputVm){
-        //TODO: vm is undefined referencel? why?
         vm = inputVm;
     }
 

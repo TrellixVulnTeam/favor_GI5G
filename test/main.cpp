@@ -13,7 +13,8 @@ int main(int argc, char **argv) {
     worker::buildDatabase();
     reader::refreshAll();
 
-    reader::accountList()->front()->updateMessages();
+    AccountManager::addAccount("skypetest", favor::TYPE_SKYPE, "{}");
+   // reader::accountList()->front()->destroy();
     //reader::accountList()->front()->updateContacts();
     
 

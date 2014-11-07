@@ -20,9 +20,7 @@ namespace favor {
         void updateFetchData() override;
 
     private:
-        static const char* addrListName;
         static JavaVM* vm;
-        std::set<string> managedAddresses;
 
     };
 }

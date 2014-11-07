@@ -8,6 +8,10 @@
 #include "../worker.h"
 
 
+//TODO:
+//private native String[] contactAddresses() throws FavorException;
+//This should be almost exactly like the c++ accountmanager implementation, just get a type from our java class and do the same thing
+
 
 namespace favor{
     namespace jni{
@@ -29,6 +33,7 @@ namespace favor{
             }
 
             string name = env->GetStringUTFChars(jstr, NULL);
+            logger::info("Destroy account "+name+" of type "+MessageTypeName[(int)type]);
             jniExcept(
                     AccountManager* acc = findAccountManager(name, (MessageType)type);
                     acc->destroy();
@@ -67,7 +72,7 @@ namespace favor{
             string detailsJsonString(jsonChars);
             logger::info("Create account "+nameString+" of type "+MessageTypeName[(int)type]);
             jniExceptReturnNull(
-                    AccountManager::addAccount(nameString, (favor::MessageType) type, detailsJsonString);
+                    AccountManager::addAccount(nameString, (favor::MessageType)((int)type), detailsJsonString);
             )
 
             jclass accountManager = env->FindClass("com/favor/library/AccountManager");

@@ -10,6 +10,12 @@
 
 #endif
 
+#ifdef FAVOR_SKYPE_MANAGER
+
+#include "skypemanager.h"
+
+#endif
+
 #ifdef ANDROID
 
 #include "androidtextmanager.h"
@@ -79,7 +85,7 @@ namespace favor {
             saveFetchData();
         }
 
-        string AccountManager::getJson() {
+        string AccountManager::getJson() const {
             return as_string(json);
         }
 
@@ -193,6 +199,10 @@ namespace favor {
                 #ifdef ANDROID
                 case TYPE_ANDROIDTEXT:
                     return new AndroidTextManager(accNm, detailsJson);
+                #endif
+                #ifdef FAVOR_SKYPE_MANAGER
+                case TYPE_SKYPE:
+                    return new SkypeManager(accNm, detailsJson);
                 #endif
                 default:
                     logger::error("Attempt to initialize manager for unsupported type " + as_string(typ));

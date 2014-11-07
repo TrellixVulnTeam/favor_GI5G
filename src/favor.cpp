@@ -88,6 +88,11 @@ namespace favor {
         }
     }
 
+    string as_string(const AccountManager& a){
+        string result = "[Account Name: "+a.accountName+ "| Type: "+as_string((int)a.type)+" | JSON: \""+a.getJson()+"\"]";
+        return result;
+    }
+
     string lowercase(const string &s){
         string ret = s;
         transform(s.begin(), s.end(), ret.begin(), ::tolower); //Only compiles specifically with "::tolower"

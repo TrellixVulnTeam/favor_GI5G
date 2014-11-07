@@ -92,7 +92,7 @@ namespace favor {
 
             void deindexTables();
 
-            string getJson();
+            string getJson() const;
 
             //Work
             void updateMessages();

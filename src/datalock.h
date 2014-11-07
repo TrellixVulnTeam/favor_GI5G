@@ -8,20 +8,29 @@ namespace favor {
     template <typename T>
     class DataLock {
     private:
-        shared_ptr<std::lock_guard<std::mutex>> guard;
+        std::mutex* mutex;
+        int* holderCount;
         T* data;
-        bool* threadVar;
+
+        void holderCheck(){
+            if (valid()){
+                if (*holderCount == 0) mutex->lock();
+                *holderCount += 1;
+            }
+        }
 
     public:
 
         void invalidate() {
+            //If there threadVar count is 0 after decrementing
+            *holderCount -= 1;
+            if (*holderCount == 0 ) mutex->unlock();
+            mutex = NULL;
             data = NULL;
-            guard.reset();
-            *threadVar = false;
         }
 
         bool valid() {
-            return guard != NULL && data != NULL;
+            return mutex != NULL && data != NULL;
         }
 
         T* operator->(){
@@ -34,22 +43,25 @@ namespace favor {
             return *data;
         }
 
-        DataLock(std::mutex& mutex, bool* tvar, T* protected_data) {
-            guard = std::make_shared<std::lock_guard<std::mutex>>(mutex);
+        DataLock(std::mutex* mut, int* hcount, T* protected_data) {
+            mutex = mut;
             data = protected_data;
-            threadVar = tvar;
+            holderCount = hcount;
+            holderCheck();
         }
 
         DataLock(const favor::DataLock<T> &other) {
-            guard = other.guard;
+            mutex = other.mutex;
             data = other.data;
-            threadVar = other.threadVar;
+            holderCount = other.holderCount;
+            holderCheck();
         }
 
         DataLock<T>& operator=(const favor::DataLock<T> &other) {
-            guard = other.guard;
+            mutex = other.mutex;
             data = other.data;
-            threadVar = other.threadVar;
+            holderCount = other.holderCount;
+            holderCheck();
         }
 
         ~DataLock() {
