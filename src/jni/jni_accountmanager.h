@@ -16,23 +16,31 @@
 namespace favor{
     namespace jni{
 
-        JNIEXPORT void JNICALL _destroy(JNIEnv* env, jobject callingObj){
-            jclass clazz = env->FindClass("com/favor/library/AccountManager");
+        JNIEXPORT jobjectArray JNICALL contactAddresses(JNIEnv* env, jobject callingObj, jint type){
 
-            jfieldID nameFieldID = env->GetFieldID(clazz, "accountName", "Ljava/lang/String;");
-            jstring jstr = (jstring) env->GetObjectField(callingObj, nameFieldID);
-
-            jfieldID typeFieldID = env->GetFieldID(clazz, "type", "I");
-            jint type = env->GetIntField(callingObj, typeFieldID);
-
-            if (jstr == NULL || env->ExceptionOccurred()){
-                logger::error("_delete could not get account name in JNI");
-                env->ExceptionClear();
-                throwFavorException(env, "Delete method could not get account name");
-                return;
+            list<Address> ret;
+            auto contacts = reader::contactList((MessageType)type);
+            for (auto it = contacts->begin(); it != contacts->end(); ++it){
+                for (int i = 0; i < it->getAddresses().size(); ++i){
+                    ret.push_back(it->getAddresses()[i]);
+                }
             }
 
-            string name = env->GetStringUTFChars(jstr, NULL);
+            jobjectArray arr = (jobjectArray) env->NewObjectArray(ret.size(), java_string, 0);
+            if(env->ExceptionOccurred() || arr == NULL){
+                //Something went wrong, we failed to make our array
+                env->DeleteLocalRef(arr);
+                logger::error("Unable to requisition array for contactAddresses");
+                env->ExceptionClear();
+                return NULL;
+            }
+
+            //TODO: jam these into a java array like the reader does and then return them
+        }
+
+        JNIEXPORT void JNICALL _destroy(JNIEnv* env, jobject callingObj, jstring accName, jint type){
+
+            string name = env->GetStringUTFChars(accName, NULL);
             logger::info("Destroy account "+name+" of type "+MessageTypeName[(int)type]);
             jniExcept(
                     AccountManager* acc = findAccountManager(name, (MessageType)type);
@@ -41,23 +49,9 @@ namespace favor{
 
         }
 
-        JNIEXPORT void JNICALL _update(JNIEnv* env, jobject callingObj, jboolean contacts){
-            jclass clazz = env->FindClass("com/favor/library/AccountManager");
+        JNIEXPORT void JNICALL _update(JNIEnv* env, jobject callingObj, jstring accName, jint type, jboolean contacts){
 
-            jfieldID nameFieldID = env->GetFieldID(clazz, "accountName", "Ljava/lang/String;");
-            jstring jstr = (jstring) env->GetObjectField(callingObj, nameFieldID);
-
-            jfieldID typeFieldID = env->GetFieldID(clazz, "type", "I");
-            jint type = env->GetIntField(callingObj, typeFieldID);
-
-            if (jstr == NULL || env->ExceptionOccurred()){
-                logger::error("fetch could not get account name in JNI");
-                env->ExceptionClear();
-                throwFavorException(env, "Fetch method could not get account name");
-                return;
-            }
-
-            string name = env->GetStringUTFChars(jstr, NULL);
+            string name = env->GetStringUTFChars(accName, NULL);
             jniExcept(
                     AccountManager* acc = findAccountManager(name, (MessageType) type);
                     if (contacts) acc->updateContacts();
@@ -75,17 +69,12 @@ namespace favor{
                     AccountManager::addAccount(nameString, (favor::MessageType)((int)type), detailsJsonString);
             )
 
-            jclass accountManager = env->FindClass("com/favor/library/AccountManager");
-            jmethodID accountManagerConstructor = env->GetMethodID(accountManager, "<init>", "(Ljava/lang/String;I)V");
-
-            jclass androidManager = env->FindClass("com/favor/library/AndroidTextManager");
-            jmethodID androidManagerConstructor = env->GetMethodID(androidManager, "<init>", "(Ljava/lang/String;)V");
 
             jobject obj;
             if (type == TYPE_ANDROIDTEXT){
-                obj = env->NewObject(androidManager, androidManagerConstructor, name);
+                obj = env->NewObject(android_text_manager, android_text_manager_constructor, name);
             } else {
-                obj = env->NewObject(accountManager, accountManagerConstructor, name, type);
+                obj = env->NewObject(account_manager, account_manager_constructor, name, type);
             }
 
             if (obj == NULL || env->ExceptionOccurred()){
@@ -98,8 +87,8 @@ namespace favor{
 
         static JNINativeMethod accountManagerMethodTable[] = {
                 {"create", "(Ljava/lang/String;ILjava/lang/String;)L" CLASS_PATH "AccountManager;", (void*) create},
-                {"_destroy", "()V", (void*) _destroy},
-                {"_update", "(Z)V", (void*) _update}
+                {"_destroy", "(Ljava/lang/String;I)V", (void*) _destroy},
+                {"_update", "(Ljava/lang/String;IZ)V", (void*) _update}
         };
 }
 }

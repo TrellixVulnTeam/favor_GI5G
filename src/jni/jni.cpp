@@ -4,6 +4,7 @@
 #include "jni_reader.h"
 #include "jni_worker.h"
 #include "jni_accountmanager.h"
+#include "jni_globals.h"
 #include "../logger.h"
 #include "../managers/androidtextmanager.h"
 
@@ -11,11 +12,6 @@ extern "C" {
 
 //Java, then package name, then class name, then method name, separated by underscores (also underscores per "." in the package name)
 //Basically if you get an error calling this stuff, the solution is replacing every . in the error with an underscore
-
-const char* coreClassPath = CLASS_PATH "Core";
-const char* readerClassPath = CLASS_PATH "Reader";
-const char* writerClassPath = CLASS_PATH "Writer";
-const char* accountManagerClassPath = CLASS_PATH "AccountManager";
 
 JNIEXPORT jstring JNICALL helloWorld(JNIEnv* env, jobject obj){
     return env->NewStringUTF("Hello from Favor's native interface!");
@@ -28,10 +24,10 @@ JNIEXPORT void JNICALL init(JNIEnv* env, jobject obj, jstring path, jboolean fir
         struct stat sb;
         int res = stat(favor::dbPath, &sb);
         if (res == 0 && sb.st_mode && S_IFDIR){
-        favor::logger::info("Database directly already exists");
+            favor::logger::info("Database already exists");
         }
         else if (ENOENT == errno){
-        res = mkdir(favor::dbPath, 0770);
+            res = mkdir(favor::dbPath, 0770);
         }
     }
     //TODO: check results, make sure they're good
@@ -58,38 +54,26 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
         return -1;
     }
 
-    jclass core = env->FindClass(coreClassPath);
-    jclass reader = env->FindClass(readerClassPath);
-    jclass writer = env->FindClass(writerClassPath);
-    jclass accountManager = env->FindClass(accountManagerClassPath);
+    jclass core = env->FindClass(favor::jni::coreClassPath);
+    jclass reader = env->FindClass(favor::jni::readerClassPath);
+    jclass writer = env->FindClass(favor::jni::writerClassPath);
 
-    if (!core){
-        favor::logger::error("JNI could not find core favor library class");
-        favor::jni::throwFavorException(env, "Could not initialize Favor: missing class");
-        return -1;
-    }
-    if (!reader){
-        favor::logger::error("JNI could not find reader favor library class");
-        favor::jni::throwFavorException(env, "Could not initialize Favor: missing class");
-        return -1;
-    }
-    if (!writer) {
-        favor::logger::error("JNI could not find writer favor library class");
-        favor::jni::throwFavorException(env, "Could not initialize Favor: missing class");
-        return -1;
-    }
-    if (!accountManager){
-        favor::logger::error("JNI could not find accountManager library class");
-        favor::jni::throwFavorException(env, "Could not initialize Favor: missing class");
-        return -1;
-    }
+    favor::jni::account_manager = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass(favor::jni::accountManagerClassPath)));
+    favor::jni::account_manager_constructor = env->GetMethodID(favor::jni::account_manager, "<init>", "(Ljava/lang/String;I)V");
+
+    favor::jni::android_text_manager = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass(favor::jni::androidTextManagerClassPath)));
+    favor::jni::android_text_manager_constructor = env->GetMethodID(favor::jni::android_text_manager, "<init>", "(Ljava/lang/String;)V");
+
+    favor::jni::java_string = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("java/lang/String")));
+
+
 
     //It's weird this can happen before init, but init may end up called in this method eventually and this is crucial in any case
     favor::AndroidTextManager::setVM(vm);
 
     env->RegisterNatives(core, coreMethodTable, sizeof(coreMethodTable) / sizeof(coreMethodTable[0]));
     env->RegisterNatives(reader, favor::jni::readerMethodTable, sizeof(favor::jni::readerMethodTable) / sizeof (favor::jni::readerMethodTable[0]));
-    env->RegisterNatives(accountManager, favor::jni::accountManagerMethodTable, sizeof(favor::jni::accountManagerMethodTable) / sizeof(favor::jni::accountManagerMethodTable[0]));
+    env->RegisterNatives(favor::jni::account_manager, favor::jni::accountManagerMethodTable, sizeof(favor::jni::accountManagerMethodTable) / sizeof(favor::jni::accountManagerMethodTable[0]));
 
     return JNI_VERSION_1_6;
 }

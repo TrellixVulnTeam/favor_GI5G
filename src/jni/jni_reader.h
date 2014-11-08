@@ -1,9 +1,10 @@
 #ifndef favor_jni_worker_include
 #define favor_jni_worker_include
 #include <jni.h>
-#include "../logger.h"
+#include "jni_globals.h"
 #include "jni_exceptions.h"
 #include "../reader.h"
+#include "../logger.h"
 
 
 namespace favor{
@@ -23,15 +24,9 @@ namespace favor{
         }
 
         JNIEXPORT jobjectArray JNICALL accountManagers(JNIEnv* env, jclass clss){
-            jclass accountManager = env->FindClass("com/favor/library/AccountManager");
-            jmethodID accountManagerConstructor = env->GetMethodID(accountManager, "<init>", "(Ljava/lang/String;I)V");
-
-            jclass androidManager = env->FindClass("com/favor/library/AndroidTextManager");
-            jmethodID androidManagerConstructor = env->GetMethodID(androidManager, "<init>", "(Ljava/lang/String;)V");
-
 
             auto accounts = reader::accountList();
-            jobjectArray arr = (jobjectArray) env->NewObjectArray(accounts->size(), accountManager, 0);
+            jobjectArray arr = (jobjectArray) env->NewObjectArray(accounts->size(), account_manager, 0);
             if(env->ExceptionOccurred() || arr == NULL){
                 //Something went wrong, we failed to make our array
                 env->DeleteLocalRef(arr);
@@ -42,8 +37,8 @@ namespace favor{
             int i = 0;
             for (auto it = accounts->begin(); it != accounts->end(); ++it){
                 if ((*it)->type == TYPE_ANDROIDTEXT){
-                    logger::info("MAKE ANDROID TEXT MANAGER");
-                    jobject obj = env->NewObject(androidManager, androidManagerConstructor, env->NewStringUTF((*it)->accountName.c_str()));
+                    logger::info((*it)->accountName);
+                    jobject obj = env->NewObject(android_text_manager, android_text_manager_constructor, env->NewStringUTF((*it)->accountName.c_str()));
                     env->SetObjectArrayElement(arr, i, obj);
                     if (obj == NULL || env->ExceptionOccurred()){
                         logger::error("Error inserting account "+(*it)->accountName+" into array");
@@ -51,8 +46,8 @@ namespace favor{
                     }
                 }
                 else {
-                    logger::info("MAKE GENERIC MANAGER. ANDROID TEXT TYPE:"+as_string((int) TYPE_ANDROIDTEXT)+" MANAGER TYPE:"+as_string((int)(*it)->type));
-                    jobject obj = env->NewObject(accountManager, accountManagerConstructor, env->NewStringUTF((*it)->accountName.c_str()), (*it)->type);
+                    logger::info((*it)->accountName);
+                    jobject obj = env->NewObject(account_manager, account_manager_constructor, env->NewStringUTF((*it)->accountName.c_str()), (*it)->type);
                     env->SetObjectArrayElement(arr, i, obj);
                     if (obj == NULL || env->ExceptionOccurred()){
                         logger::error("Error inserting account "+(*it)->accountName+" into array");
