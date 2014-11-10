@@ -2,6 +2,7 @@
 #define favor_address_include
 
 #include "favor.h"
+#include "reader.h"
 
 namespace favor {
     class Address {
@@ -16,6 +17,11 @@ namespace favor {
         bool belongsToContact(){
             return contactId > -1;
         }
+
+//        //TODO: This won't compile for reasons unclear, but makes sense as a method here
+//        bool inDatabase(){
+//            return reader::addressExists(addr, type);
+//        }
     };
 }
 

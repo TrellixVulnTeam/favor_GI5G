@@ -8,26 +8,24 @@
 #include "../worker.h"
 
 
-//TODO:
-//private native String[] contactAddresses() throws FavorException;
-//This should be almost exactly like the c++ accountmanager implementation, just get a type from our java class and do the same thing
-
-
 namespace favor{
     namespace jni{
 
+        //TODO: method untested
         JNIEXPORT jobjectArray JNICALL contactAddresses(JNIEnv* env, jobject callingObj, jint type){
 
             list<Address> ret;
-            auto contacts = reader::contactList((MessageType)type);
+            auto contacts = reader::contactList(static_cast<MessageType>(type));
             for (auto it = contacts->begin(); it != contacts->end(); ++it){
                 for (int i = 0; i < it->getAddresses().size(); ++i){
                     ret.push_back(it->getAddresses()[i]);
                 }
             }
 
+            //TODO: ret may very well be in excess of 16, in which case we should inform the JVM we'll be using X extra local references
+
             jobjectArray arr = (jobjectArray) env->NewObjectArray(ret.size(), java_string, 0);
-            if(env->ExceptionOccurred() || arr == NULL){
+            if (env->ExceptionOccurred() || arr == NULL){
                 //Something went wrong, we failed to make our array
                 env->DeleteLocalRef(arr);
                 logger::error("Unable to requisition array for contactAddresses");
@@ -35,7 +33,13 @@ namespace favor{
                 return NULL;
             }
 
-            //TODO: jam these into a java array like the reader does and then return them
+            int i = 0;
+            for (auto it = ret.begin(); it != ret.end(); ++it){
+                env->SetObjectArrayElement(arr, i, env->NewStringUTF(it->addr.c_str()));
+                ++i;
+            }
+
+            return arr;
         }
 
         JNIEXPORT void JNICALL _destroy(JNIEnv* env, jobject callingObj, jstring accName, jint type){
@@ -43,7 +47,7 @@ namespace favor{
             string name = env->GetStringUTFChars(accName, NULL);
             logger::info("Destroy account "+name+" of type "+MessageTypeName[(int)type]);
             jniExcept(
-                    AccountManager* acc = findAccountManager(name, (MessageType)type);
+                    AccountManager* acc = findAccountManager(name, static_cast<MessageType>(type));
                     acc->destroy();
             )
 
@@ -53,7 +57,7 @@ namespace favor{
 
             string name = env->GetStringUTFChars(accName, NULL);
             jniExcept(
-                    AccountManager* acc = findAccountManager(name, (MessageType) type);
+                    AccountManager* acc = findAccountManager(name, static_cast<MessageType>(type));
                     if (contacts) acc->updateContacts();
                     else acc->updateMessages();
             )

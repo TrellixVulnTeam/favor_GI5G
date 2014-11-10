@@ -70,6 +70,7 @@ namespace favor {
                         reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2))));
             }
             sqlv(result); //Make sure we broke out of the loop with good results
+            sqlv(sqlite3_finalize(stmt));
         }
 
         void refreshContactList(const MessageType &t){
@@ -118,7 +119,19 @@ namespace favor {
 
             }
             sqlv(result);
+            sqlv(sqlite3_finalize(stmt));
             return ret;
+        }
+
+        //TODO: untested, test me
+        bool addressExists(const string& addr, const MessageType &t){
+            sqlite3_stmt* stmt;
+            string sql = "SELECT EXISTS(SELECT address FROM " ADDRESS_TABLE(t) " WHERE address=?);";
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            sqlv(sqlite3_step(stmt));
+            bool exists = static_cast<bool>(sqlite3_column_int(stmt, 1));
+            sqlv(sqlite3_finalize(stmt));
+            return exists;
         }
 
 

@@ -17,6 +17,7 @@ namespace favor {
         DataLock<list<Contact>> contactList(const MessageType &t);
 
         shared_ptr<list<Address>> addresses(const MessageType &t); //We should really only need this internally
+        bool addressExists(const string& addr, const MessageType &t);
 
         //Writers
         void removeAccount(AccountManager* account);
