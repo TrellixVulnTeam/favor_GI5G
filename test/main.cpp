@@ -13,9 +13,15 @@ int main(int argc, char **argv) {
     worker::buildDatabase();
     reader::refreshAll();
 
-    AccountManager::addAccount("skypetest", favor::TYPE_SKYPE, "{}");
+
+    //AccountManager::addAccount("skypetest", favor::TYPE_SKYPE, "{}");
+
+    auto addrs = reader::addresses(TYPE_EMAIL);
+    Address& a = addrs->front();
+    cout << "good addr exists: " << reader::addressExists(a.addr, a.type) << endl;
+    cout << "bad addr exists: " << reader::addressExists("NOPE", a.type) << endl;
    // reader::accountList()->front()->destroy();
-    //reader::accountList()->front()->updateContacts();
+    //reader::accountList()->front()->updateAddresses();
     
 
     //MessageType t, bool s, long int i, std::time_t d, string a, bool m, const string& b, size_t cc)

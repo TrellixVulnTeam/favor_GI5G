@@ -50,6 +50,12 @@ platform. However, realistically, there are some cases in which it serves us bet
  but it seems there is some evidence of being able to compile thrift clients with the NDK based on Apache tickets here: https://issues.apache.org/jira/browse/THRIFT-1846. Also seems reasonable on the
  grounds that its main dependency is Boost, which has at least some (unofficial) NDK support.
  
+ 
+On JNI Bindings
+==
+The basic idea here is to do the absolute minimum at the C++ layer. The operations and computations we do here are faster if we can do them natively, but construction of objects and such
+should be left ot Java wherever it makes sense and doesn't mean more layer switches, because failures are so much easier to handle there. The important thing is just ot properly signal
+if anything goes wrong at the C++ layer so Java knows to stop whatever it's doing. 
 
 Dependencies
 ==

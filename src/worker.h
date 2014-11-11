@@ -34,6 +34,10 @@ namespace favor {
         void createContactWithAddress(const string &address, MessageType type, const string &displayName);
 
         void createContactFromAddress(const Address& addr, const string& displayName);
+
+        void saveAddress(const Address& a, sqlite3_stmt* stmt);
+
+        void rewriteAddressTable(const list<Address>& newAddresses, const MessageType& type);
     }
 }
 

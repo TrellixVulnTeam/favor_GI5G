@@ -110,6 +110,31 @@ namespace favor {
             sqlv(sqlite3_finalize(stmt));
         }
 
+        void saveAddress(const Address &a, sqlite3_stmt* stmt) {
+            sqlv(sqlite3_bind_text(stmt, 1, a.addr.c_str(), a.addr.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_int(stmt, 2, a.count));
+            if (a.contactId > -1) sqlv(sqlite3_bind_int(stmt, 3, a.contactId));
+            sqlv(sqlite3_step(stmt));
+            sqlv(sqlite3_reset(stmt));
+            sqlv(sqlite3_clear_bindings(stmt));
+            //I think we can just rebind without clearing bindings, but in this case we need at least #3 (id) to be NULL
+            //so we can leave it unbound when it's -1
+
+        }
+
+        void rewriteAddressTable(const list<Address>& newAddresses, const MessageType& type){
+            beginTransaction();
+            exec("DELETE FROM " ADDRESS_TABLE(type) ";");
+            string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES(?,?,?);";
+            sqlite3_stmt* stmt;
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            for (auto it = newAddresses.begin(); it != newAddresses.end(); ++it){
+                saveAddress(*it, stmt);
+            }
+            sqlv(sqlite3_finalize(stmt)); //Finalizing it here is just cleanup
+            commitTransaction();
+        }
+
         void indexDatabase() {
             for (int i = 0; i < NUMBER_OF_TYPES; ++i) {
                 exec("CREATE INDEX IF NOT EXISTS " ADDRESS_INDEX(i) " ON " ADDRESS_INDEX(i) ADDRESS_INDEX_SCHEMA ";");
@@ -130,9 +155,11 @@ namespace favor {
             }
         }
 
+
+
         /* --------------------------------------------------------------------------------
-        Account manager methods from here down. Declared in this file because they require
-        direct db access
+        Account manager methods from here down. Declared in this file because they require,
+        or can be run more efficientl with, direct db access
          --------------------------------------------------------------------------------*/
 
         void AccountManager::saveHeldMessages() {
@@ -166,60 +193,6 @@ namespace favor {
             sqlv(sqlite3_reset(stmt));
         }
 
-        void AccountManager::saveAddress(const Address &a, sqlite3_stmt* stmt) {
-            sqlv(sqlite3_bind_text(stmt, 1, a.addr.c_str(), a.addr.length(), SQLITE_STATIC));
-            sqlv(sqlite3_bind_int(stmt, 2, a.count));
-            if (a.contactId > -1) sqlv(sqlite3_bind_int(stmt, 3, a.contactId));
-            sqlv(sqlite3_step(stmt));
-            sqlv(sqlite3_reset(stmt));
-            sqlv(sqlite3_clear_bindings(stmt));
-            //I think we can just rebind without clearing bindings, but in this case we need at least #3 (id) to be NULL
-            //so we can leave it unbound when it's -1
-
-        }
-
-        void AccountManager::saveHeldAddresses() {
-            shared_ptr<list<Address>> addrList = reader::addresses(type);
-
-            list<Address> addrOutList = list<Address>();
-
-            for (auto it = addrList->begin(); it != addrList->end(); ++it){
-                //Insert, get state and remove from countedaddrs if exists
-                int count = it->count;
-                if (countedAddresses.count(it->addr)){
-                    //This is newer information, so we update the count and then remove what would be duplicate data later on
-                    count = countedAddresses.at(it->addr);
-                    countedAddresses.erase(it->addr);
-                }
-                addrOutList.push_back(Address(it->addr, count, it->contactId, type));
-            }
-            for (auto it = countedAddresses.begin(); it != countedAddresses.end(); it++) {
-                addrOutList.push_back(Address(it->first, it->second, -1, type));
-            }
-
-            addrOutList.sort(compareAddress);
-
-            auto itr = addrOutList.begin();
-            int i;
-            for (i = 0; i < MAX_ADDRESSES && itr != addrOutList.end(); ++i) ++itr;
-            if (i == MAX_ADDRESSES) addrOutList.erase(itr, addrOutList.end()); //Erase anything above our max if there are enough elements to need to
-
-            //TODO: eventually we can do some guessing about current contacts here with levenshtein distance on names
-
-            countedAddresses.clear();
-            addressNames.clear();
-
-            beginTransaction();
-            exec("DELETE FROM " ADDRESS_TABLE(type) ";");
-            string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES(?,?,?);";
-            sqlite3_stmt* stmt;
-            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-            for (auto it = addrOutList.begin(); it != addrOutList.end(); ++it){
-                saveAddress(*it, stmt);
-            }
-            sqlv(sqlite3_finalize(stmt)); //Finalizing it here is just cleanup
-            commitTransaction();
-        }
 
         void AccountManager::saveFetchData() {
             string detailsJson = as_string(json);

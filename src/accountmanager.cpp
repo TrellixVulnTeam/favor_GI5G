@@ -73,7 +73,7 @@ namespace favor {
             exec("CREATE INDEX IF NOT EXISTS " SENT_INDEX_NAME " ON " SENT_TABLE_NAME MESSAGE_INDEX_SCHEMA ";");
         }
 
-        void AccountManager::updateContacts() {
+        void AccountManager::updateAddresses() {
             fetchAddresses();
             saveHeldAddresses();
         }
@@ -166,6 +166,42 @@ namespace favor {
             size_t length = utf8::distance(msg.begin(), msg.end());
 
             heldMessages->emplace_back(Message(type, sent, id, date, address, media, msg, length));
+        }
+
+        //TODO: untested since minor refactor. should be identical though
+        void AccountManager::saveHeldAddresses() {
+            //TODO: we don't know what we're doing with names yet
+            shared_ptr<list<Address>> addrList = reader::addresses(type);
+
+            list<Address> addrOutList = list<Address>();
+
+            for (auto it = addrList->begin(); it != addrList->end(); ++it){
+                //Insert, get state and remove from countedaddrs if exists
+                int count = it->count;
+                if (countedAddresses.count(it->addr)){
+                    //This is newer information, so we update the count and then remove what would be duplicate data later on
+                    count = countedAddresses.at(it->addr);
+                    countedAddresses.erase(it->addr);
+                }
+                addrOutList.push_back(Address(it->addr, count, it->contactId, type));
+            }
+            for (auto it = countedAddresses.begin(); it != countedAddresses.end(); it++) {
+                addrOutList.push_back(Address(it->first, it->second, -1, type));
+            }
+
+            addrOutList.sort(compareAddress);
+
+            auto itr = addrOutList.begin();
+            int i;
+            for (i = 0; i < MAX_ADDRESSES && itr != addrOutList.end(); ++i) ++itr;
+            if (i == MAX_ADDRESSES) addrOutList.erase(itr, addrOutList.end()); //Erase anything above our max if there are enough elements to need to
+
+            //TODO: eventually we can do some guessing about current contacts here with levenshtein distance on names
+
+            countedAddresses.clear();
+            addressNames.clear();
+
+            rewriteAddressTable(addrOutList, type);
         }
 
         void AccountManager::countAddress(const string &address){

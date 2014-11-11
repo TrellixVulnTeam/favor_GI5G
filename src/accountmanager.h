@@ -40,8 +40,6 @@ namespace favor {
 
             void saveMessage(const Message& m, sqlite3_stmt* stmt);
 
-            void saveAddress(const Address& a, sqlite3_stmt* stmt);
-
             static bool isWhitespace(uint32_t code);
 
             static void cleanWhitespace(string &s);
@@ -97,7 +95,7 @@ namespace favor {
             //Work
             void updateMessages();
 
-            void updateContacts();
+            void updateAddresses();
 
             //Static methods
             static AccountManager* buildManager(string accNm, MessageType typ, string detailsJson);
