@@ -19,11 +19,12 @@ namespace favor{
         //process like jamming all of the relevant characters into a bye array ourselves, deliminating them, and then separating them into usable data
         //again at the C++ layer, but right now something like that is premature. This method doesn't need to be super performant anyway because it's a
         //writer.
-        JNIEXPORT void JNICALL _saveContacts(JNIEnv* env, jobject callingObj, jint type, jobjectArray addressStrings, jintArray countArray,jobjectArray nameStrings){
+        JNIEXPORT void JNICALL _saveAddresses(JNIEnv* env, jobject callingObj, jint type, jobjectArray addressStrings, jintArray countArray,jobjectArray nameStrings){
             jsize addrCount = env->GetArrayLength(addressStrings);
             jint* counts = env->GetIntArrayElements(countArray, NULL);
             //TODO: we don't know what we're doing with names yet
             list<Address> outputAddrs;
+            logger::info("Save "+as_string((int)addrCount)+" addresses of type "+MessageTypeName[type]);
             for (int i = 0; i < addrCount; ++i){
                 string addr = env->GetStringUTFChars((jstring) env->GetObjectArrayElement(addressStrings, i), NULL);
                 jobject jName = env->GetObjectArrayElement(nameStrings, i);
@@ -38,12 +39,16 @@ namespace favor{
             }
             env->ReleaseIntArrayElements(countArray, counts, JNI_ABORT);
 
-//            addrOutList.sort(compareAddress);
-//
-//            auto itr = addrOutList.begin();
-//            int i;
-//            for (i = 0; i < MAX_ADDRESSES && itr != addrOutList.end(); ++i) ++itr;
-//            if (i == MAX_ADDRESSES) addrOutList.erase(itr, addrOutList.end()); //Erase anything above our max if there are enough elements to need to
+            outputAddrs.sort(compareAddress);
+
+            auto itr = outputAddrs.begin();
+            int i;
+            for (i = 0; i < MAX_ADDRESSES && itr != outputAddrs.end(); ++i) ++itr;
+            if (i == MAX_ADDRESSES) outputAddrs.erase(itr, outputAddrs.end());
+
+            for (auto it = outputAddrs.begin(); it != outputAddrs.end(); ++it) logger::info(as_string(*it)); //TODO: TESTCODE
+
+            //TODO: this is working fine. we gotta make a contact
             jniExcept(
                     worker::rewriteAddressTable(outputAddrs, static_cast<MessageType>(type));
             )
@@ -55,6 +60,7 @@ namespace favor{
 
             list<Address> ret;
             auto contacts = reader::contactList(static_cast<MessageType>(type));
+            logger::info("ContactsList length: "+as_string((int)contacts->size()));
             for (auto it = contacts->begin(); it != contacts->end(); ++it){
                 for (int i = 0; i < it->getAddresses().size(); ++i){
                     ret.push_back(it->getAddresses()[i]);
@@ -63,7 +69,7 @@ namespace favor{
 
             //TODO: ret may very well be in excess of 16, in which case we should inform the JVM we'll be using X extra local references
             //or can we save the references returned by NewStringUTF and release them instead?
-
+            logger::info("Get "+as_string((int)ret.size())+" contacts of type "+MessageTypeName[type]); //TODO: TESTCODE
             jobjectArray arr = (jobjectArray) env->NewObjectArray(ret.size(), java_string, 0);
             if (env->ExceptionOccurred() || arr == NULL){
                 //Something went wrong, we failed to make our array
@@ -75,6 +81,7 @@ namespace favor{
 
             int i = 0;
             for (auto it = ret.begin(); it != ret.end(); ++it){
+                logger::info("Get "+it->addr); //TODO: TESTCODE
                 env->SetObjectArrayElement(arr, i, env->NewStringUTF(it->addr.c_str()));
                 ++i;
             }
@@ -117,7 +124,9 @@ namespace favor{
         static JNINativeMethod accountManagerMethodTable[] = {
                 {"_create", "(Ljava/lang/String;ILjava/lang/String;)V", (void*) _create},
                 {"_destroy", "(Ljava/lang/String;I)V", (void*) _destroy},
-                {"_update", "(Ljava/lang/String;IZ)V", (void*) _update}
+                {"_update", "(Ljava/lang/String;IZ)V", (void*) _update},
+                {"contactAddresses", "(I)[Ljava/lang/String;", (void*) contactAddresses},
+                {"_saveAddresses", "(I[Ljava/lang/String;[I[Ljava/lang/String;)V", (void*) _saveAddresses}
         };
 }
 }

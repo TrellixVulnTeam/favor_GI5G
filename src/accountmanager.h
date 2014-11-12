@@ -44,8 +44,6 @@ namespace favor {
 
             static void cleanWhitespace(string &s);
 
-            static bool compareAddress(const Address& lhs, const Address& rhs);
-
         protected:
             AccountManager(string accNm, MessageType typ, string detailsJson);
 

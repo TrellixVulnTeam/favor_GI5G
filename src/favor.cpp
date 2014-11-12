@@ -38,6 +38,20 @@ namespace favor {
         }
     }
 
+    bool compareAddress(const Address &lhs, const Address &rhs) {
+        //Results in a largest first array
+        if (lhs.contactId > -1){
+            if (rhs.contactId > -1){
+                lhs.count == rhs.count ? lhs.addr > rhs.addr : lhs.count > rhs.count;
+            }
+            else return true;
+        }
+        else if (rhs.contactId > -1) return false;
+        else{
+            return lhs.count == rhs.count ? lhs.addr > rhs.addr : lhs.count > rhs.count;
+        }
+    }
+
     //On Android, these methods will not behave well with numbers whose digit count exceeds the DIGIT_MAX
     string as_string(long int l) {
     #ifdef ANDROID

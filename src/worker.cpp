@@ -118,7 +118,7 @@ namespace favor {
             sqlv(sqlite3_reset(stmt));
             sqlv(sqlite3_clear_bindings(stmt));
             //I think we can just rebind without clearing bindings, but in this case we need at least #3 (id) to be NULL
-            //so we can leave it unbound when it's -1
+            //so that we can leave it unbound when it's -1
 
         }
 

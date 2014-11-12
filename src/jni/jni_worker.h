@@ -8,9 +8,11 @@
 namespace favor{
     namespace jni{
 
-        JNIEXPORT void JNICALL createContact(JNIEnv* env, jobject callingObj, jstring address, jint type, jstring displayName, jboolean addressExistsHint){
+        JNIEXPORT void JNICALL _createContact(JNIEnv* env, jobject callingObj, jstring address, jint type, jstring displayName, jboolean addressExistsHint){
+            //TODO: this isn't finding/associating with the address properly when we pass it one that exists
             string addressString = env->GetStringUTFChars(address, NULL);
             string displaynameString = env->GetStringUTFChars(displayName, NULL);
+            logger::info("Create contact with address: "+addressString+" and name "+displaynameString);
             //Short circuiting saves us the method call if we know the address exists
             if (addressExistsHint || reader::addressExists(addressString, static_cast<MessageType>(type))){
                 //We believe our reader or hint, make an address object and pass it in like it was from the database
@@ -26,6 +28,10 @@ namespace favor{
             }
 
         }
+
+        static JNINativeMethod workerMethodTable[] = {
+                {"_createContact", "(Ljava/lang/String;ILjava/lang/String;Z)V", (void*) _createContact}
+        };
 
     }
 }

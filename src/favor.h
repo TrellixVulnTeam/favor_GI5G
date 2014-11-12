@@ -45,6 +45,8 @@ namespace favor {
     //Utility
     void sqlite3_validate(int result, sqlite3 *db);
 
+    bool compareAddress(const Address& lhs, const Address& rhs);
+
     string lowercase(const string& s);
 
     string as_string(int i);

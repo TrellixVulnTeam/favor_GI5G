@@ -89,20 +89,6 @@ namespace favor {
             return as_string(json);
         }
 
-        bool AccountManager::compareAddress(const Address &lhs, const Address &rhs) {
-            //Results in a largest first array
-            if (lhs.contactId > -1){
-                if (rhs.contactId > -1){
-                    lhs.count == rhs.count ? lhs.addr > rhs.addr : lhs.count > rhs.count;
-                }
-                else return true;
-            }
-            else if (rhs.contactId > -1) return false;
-            else{
-                return lhs.count == rhs.count ? lhs.addr > rhs.addr : lhs.count > rhs.count;
-            }
-        }
-
         bool AccountManager::isWhitespace(uint32_t code) {
             //TODO: consult https://www.cs.tut.fi/~jkorpela/chars/spaces.html and http://www.fileformat.info/info/unicode/category/Zs/list.htm
             //because I'm suddenly easy about the data wikipedia gave me. Should've seen that coming I guess
