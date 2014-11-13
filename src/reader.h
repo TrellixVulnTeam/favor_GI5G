@@ -19,9 +19,11 @@ namespace favor {
         shared_ptr<list<Address>> addresses(const MessageType &t); //We should really only need this internally
         bool addressExists(const string& addr, const MessageType &t);
 
-        //Writers
+        //Writers (the specific add/removes should be called exclusively by the worker)
         void removeAccount(AccountManager* account);
         void addAccount(AccountManager* account);
+        void addContact(Contact& contact);
+        void removeContact(Contact& contact);
 
         void refreshAll();
 

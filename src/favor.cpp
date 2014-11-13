@@ -11,7 +11,10 @@ namespace favor {
     const char* dbPath = "."; //TODO: This can eventually be something else, but we'll need to ensure the directory exists in that case
 
     void initialize() {
-        sqlite3_enable_shared_cache(1);
+        assert(sqlite3_config(SQLITE_CONFIG_MULTITHREAD)==SQLITE_OK);
+        assert(sqlite3_initialize()==SQLITE_OK);
+        assert(sqlite3_threadsafe()); //We just want this to not be 0, not for it to be ==SQLITE_OK
+        assert(sqlite3_enable_shared_cache(1)==SQLITE_OK);
         //The worker must be initialized first, because it will create the database if there is none
         worker::initialize();
         reader::initialize();
@@ -20,10 +23,11 @@ namespace favor {
     void cleanup() {
         worker::cleanup();
         reader::cleanup();
+        sqlite3_shutdown();
     }
 
 
-    void sqlite3_validate(int result, sqlite3 *db) {
+    void sqlite3_validate(int result, sqlite3 *db, bool constraintFailureOK) {
         switch (result) {
             //TODO: a specific case for constraint violations (esp. unique) that logs an error but doesn't except
             case SQLITE_OK:
@@ -32,6 +36,9 @@ namespace favor {
                 break;
             case SQLITE_DONE:
                 break;
+            case SQLITE_CONSTRAINT:
+                if (!constraintFailureOK) break; //TODO: throw a constraint-specific exception inhereted from sqliteException
+                else logger::warning("SQLite constraint failed, db says \"" + string(sqlite3_errmsg(db)) + "\"");
             default:
                 logger::error("SQLite error #" + as_string(result) + ", db says \"" + sqlite3_errmsg(db) + "\"");
                 throw sqliteException();

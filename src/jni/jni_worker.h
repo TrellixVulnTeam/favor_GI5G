@@ -18,10 +18,12 @@ namespace favor{
                 //We believe our reader or hint, make an address object and pass it in like it was from the database
                 jniExcept(
                     Address addrObj(addressString, -1, -1, static_cast<MessageType>(type));
+                        logger::info("Address exists, creating from "+as_string(addrObj));
                     worker::createContactFromAddress(addrObj, displaynameString);
                 )
             } else {
                 //There's no address already, so we make one
+                logger::info("No address found, creating with address");
                 jniExcept(
                     worker::createContactWithAddress(addressString, static_cast<MessageType>(type), displaynameString);
                 )

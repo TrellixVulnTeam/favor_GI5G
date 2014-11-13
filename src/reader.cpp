@@ -47,6 +47,14 @@ namespace favor {
             accountList()->push_back(account);
         }
 
+        void addContact(Contact& contact){
+            contactList(contact.type)->push_back(contact);
+        }
+
+        void removeContact(Contact& contact){
+            contactList(contact.type)->remove(contact);
+        }
+
         void refreshAll() {
             refreshAccountList();
             for (int i = 0; i < NUMBER_OF_TYPES; ++i) {

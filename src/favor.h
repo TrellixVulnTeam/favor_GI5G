@@ -43,7 +43,7 @@ namespace favor {
     void cleanup();
 
     //Utility
-    void sqlite3_validate(int result, sqlite3 *db);
+    void sqlite3_validate(int result, sqlite3 *db, bool constraintFailureOK = false);
 
     bool compareAddress(const Address& lhs, const Address& rhs);
 

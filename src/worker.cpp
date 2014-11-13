@@ -8,16 +8,6 @@ namespace favor {
             sqlite3 *db;
             bool transacting = false;
 
-            long createContact(const string& displayName, MessageType type){
-                string sql = "INSERT INTO " CONTACT_TABLE(type) "(display_name) VALUES(?)";
-                sqlite3_stmt* stmt;
-                sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-                sqlv(sqlite3_bind_text(stmt, 1, displayName.c_str(), displayName.length(), SQLITE_STATIC));
-                sqlv(sqlite3_step(stmt));
-                long contactId = sqlite3_last_insert_rowid(db);
-                sqlv(sqlite3_finalize(stmt));
-                return contactId;
-            }
         }
 
         void initialize() {
@@ -84,7 +74,19 @@ namespace favor {
             }
         }
 
-        //TODO: test next 2 methods for creating contacts
+        long createContact(const string& displayName, MessageType type){
+            string sql = "INSERT INTO " CONTACT_TABLE(type) "(display_name) VALUES(?)";
+            sqlite3_stmt* stmt;
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            sqlv(sqlite3_bind_text(stmt, 1, displayName.c_str(), displayName.length(), SQLITE_STATIC));
+            sqlv(sqlite3_step(stmt));
+            long contactId = sqlite3_last_insert_rowid(db);
+            sqlv(sqlite3_finalize(stmt));
+            Contact contact(contactId, displayName, type);
+            reader::addContact(contact);
+            return contactId;
+        }
+
         void createContactWithAddress(const string &address, MessageType type, const string &displayName){
             long contactId = createContact(displayName, type);
 
@@ -100,7 +102,6 @@ namespace favor {
 
         void createContactFromAddress(const Address& addr, const string& displayName){
             long contactId = createContact(displayName, addr.type);
-
             string sql = "UPDATE " ADDRESS_TABLE(addr.type) " SET contact_id=? WHERE address=?";
             sqlite3_stmt* stmt;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));

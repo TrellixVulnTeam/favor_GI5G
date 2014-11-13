@@ -1,6 +1,9 @@
 Just getting things set up right now. 
 
 Todo (in order):
+ - Android needs to release all the UTF chars it's getting from Java strings right now to avoid leaking memory, but we need to release them even in case of exceptions, and our current
+ nice exception macro is not set up to do this. Unfortunately.
+ - SQLite extended error codes? See about making use of these.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
  further down the road.

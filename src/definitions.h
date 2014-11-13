@@ -54,12 +54,8 @@ namespace favor {
 #define ACCOUNT_TABLE_SCHEMA "(name TEXT NOT NULL, type INTEGER NOT NULL, details_json TEXT, PRIMARY KEY(name, type))"
 
 //Contacts table
-/*Note:
-"explicit" is our way of specifying whether Favor is automatically generating a contact for a stranded address, or whether
-the contact has been explicitly specified as one (whether at Favor's suggestion or not) by the user.
- */
 #define CONTACT_TABLE(type) "contacts_" + string(MessageTypeName[type]) + ""
-#define CONTACT_TABLE_SCHEMA "(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL)"
+#define CONTACT_TABLE_SCHEMA "(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL UNIQUE)"
 
 //Addresses table
 /*Note:
