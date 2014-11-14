@@ -4,79 +4,80 @@
 #include <exception>
 #include <stdexcept>
 
+#ifdef ANDROID
+#include <jni.h>
+#endif
+
 namespace favor {
     class exception : public std::runtime_error {
     protected:
         exception(const std::string &e) : runtime_error(e) {
         }
+#ifdef ANDROID
+    public:
+        //The method can eventually be virtual and child classes can overwrite it if necessary
+        jint jniException(JNIEnv* env);
+#endif
     };
 
     //TODO: get some exception inheritance going on; network and authentication can inherit from the same thing, as can
     //bad user data and bad message data.
     class sqliteException : public exception {
     public:
-        sqliteException(const std::string &e) : exception(e) {
-        }
+        sqliteException(const std::string &e) : exception(e) {}
 
-        sqliteException() : exception("An internal SQLite3 operation has failed") {
-        }
+        sqliteException() : exception("An internal SQLite3 operation has failed") {}
+    };
+
+    class constraintViolationException : public sqliteException {
+    public:
+        constraintViolationException(const std::string &e) : sqliteException(e) {}
+
+        constraintViolationException() : sqliteException("An SQLite3 operation has failed because of database constraint violations"){}
     };
 
     class networkConnectionException : public exception {
     public:
-        networkConnectionException(const std::string &e) : exception(e) {
-        }
+        networkConnectionException(const std::string &e) : exception(e) {}
 
-        networkConnectionException() : exception("Failed to perform normal network operations") {
-        }
+        networkConnectionException() : exception("Failed to perform normal network operations") {}
     };
 
     class authenticationException : public exception {
     public:
-        authenticationException(const std::string &e) : exception(e) {
-        }
+        authenticationException(const std::string &e) : exception(e) {}
 
-        authenticationException() : exception("Failed to login with credentials provided") {
-        }
+        authenticationException() : exception("Failed to login with credentials provided") {}
     };
 
     class badUserDataException : public exception {
     public:
-        badUserDataException(const std::string &e) : exception(e) {
-        }
+        badUserDataException(const std::string &e) : exception(e) {}
 
-        badUserDataException() : exception("Bad account, contact or address data") {
-        }
+        badUserDataException() : exception("Bad account, contact or address data") {}
     };
 
     class badMessageDataException : public exception {
     public:
-        badMessageDataException(const std::string &e) : exception(e) {
-        }
+        badMessageDataException(const std::string &e) : exception(e) {}
 
-        badMessageDataException() : exception("Unhandleable message data received") {
-        }
+        badMessageDataException() : exception("Unhandleable message data received") {}
     };
 
     class threadingException : public exception {
     public:
-        threadingException(const std::string &e) : exception(e){
-        }
+        threadingException(const std::string &e) : exception(e){}
 
-        threadingException(): exception("Misuse of favor threading internals"){
-
-        }
+        threadingException(): exception("Misuse of favor threading internals"){}
     };
 
 #ifdef FAVOR_EMAIL_MANAGER
 
     class emailException : public exception {
     public:
-        emailException(const std::string &e) : exception(e) {
-        }
+        emailException(const std::string &e) : exception(e) {}
 
-        emailException() : exception("Error interfacing with email server") {
-        }
+        emailException() : exception("Error interfacing with email server") {}
     };
 
 #endif

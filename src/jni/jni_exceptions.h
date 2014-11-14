@@ -7,29 +7,28 @@
     x\
 }\
 catch (favor::exception &e){\
-    throwFavorException(env, e.what());\
+    e.jniException(env);\
 }\
 
 #define jniExceptReturnNull(x) try {\
     x\
 }\
 catch (favor::exception &e){\
-    throwFavorException(env, e.what());\
+    e.jniException(env);\
     return NULL;\
 }\
 
 namespace favor{
-    namespace jni{
-        jint throwFavorException(JNIEnv* env, const char* message){
-            jclass exClass = env->FindClass("com/favor/library/FavorException");
-            if (exClass == NULL) {
-                //TODO: we're in trouble now. maybe fall back on some more generic runtime exception?
-            }
-            return env->ThrowNew(exClass, message);
-        }
-
-
+    jint exception::jniException(JNIEnv* env){
+        return env->ThrowNew(jni::favor_exception, what());
     }
+
+    class jniException : public exception{
+    public:
+        jniException(const std::string &e) : exception(e) {}
+
+        jniException() : exception("An operation across the JNI boundary has failed") {}
+    };
 }
 
 

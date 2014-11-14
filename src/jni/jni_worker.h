@@ -3,6 +3,7 @@
 #include <jni.h>
 #include <reader.h>
 #include "jni_exceptions.h"
+#include "jni_string.h"
 #include "../worker.h"
 
 namespace favor{
@@ -10,9 +11,9 @@ namespace favor{
 
         JNIEXPORT void JNICALL _createContact(JNIEnv* env, jobject callingObj, jstring address, jint type, jstring displayName, jboolean addressExistsHint){
             //TODO: this isn't finding/associating with the address properly when we pass it one that exists
-            string addressString = env->GetStringUTFChars(address, NULL);
-            string displaynameString = env->GetStringUTFChars(displayName, NULL);
-            logger::info("Create contact with address: "+addressString+" and name "+displaynameString);
+            JNIString addressString(env, address);
+            JNIString displaynameString(env, displayName);
+            logger::info("Create contact with address: "+addressString.getString()+" and name "+displaynameString.getString());
             //Short circuiting saves us the method call if we know the address exists
             if (addressExistsHint || reader::addressExists(addressString, static_cast<MessageType>(type))){
                 //We believe our reader or hint, make an address object and pass it in like it was from the database

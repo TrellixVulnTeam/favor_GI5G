@@ -18,7 +18,7 @@ JNIEXPORT jstring JNICALL helloWorld(JNIEnv* env, jobject obj){
 
 //TODO: might make way more sense to do the directory stuff in java.
 JNIEXPORT void JNICALL init(JNIEnv* env, jobject obj, jstring path, jboolean first){
-    favor::dbPath = env->GetStringUTFChars(path, 0);
+    favor::dbPath = env->GetStringUTFChars(path, NULL); //This is technically a memory leak, but we're holding onto the same amount of memory if we copy it anyway
 
     favor::initialize();
     if (first) favor::worker::buildDatabase();
@@ -52,6 +52,8 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
 
     favor::jni::android_text_manager = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass(favor::jni::androidTextManagerClassPath)));
     favor::jni::android_text_manager_constructor = env->GetMethodID(favor::jni::android_text_manager, "<init>", "(Ljava/lang/String;)V");
+
+    favor::jni::favor_exception = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("com/favor/library/FavorException")));
 
     favor::jni::java_string = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass("java/lang/String")));
 

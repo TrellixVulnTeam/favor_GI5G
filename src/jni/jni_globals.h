@@ -15,6 +15,7 @@ namespace favor{
         jmethodID account_manager_constructor;
         jclass android_text_manager;
         jmethodID android_text_manager_constructor;
+        jclass favor_exception;
         jclass java_string;
     }
 }

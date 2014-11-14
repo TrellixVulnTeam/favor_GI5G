@@ -25,6 +25,9 @@ namespace favor{
 
         JNIEXPORT jobjectArray JNICALL accountManagers(JNIEnv* env, jclass clss){
 
+            //This could conceivably produce more than 16 refs, but it seems highly unlikely. Also I don't know if the possible slowdown is even enough
+            //to warrant deleting refs for objects we've created...
+
             auto accounts = reader::accountList();
             jobjectArray arr = (jobjectArray) env->NewObjectArray(accounts->size(), account_manager, 0);
             if(env->ExceptionOccurred() || arr == NULL){

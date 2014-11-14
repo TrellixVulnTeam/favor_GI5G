@@ -29,7 +29,6 @@ namespace favor {
 
     void sqlite3_validate(int result, sqlite3 *db, bool constraintFailureOK) {
         switch (result) {
-            //TODO: a specific case for constraint violations (esp. unique) that logs an error but doesn't except
             case SQLITE_OK:
                 break;
             case SQLITE_ROW:
@@ -37,7 +36,10 @@ namespace favor {
             case SQLITE_DONE:
                 break;
             case SQLITE_CONSTRAINT:
-                if (!constraintFailureOK) break; //TODO: throw a constraint-specific exception inhereted from sqliteException
+                if (!constraintFailureOK){
+                    logger::error("SQLite error #" + as_string(result) + ", db says \"" + sqlite3_errmsg(db) + "\"");
+                    throw constraintViolationException();
+                }
                 else logger::warning("SQLite constraint failed, db says \"" + string(sqlite3_errmsg(db)) + "\"");
             default:
                 logger::error("SQLite error #" + as_string(result) + ", db says \"" + sqlite3_errmsg(db) + "\"");

@@ -3,6 +3,7 @@
 #include <jni.h>
 #include "jni_exceptions.h"
 #include "jni_reader.h"
+#include "jni_string.h"
 #include "../accountmanager.h"
 #include "../reader.h"
 #include "../worker.h"
@@ -26,16 +27,17 @@ namespace favor{
             list<Address> outputAddrs;
             logger::info("Save "+as_string((int)addrCount)+" addresses of type "+MessageTypeName[type]);
             for (int i = 0; i < addrCount; ++i){
-                string addr = env->GetStringUTFChars((jstring) env->GetObjectArrayElement(addressStrings, i), NULL);
-                jobject jName = env->GetObjectArrayElement(nameStrings, i);
-                if (jName != NULL){
-                    //TODO: I assume null will come through like this...
-                    string name = env->GetStringUTFChars(static_cast<jstring>(jName), NULL);
+                JNIString addr(env, (jstring) env->GetObjectArrayElement(addressStrings, i));
+                JNIString name(env, (jstring) env->GetObjectArrayElement(nameStrings, i));
+                if (!name.isNull()){
+                    //TODO: log to make sure we detect nulls
+                    //TODO: what are we doing with names?
                     outputAddrs.push_back(Address(addr, (int)counts[i], -1, static_cast<MessageType>(type)));
                 } else {
                     outputAddrs.push_back(Address(addr, (int)counts[i], -1, static_cast<MessageType>(type)));
                 }
-                //TODO: release the refs when we're done with them inside the loop
+                addr.deleteRefAndInvalidate();
+                addr.deleteRefAndInvalidate();
             }
             env->ReleaseIntArrayElements(countArray, counts, JNI_ABORT);
 
@@ -48,7 +50,6 @@ namespace favor{
 
             for (auto it = outputAddrs.begin(); it != outputAddrs.end(); ++it) logger::info(as_string(*it)); //TODO: TESTCODE
 
-            //TODO: this is working fine. we gotta make a contact
             jniExcept(
                     worker::rewriteAddressTable(outputAddrs, static_cast<MessageType>(type));
             )
@@ -91,8 +92,8 @@ namespace favor{
 
         JNIEXPORT void JNICALL _destroy(JNIEnv* env, jobject callingObj, jstring accName, jint type){
 
-            string name = env->GetStringUTFChars(accName, NULL);
-            logger::info("Destroy account "+name+" of type "+MessageTypeName[(int)type]);
+            JNIString name(env, accName);
+            logger::info("Destroy account "+name.getString()+" of type "+MessageTypeName[(int)type]);
             jniExcept(
                     AccountManager* acc = findAccountManager(name, static_cast<MessageType>(type));
                     acc->destroy();
@@ -102,7 +103,7 @@ namespace favor{
 
         JNIEXPORT void JNICALL _update(JNIEnv* env, jobject callingObj, jstring accName, jint type, jboolean addresses){
 
-            string name = env->GetStringUTFChars(accName, NULL);
+            JNIString name(env, accName);
             jniExcept(
                     AccountManager* acc = findAccountManager(name, static_cast<MessageType>(type));
                     if (addresses) acc->updateAddresses();
@@ -111,11 +112,9 @@ namespace favor{
         }
 
         JNIEXPORT void JNICALL _create(JNIEnv* env, jobject callingObj, jstring name, jint type, jstring detailsJson) {
-            const char* nameChars = env->GetStringUTFChars(name, NULL);
-            const char* jsonChars = env->GetStringUTFChars(detailsJson, NULL);
-            string nameString(nameChars);
-            string detailsJsonString(jsonChars);
-            logger::info("Create account "+nameString+" of type "+MessageTypeName[(int)type]);
+            JNIString nameString(env, name);
+            JNIString detailsJsonString(env, detailsJson);
+            logger::info("Create account "+nameString.getString()+" of type "+MessageTypeName[(int)type]);
             jniExcept(
                     AccountManager::addAccount(nameString, (favor::MessageType)((int)type), detailsJsonString);
             )
