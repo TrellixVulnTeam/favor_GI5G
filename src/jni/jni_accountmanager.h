@@ -21,23 +21,23 @@ namespace favor{
         //again at the C++ layer, but right now something like that is premature. This method doesn't need to be super performant anyway because it's a
         //writer.
         JNIEXPORT void JNICALL _saveAddresses(JNIEnv* env, jobject callingObj, jint type, jobjectArray addressStrings, jintArray countArray,jobjectArray nameStrings){
+            //TODO: method is severely broken because it just wipes out current contacts. remodel after accountmanager method
+
             jsize addrCount = env->GetArrayLength(addressStrings);
             jint* counts = env->GetIntArrayElements(countArray, NULL);
-            //TODO: we don't know what we're doing with names yet
             list<Address> outputAddrs;
             logger::info("Save "+as_string((int)addrCount)+" addresses of type "+MessageTypeName[type]);
             for (int i = 0; i < addrCount; ++i){
                 JNIString addr(env, (jstring) env->GetObjectArrayElement(addressStrings, i));
                 JNIString name(env, (jstring) env->GetObjectArrayElement(nameStrings, i));
                 if (!name.isNull()){
-                    //TODO: log to make sure we detect nulls
                     //TODO: what are we doing with names?
                     outputAddrs.push_back(Address(addr, (int)counts[i], -1, static_cast<MessageType>(type)));
                 } else {
                     outputAddrs.push_back(Address(addr, (int)counts[i], -1, static_cast<MessageType>(type)));
                 }
                 addr.deleteRefAndInvalidate();
-                addr.deleteRefAndInvalidate();
+                name.deleteRefAndInvalidate();
             }
             env->ReleaseIntArrayElements(countArray, counts, JNI_ABORT);
 

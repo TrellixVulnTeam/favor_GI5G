@@ -13,6 +13,7 @@ namespace favor {
             std::mutex contactsMutex[NUMBER_OF_TYPES];
             thread_local int contactsHolderCount[NUMBER_OF_TYPES] = {0};
             list<Contact>* _contacts[NUMBER_OF_TYPES];
+            bool valid[NUMBER_OF_TYPES] = {false};
         }
 
         void initialize() {
@@ -34,7 +35,7 @@ namespace favor {
 
 
         DataLock<list<Contact>> contactList(const MessageType& t){
-            //The DataLock constructor will block if we can't get a lock.
+            if (!valid[t]) refreshContactList(t);
             return DataLock<list<Contact>>(&contactsMutex[t], &contactsHolderCount[t], _contacts[t]);
         }
 
@@ -47,13 +48,12 @@ namespace favor {
             accountList()->push_back(account);
         }
 
-        void addContact(Contact& contact){
-            contactList(contact.type)->push_back(contact);
+        //Something has changed, and the contacts list needs refreshing
+        void invalidateContactList(MessageType t){
+            DataLock<list<Contact>>(&contactsMutex[t], &contactsHolderCount[t], _contacts[t]); //Just for locking purposes
+            valid[t] = false;
         }
 
-        void removeContact(Contact& contact){
-            contactList(contact.type)->remove(contact);
-        }
 
         void refreshAll() {
             refreshAccountList();
@@ -96,7 +96,9 @@ namespace favor {
                 //Canonical contacts added to hash table
             }
             sqlv(result);
-            auto contacts = contactList(t);
+
+            //Get this manually because the method to get it from outside the worker could trigger infinite recursion if it's invalid
+            DataLock<list<Contact>> contacts = DataLock<list<Contact>>(&contactsMutex[t], &contactsHolderCount[t], _contacts[t]);
             contacts->clear();
 
             for (auto it = addrs->begin(); it != addrs->end(); it++){
@@ -109,6 +111,7 @@ namespace favor {
             for (auto it = contactHolder.begin(); it != contactHolder.end(); it++){
                 contacts->push_back(it->second);
             }
+            valid[t] = true;
         }
 
         shared_ptr<list<Address>> addresses(const MessageType &t){

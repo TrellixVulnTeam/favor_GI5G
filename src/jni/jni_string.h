@@ -37,21 +37,24 @@ namespace favor{
                     if (jniChars == NULL){
                         setNull();
                         throw jniException("Could not get string UTF chars");
+                    } else{
+                        str = string(jniChars);
+                        nullStr = false;
                     }
                 }
             }
 
 
             bool isNull() const {
-                return !nullStr;
+                return nullStr;
             }
 
             bool isCopied() const {
-                return !copied;
+                return copied;
             }
 
             void invalidate(){
-                if (isNull()) return;
+                if (nullStr) return;
                 env->ReleaseStringUTFChars(jstr, jniChars);
                 setNull();
             }
@@ -62,11 +65,12 @@ namespace favor{
             }
 
             std::string getString() const{
+                if (nullStr) throw jniException("Attempt to use null JNIString");
                 return str;
             }
 
             operator std::string() const{
-                if (isNull()) throw jniException("Attempt to use null JNIString");
+                if (nullStr) throw jniException("Attempt to use null JNIString");
                 else return str;
             }
 

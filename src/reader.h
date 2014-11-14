@@ -22,8 +22,7 @@ namespace favor {
         //Writers (the specific add/removes should be called exclusively by the worker)
         void removeAccount(AccountManager* account);
         void addAccount(AccountManager* account);
-        void addContact(Contact& contact);
-        void removeContact(Contact& contact);
+        void invalidateContactList(MessageType t);
 
         void refreshAll();
 

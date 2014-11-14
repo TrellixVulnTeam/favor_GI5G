@@ -82,8 +82,7 @@ namespace favor {
             sqlv(sqlite3_step(stmt));
             long contactId = sqlite3_last_insert_rowid(db);
             sqlv(sqlite3_finalize(stmt));
-            Contact contact(contactId, displayName, type);
-            reader::addContact(contact);
+            reader::invalidateContactList(type);
             return contactId;
         }
 

@@ -1,18 +1,25 @@
 Just getting things set up right now. 
 
 Todo (in order):
+ - __Fix the jni_accountmanager method for saving addresses so it doesn't just trample over old data. See accountmanager and its hashtable use.__
  - Android needs to release all the UTF chars it's getting from Java strings right now to avoid leaking memory, but we need to release them even in case of exceptions, and our current
  nice exception macro is not set up to do this. Unfortunately.
  - SQLite extended error codes? See about making use of these.
+ - See about a const version of the DataLock, or just about making DataLocks return only const references (if the former, watch out for slicing). Only the reader should be updating its 
+ cached info anyway...
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
  further down the road.
  - Japanese support is going to require we handle the "shiftJIS" ("big5" won't hurt either while we're at it, though it's Chinese) encoding, because VMIME is having none of it. 
  Look into detecting this (and any other encodings that tidyhtml handles but vmime doesn't) and using TIDY to convert the text, trying to avoid any extra HTML work. It'd also be better if we knew tidy worked on Android so we could count on it for doing this in other
  situations, but that just takes some testing.
+ - In the AccountManager and jni account manager code, we need to figure out what we're doing with suggested names (how to use/store them, whether to save them, etc.)
  - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts')
  - Basic unit tests, and some basic threading tests to make sure datalocks do their job
  - What do we when we can't parse a message for whatever reason? Have a specific method to export as much data as possible?
+ - In a perfect world, our methods to update contacts would properly adjust the state of the contacts and their held addresses instead of just marking the list as needing to be
+ refreshed. This will take a little bit of work to do elegantly though - additions must create a new contact with an address _and_ ensure no other contacts have that address, and of
+ course updates just to address linkages must do something similar. Deletions should be relatively simple. 
  - When account managers fail to save their held messages, they can end up with state that's potentially inconsistent - it might be wise to look at this and consider situations in which
  it makes the most sense to reload an account manager from its database JSON after a save failure. Of course this would have to come hand in hand with higher tolerance for possible
  insertion failures due to duplicates, otherwise we can end up with an account manager that reloads itself forever trying to save a message with a given ID.
