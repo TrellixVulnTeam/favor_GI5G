@@ -21,37 +21,26 @@ namespace favor{
         //again at the C++ layer, but right now something like that is premature. This method doesn't need to be super performant anyway because it's a
         //writer.
         JNIEXPORT void JNICALL _saveAddresses(JNIEnv* env, jobject callingObj, jint type, jobjectArray addressStrings, jintArray countArray,jobjectArray nameStrings){
-            //TODO: method is severely broken because it just wipes out current contacts. remodel after accountmanager method
 
             jsize addrCount = env->GetArrayLength(addressStrings);
             jint* counts = env->GetIntArrayElements(countArray, NULL);
-            list<Address> outputAddrs;
+            std::unordered_map<std::string, int> countedAddresses;
+            std::unordered_map<std::string, std::string> addressNames;
+
             logger::info("Save "+as_string((int)addrCount)+" addresses of type "+MessageTypeName[type]);
             for (int i = 0; i < addrCount; ++i){
                 JNIString addr(env, (jstring) env->GetObjectArrayElement(addressStrings, i));
                 JNIString name(env, (jstring) env->GetObjectArrayElement(nameStrings, i));
-                if (!name.isNull()){
-                    //TODO: what are we doing with names?
-                    outputAddrs.push_back(Address(addr, (int)counts[i], -1, static_cast<MessageType>(type)));
-                } else {
-                    outputAddrs.push_back(Address(addr, (int)counts[i], -1, static_cast<MessageType>(type)));
-                }
+                countedAddresses[addr] = counts[i];
+                if (!name.isNull()) addressNames[addr] = name;
+
                 addr.deleteRefAndInvalidate();
                 name.deleteRefAndInvalidate();
             }
             env->ReleaseIntArrayElements(countArray, counts, JNI_ABORT);
 
-            outputAddrs.sort(compareAddress);
-
-            auto itr = outputAddrs.begin();
-            int i;
-            for (i = 0; i < MAX_ADDRESSES && itr != outputAddrs.end(); ++i) ++itr;
-            if (i == MAX_ADDRESSES) outputAddrs.erase(itr, outputAddrs.end());
-
-            for (auto it = outputAddrs.begin(); it != outputAddrs.end(); ++it) logger::info(as_string(*it)); //TODO: TESTCODE
-
             jniExcept(
-                    worker::rewriteAddressTable(outputAddrs, static_cast<MessageType>(type));
+                    worker::recomputeAddressTable(countedAddresses, addressNames, (MessageType)type);
             )
 
         }

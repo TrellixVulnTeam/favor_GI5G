@@ -122,6 +122,39 @@ namespace favor {
 
         }
 
+        //Not that this should ever matter, but this will remove any addresses that exist in the database from countedAddresses
+        void recomputeAddressTable(std::unordered_map<std::string, int>& countedAddresses, std::unordered_map<std::string, std::string>& addressNames, MessageType type){
+            //TODO: we don't know what we're doing with names yet
+            shared_ptr<list<Address>> addrList = reader::addresses(type);
+
+            list<Address> addrOutList = list<Address>();
+
+            for (auto it = addrList->begin(); it != addrList->end(); ++it){
+                //Insert, get state and remove from countedaddrs if exists
+                int count = it->count;
+                if (countedAddresses.count(it->addr)){
+                    //This is newer information, so we update the count and then remove what would be duplicate data later on
+                    count = countedAddresses.at(it->addr);
+                    countedAddresses.erase(it->addr);
+                }
+                addrOutList.push_back(Address(it->addr, count, it->contactId, type));
+            }
+            for (auto it = countedAddresses.begin(); it != countedAddresses.end(); it++) {
+                addrOutList.push_back(Address(it->first, it->second, -1, type));
+            }
+
+            addrOutList.sort(compareAddress);
+
+            auto itr = addrOutList.begin();
+            int i;
+            for (i = 0; i < MAX_ADDRESSES && itr != addrOutList.end(); ++i) ++itr;
+            if (i == MAX_ADDRESSES) addrOutList.erase(itr, addrOutList.end()); //Erase anything above our max if there are enough elements to need to
+
+            //TODO: eventually we can do some guessing about current contacts here with levenshtein distance on names
+
+            rewriteAddressTable(addrOutList, type);
+        }
+
         void rewriteAddressTable(const list<Address>& newAddresses, const MessageType& type){
             beginTransaction();
             exec("DELETE FROM " ADDRESS_TABLE(type) ";");
