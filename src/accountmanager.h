@@ -6,6 +6,15 @@
 #include "address.h"
 #include "contact.h"
 
+#ifdef ANDROID
+#include <jni.h>
+namespace favor{
+ namespace jni{
+ void _saveMessages(JNIEnv* env, jobject callingObj, jint type, jstring name, jbooleanArray sent, jlongArray ids, jlongArray dates, jobjectArray addresses, jbooleanArray media, jobjectArray bodies);
+  }
+}
+#endif
+
 //I agree processor macros as functions are bad, but it's too convenient to just be able to use these variable's names as strings directly, and
 //in this case actually ends up with us being less bug prone
 #define setJsonLong(name) if (json.HasMember(#name)) json[#name].SetInt64(name);\
@@ -30,7 +39,7 @@ namespace favor {
             rapidjson::Document json;
 
         private:
-            std::vector<favor::Message>* heldMessages;
+            std::vector<favor::Message> heldMessages;
             std::unordered_map<std::string, int> countedAddresses; //Address : count
             std::unordered_map<std::string, std::string> addressNames; //Address : suggestedName
 
@@ -97,6 +106,11 @@ namespace favor {
 
             //Static methods
             static AccountManager* buildManager(string accNm, MessageType typ, string detailsJson);
+
+            //Friend methods
+            #ifdef ANDROID
+            friend void ::favor::jni::_saveMessages(JNIEnv* env, jobject callingObj, jint type, jstring name, jbooleanArray sent, jlongArray ids, jlongArray dates, jobjectArray addresses, jbooleanArray media, jobjectArray bodies);
+            #endif
         };
 
     }

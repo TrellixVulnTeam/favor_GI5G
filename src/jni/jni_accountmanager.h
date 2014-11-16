@@ -16,6 +16,39 @@ private native void _saveMessages(int type, boolean[] sent, long[] id, long[] da
 namespace favor{
     namespace jni{
 
+
+
+        JNIEXPORT void JNICALL _saveMessages(JNIEnv* env, jobject callingObj, jint type, jstring name, jbooleanArray sent, jlongArray ids, jlongArray dates, jobjectArray addresses, jbooleanArray media, jobjectArray bodies){
+            jboolean* sentArray = env->GetBooleanArrayElements(sent, NULL);
+            jlong* idArray = env->GetLongArrayElements(ids, NULL);
+            jlong* dateArray = env->GetLongArrayElements(dates, NULL);
+            jboolean* mediaArray = env->GetBooleanArrayElements(media, NULL);
+
+            jsize msgCount = env->GetArrayLength(sent);
+
+            JNIString accountName(env, name);
+            AccountManager* accManager = findAccountManager(accountName, (MessageType) type);
+
+            for (int i = 0; i < msgCount; ++i){
+                JNIString address(env, (jstring) env->GetObjectArrayElement(addresses, i));
+                JNIString body(env, (jstring) env->GetObjectArrayElement(bodies, i));
+                //TODO: date may need to become a time_t
+                accManager->holdMessage(sentArray[i], idArray[i], dateArray[i], address, mediaArray[i], body);
+                address.deleteRefAndInvalidate();
+                body.deleteRefAndInvalidate();
+            }
+
+            env->ReleaseBooleanArrayElements(sent, sentArray, JNI_ABORT);
+            env->ReleaseLongArrayElements(ids, idArray, JNI_ABORT);
+            env->ReleaseLongArrayElements(dates, dateArray, JNI_ABORT);
+            env->ReleaseBooleanArrayElements(media, mediaArray, JNI_ABORT);
+
+            logger::info("Saving "+as_string((int)msgCount)+" messages");
+            jniExcept(
+                accManager->saveHeldMessages();
+            )
+        }
+
         //This is a heavy method. We're doing multiple JNI calls for every contact; we could potentially get around this with some really obnoxious
         //process like jamming all of the relevant characters into a bye array ourselves, deliminating them, and then separating them into usable data
         //again at the C++ layer, but right now something like that is premature. This method doesn't need to be super performant anyway because it's a
@@ -114,7 +147,8 @@ namespace favor{
                 {"_destroy", "(Ljava/lang/String;I)V", (void*) _destroy},
                 {"_update", "(Ljava/lang/String;IZ)V", (void*) _update},
                 {"contactAddresses", "(I)[Ljava/lang/String;", (void*) contactAddresses},
-                {"_saveAddresses", "(I[Ljava/lang/String;[I[Ljava/lang/String;)V", (void*) _saveAddresses}
+                {"_saveAddresses", "(I[Ljava/lang/String;[I[Ljava/lang/String;)V", (void*) _saveAddresses},
+                {"_saveMessages", "(ILjava/lang/String;[Z[J[J[Ljava/lang/String;[Z[Ljava/lang/String;)V", (void*) _saveMessages}
         };
 }
 }

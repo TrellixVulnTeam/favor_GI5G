@@ -55,7 +55,7 @@ namespace favor {
 
 //Contacts table
 #define CONTACT_TABLE(type) "contacts_" + string(MessageTypeName[type]) + ""
-#define CONTACT_TABLE_SCHEMA "(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL UNIQUE)"
+#define CONTACT_TABLE_SCHEMA "(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL)"
 
 //Addresses table
 /*Note:

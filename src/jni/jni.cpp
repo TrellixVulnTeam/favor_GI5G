@@ -12,10 +12,6 @@ extern "C" {
 //Java, then package name, then class name, then method name, separated by underscores (also underscores per "." in the package name)
 //Basically if you get an error calling this stuff, the solution is replacing every . in the error with an underscore
 
-JNIEXPORT jstring JNICALL helloWorld(JNIEnv* env, jobject obj){
-    return env->NewStringUTF("Hello from Favor's native interface!");
-}
-
 //TODO: might make way more sense to do the directory stuff in java.
 JNIEXPORT void JNICALL init(JNIEnv* env, jobject obj, jstring path, jboolean first){
     favor::dbPath = env->GetStringUTFChars(path, NULL); //This is technically a memory leak, but we're holding onto the same amount of memory if we copy it anyway
@@ -31,7 +27,6 @@ JNIEXPORT void JNICALL cleanup(JNIEnv* env, jobject obj){
 }
 
 static JNINativeMethod coreMethodTable[] = {
-        {"helloWorld", "()Ljava/lang/String;", (void*) helloWorld},
         {"init", "(Ljava/lang/String;Z)V", (void*) init},
         {"cleanup", "()V", (void*) cleanup}
 };

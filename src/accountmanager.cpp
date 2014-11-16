@@ -32,12 +32,9 @@ namespace favor {
                 logger::error("Parse error on json: \"" + detailsJson + "\". RapidJson says: " + rapidjson::GetParseError_En(json.GetParseError()));
                 throw badUserDataException("Failed to parse JSON details for account "+accountName);
             }
-            heldMessages = new std::vector<favor::Message>;
         }
 
-        AccountManager::~AccountManager(){
-            delete heldMessages;
-        }
+        AccountManager::~AccountManager(){}
 
         void AccountManager::buildTables() {
             //TODO: index if indexing is enabled
@@ -151,7 +148,7 @@ namespace favor {
             cleanWhitespace(msg);
             size_t length = utf8::distance(msg.begin(), msg.end());
 
-            heldMessages->emplace_back(Message(type, sent, id, date, address, media, msg, length));
+            heldMessages.emplace_back(Message(type, sent, id, date, address, media, msg, length));
         }
 
         //TODO: untested since minor refactor. should be identical though

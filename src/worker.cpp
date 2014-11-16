@@ -197,22 +197,23 @@ namespace favor {
 
         void AccountManager::saveHeldMessages() {
             //id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, body TEXT
-            string sentSql = "INSERT INTO " SENT_TABLE_NAME " VALUES(?,?,?,?,?,?)";
-            string receivedSql = "INSERT INTO " RECEIVED_TABLE_NAME " VALUES(?,?,?,?,?,?)";
+            string sentSql = "INSERT INTO " SENT_TABLE_NAME " VALUES(?,?,?,?,?,?);";
+            string receivedSql = "INSERT INTO " RECEIVED_TABLE_NAME " VALUES(?,?,?,?,?,?);";
             sqlite3_stmt* sentStmt;
             sqlite3_stmt* receivedStmt;
-            sqlv(sqlite3_prepare(db, sentSql.c_str(), sentSql.length(), &sentStmt, NULL));
-            sqlv(sqlite3_prepare(db, receivedSql.c_str(), receivedSql.length(), &receivedStmt, NULL));
+            sqlv(sqlite3_prepare_v2(db, sentSql.c_str(), sentSql.length(), &sentStmt, NULL));
+            sqlv(sqlite3_prepare_v2(db, receivedSql.c_str(), receivedSql.length(), &receivedStmt, NULL));
 
             beginTransaction();
-            for (int i = 0; i < heldMessages->size(); ++i) {
-                if ((*heldMessages)[i].sent) saveMessage((*heldMessages)[i], sentStmt);
-                else saveMessage((*heldMessages)[i], receivedStmt);
+            for (int i = 0; i < heldMessages.size(); ++i) {
+                if (heldMessages[i].sent) saveMessage(heldMessages[i], sentStmt);
+                else saveMessage(heldMessages[i], receivedStmt);
             }
+
             sqlv(sqlite3_finalize(sentStmt));
             sqlv(sqlite3_finalize(receivedStmt));
             commitTransaction();
-            heldMessages->clear();
+            heldMessages.clear();
         }
 
         void AccountManager::saveMessage(const Message& m, sqlite3_stmt* stmt) {
