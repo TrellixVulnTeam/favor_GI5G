@@ -13,7 +13,6 @@ Todo (in order):
   - See about a const version of the DataLock, or just about making DataLocks return only const references (if the former, watch out for slicing). Only the reader should be updating its 
   cached info anyway...
  - Basic unit tests, and some basic threading tests to make sure datalocks do their job
- - What do we when we can't parse a message for whatever reason? Have a specific method to export as much data as possible?
  - In a perfect world, our methods to update contacts would properly adjust the state of the contacts and their held addresses instead of just marking the list as needing to be
  refreshed. This will take a little bit of work to do elegantly though - additions must create a new contact with an address _and_ ensure no other contacts have that address, and of
  course updates just to address linkages must do something similar. Deletions should be relatively simple. 

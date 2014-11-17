@@ -65,6 +65,8 @@ namespace favor {
 
             void holdMessage(bool sent, long int id, time_t date, string address, bool media, string msg);
 
+            void holdMessageFailure(bool sent, long int id);
+
             void countAddress(const string &address);
 
             void setCountedAddressName(const string &address, const string &name);

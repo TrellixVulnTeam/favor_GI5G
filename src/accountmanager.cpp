@@ -151,6 +151,10 @@ namespace favor {
             heldMessages.emplace_back(Message(type, sent, id, date, address, media, msg, length));
         }
 
+        void AccountManager::holdMessageFailure(bool sent, long int id) {
+            heldMessages.emplace_back(Message(type, sent, id, 0, "", 0, "", 0));
+        }
+
         //TODO: untested since minor refactor. should be identical though
         void AccountManager::saveHeldAddresses() {
             worker::recomputeAddressTable(countedAddresses, addressNames, type);

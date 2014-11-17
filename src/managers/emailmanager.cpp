@@ -257,18 +257,23 @@ namespace favor {
         for (int i = 0; i < mp.getTextPartCount(); ++i) {
             vmime::shared_ptr<const vmime::textPart> tp = mp.getTextPartAt(i);
             if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_HTML) {
-                //TODO: handleHTMl can fail, and except. how do we handle that?
                 shared_ptr<const vmime::htmlTextPart> htp = dynamic_pointer_cast<const vmime::htmlTextPart>(tp);
-                if (!regex_match(htp->getCharset().getName(), utf8regex)) {
-                    //Encoding is supposedly handled by VMIME, but we'll need to look at charset
-                    //TODO: test this converting from a non utf-8 charset. Everybody seems to send everything already in UTF-8 these days
-                    logger::info("Converting mail with UID " + string(m->getUID()) + " and charset " + htp->getCharset().getName() + " to utf-8");
-                    shared_ptr<vmime::charsetConverter> conv = vmime::charsetConverter::create(htp->getCharset(), vmime::charset("utf-8"));
-                    shared_ptr<vmime::utility::charsetFilteredOutputStream> out = conv->getFilteredOutputStream(os);
-                    handleHTML(&(*out), body, htp);
-                }
-                else {
-                    handleHTML(&os, body, htp);
+                try{
+                    if (!regex_match(htp->getCharset().getName(), utf8regex)) {
+                        //Encoding is supposedly handled by VMIME, but we'll need to look at charset
+                        //TODO: test this converting from a non utf-8 charset. Everybody seems to send everything already in UTF-8 these days
+                        logger::info("Converting mail with UID " + string(m->getUID()) + " and charset " + htp->getCharset().getName() + " to utf-8");
+                        shared_ptr<vmime::charsetConverter> conv = vmime::charsetConverter::create(htp->getCharset(), vmime::charset("utf-8"));
+                        shared_ptr<vmime::utility::charsetFilteredOutputStream> out = conv->getFilteredOutputStream(os);
+                        handleHTML(&(*out), body, htp);
+                    }
+                    else {
+                        handleHTML(&os, body, htp);
+                    }
+                } catch (badMessageDataException& e){
+                    logger::warning("Failed to parse html text part of message with UID "+as_string(uid));
+                    holdMessageFailure(sent, uid);
+                    return;
                 }
             }
             else if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_PLAIN) {
@@ -276,7 +281,9 @@ namespace favor {
                     os.flush();
             }
             else {
-                //Some formatting of text we don't know how to handle
+                logger::warning("Failed to parse message with text part of type: "+tp->getType().getType()+" with UID "+as_string(uid));
+                holdMessageFailure(sent, uid);
+                return;
             }
         }
 
@@ -513,6 +520,7 @@ namespace favor {
 
     }
 
+    //TODO: untested since minor changes, but should still work perfectly fine.
     void EmailManager::fetchAddresses() {
         try {
             vmime::shared_ptr<vmime::net::store> st = login();
@@ -522,13 +530,19 @@ namespace favor {
 
             long nextUid = dynamic_pointer_cast<vmime::net::imap::IMAPFolderStatus>(sent->getStatus())->getUIDNext();
             if (nextUid == 0) {
-                //TODO: this sucks and I expect will realistically almost never happen, but we can probably do better than excepting. try using our last UID, maybe?
-                logger::error("Could not retrieve next UID, and so could not determine recent messages");
-                throw emailException("Server failed to provide next UID");
+                if (lastSentUid > 1) {
+                    logger::warning("Could not retrieve next UID from server, so using last fetched sent UID to determine recent messages for address fetching");
+                    nextUid = lastSentUid;
+                } else {
+                    logger::error("Could not retrieve next UID and no previous UID fetches on this server, so could not determine recent messages");
+                    throw emailException("Server failed to provide next UID");
+                }
             }
 
             nextUid--; //To account for the fact that this UID doesn't actually exist yet
-            vmime::net::messageSet wantedMessages(vmime::net::messageSet::byUID(nextUid - ADDRESS_CHECK_MESSAGE_COUNT, nextUid));
+            long minUid = nextUid - ADDRESS_CHECK_MESSAGE_COUNT;
+            if (minUid < 1) minUid = 1;
+            vmime::net::messageSet wantedMessages(vmime::net::messageSet::byUID(minUid, nextUid));
             vmime::net::fetchAttributes attribs;
             attribs.add("To");
             vector<shared_ptr<vmime::net::message>> result = sent->getAndFetchMessages(wantedMessages, attribs);
@@ -538,7 +552,7 @@ namespace favor {
                 shared_ptr<const vmime::addressList> addrList = result[i]->getHeader()->To()->getValue<vmime::addressList>();
 
                 //TODO: Write some email-specific code to use the most common name for a given contact, because any other medium should have a
-                //very well defined mapping
+                //very well defined mapping. throw names into hash tables of counts per address, associate the most common ones with the address
                 for (int i = 0; i < addrList->getAddressCount(); ++i) {
                     shared_ptr<const vmime::address> addr = addrList->getAddressAt(i);
                     string address;
