@@ -176,6 +176,7 @@ namespace favor {
             addressNames[address] = name;
         }
 
+        //TODO: this should be a shared pointer to a vector
         shared_ptr<list<Address>> AccountManager::contactAddresses() {
             shared_ptr<list<Address>> ret = make_shared<list<Address>>();
             auto contacts = reader::contactList(type);
