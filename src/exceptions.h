@@ -43,11 +43,11 @@ namespace favor {
         networkConnectionException() : exception("Failed to perform normal network operations") {}
     };
 
-    class authenticationException : public exception {
+    class authenticationException : public networkConnectionException {
     public:
-        authenticationException(const std::string &e) : exception(e) {}
+        authenticationException(const std::string &e) : networkConnectionException(e) {}
 
-        authenticationException() : exception("Failed to login with credentials provided") {}
+        authenticationException() : networkConnectionException("Failed to login with credentials provided") {}
     };
 
     class badUserDataException : public exception {
@@ -64,6 +64,12 @@ namespace favor {
         badMessageDataException() : exception("Unhandleable message data received") {}
     };
 
+    class queryException : public exception{
+    public:
+        queryException(const std::string& e) : exception(e) {}
+        queryException(): exception("Attempted to construct a database query with invalid input"){}
+    };
+
     class threadingException : public exception {
     public:
         threadingException(const std::string &e) : exception(e){}
@@ -73,11 +79,11 @@ namespace favor {
 
 #ifdef FAVOR_EMAIL_MANAGER
 
-    class emailException : public exception {
+    class emailException : public networkConnectionException {
     public:
-        emailException(const std::string &e) : exception(e) {}
+        emailException(const std::string &e) : networkConnectionException(e) {}
 
-        emailException() : exception("Error interfacing with email server") {}
+        emailException() : networkConnectionException("Error interfacing with email server") {}
     };
 
 #endif

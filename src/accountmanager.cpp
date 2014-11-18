@@ -86,6 +86,11 @@ namespace favor {
             return as_string(json);
         }
 
+        string AccountManager::getTableName(bool sent) const {
+            if (sent) return SENT_TABLE_NAME;
+            else return RECEIVED_TABLE_NAME;
+        }
+
         bool AccountManager::isWhitespace(uint32_t code) {
             //TODO: consult https://www.cs.tut.fi/~jkorpela/chars/spaces.html and http://www.fileformat.info/info/unicode/category/Zs/list.htm
             //because I'm suddenly easy about the data wikipedia gave me. Should've seen that coming I guess

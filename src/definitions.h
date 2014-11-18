@@ -84,6 +84,17 @@ not even compile.
  * "But the following declaration does not result in "x" being an alias for the rowid:
  * CREATE TABLE t(x INTEGER PRIMARY KEY DESC, y, z);"
  */
+enum Key{
+    ADDRESS = 1 << 0, //0 0001
+    DATE = 1 << 1, //0 0010
+    CHARCOUNT = 1 << 2, //0 0100
+    MEDIA = 1 << 3, //0 1000
+    BODY = 1 << 4, //1 0000
+
+};
+inline Key operator|(Key lhs, Key rhs){
+    return static_cast<Key>(static_cast<int>(lhs) | static_cast<int>(rhs));
+}
 #define RECEIVED_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, body TEXT, PRIMARY KEY(id))"
 #define SENT_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, body TEXT, PRIMARY KEY(id, address))"
 /*Note:

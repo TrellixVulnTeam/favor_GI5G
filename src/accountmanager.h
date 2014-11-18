@@ -99,7 +99,11 @@ namespace favor {
 
             void deindexTables();
 
+            //Getters
+
             string getJson() const;
+
+            string getTableName(bool sent) const;
 
             //Work
             void updateMessages();
