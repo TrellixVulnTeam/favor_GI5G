@@ -42,11 +42,11 @@ namespace favor {
 
         std::time_t toTime(const vmime::datetime input);
 
-        string searchCommand(bool sent, shared_ptr<const list<Address>> addresses, long startUid, long endUid);
+        string searchCommand(bool sent, shared_ptr<const vector<Address>> addresses, long startUid, long endUid);
 
         std::pair<std::shared_ptr<vmime::net::folder>, std::shared_ptr<vmime::net::folder>> findSentRecFolder(favor::shared_ptr<vmime::net::store> st);
 
-        void fetchFromFolder(favor::shared_ptr<vmime::net::folder> folder, shared_ptr<const list<Address>> addresses, bool catchUp);
+        void fetchFromFolder(favor::shared_ptr<vmime::net::folder> folder, shared_ptr<const vector<Address>> addresses, bool catchUp);
     };
 }
 

@@ -90,6 +90,7 @@ enum Key{
     CHARCOUNT = 1 << 2, //0 0100
     MEDIA = 1 << 3, //0 1000
     BODY = 1 << 4, //1 0000
+    ALL = 31    //1 1111
 
 };
 inline Key operator|(Key lhs, Key rhs){

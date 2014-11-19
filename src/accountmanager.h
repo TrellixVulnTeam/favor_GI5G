@@ -79,8 +79,6 @@ namespace favor {
 
             void saveFetchData();
 
-            shared_ptr<list<Address>> contactAddresses();
-
         public:
             ~AccountManager();
 
@@ -104,6 +102,8 @@ namespace favor {
             string getJson() const;
 
             string getTableName(bool sent) const;
+
+            shared_ptr<vector<Address>> contactAddresses() const;
 
             //Work
             void updateMessages();

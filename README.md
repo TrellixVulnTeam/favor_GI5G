@@ -8,7 +8,8 @@ Todo (in order):
  Look into detecting this (and any other encodings that tidyhtml handles but vmime doesn't) and using TIDY to convert the text, trying to avoid any extra HTML work. It'd also be better if we knew tidy worked on Android so we could count on it for doing this in other
  situations, but that just takes some testing.
  - In the worker address table computing code, we need to figure out what we're doing with suggested names (how to use/store them, whether to save them or give them to the reader, etc.)
- - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts')
+ - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts'). Also take this time to verify
+ stuff still works with the list -> vector switch (not that that should actually change anything)
   - SQLite extended error codes? See about making use of these.
   - See about a const version of the DataLock, or just about making DataLocks return only const references (if the former, watch out for slicing). Only the reader should be updating its 
   cached info anyway...

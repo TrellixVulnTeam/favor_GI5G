@@ -361,7 +361,7 @@ namespace favor {
         return st;
     }
 
-    string EmailManager::searchCommand(bool sent, shared_ptr<const list<Address>> addresses, long startUid, long endUid = -1) {
+    string EmailManager::searchCommand(bool sent, shared_ptr<const vector<Address>> addresses, long startUid, long endUid = -1) {
         string cmd("");
         string addressField = sent ? "TO" : "FROM";
         for (int i = 1; i < addresses->size(); ++i) {cmd += "OR ";} //One less "OR " than the number of addresses is important, so we start from 1 here
@@ -410,7 +410,7 @@ namespace favor {
 
     }
 
-    void EmailManager::fetchFromFolder(shared_ptr<vmime::net::folder> folder, shared_ptr<const list<Address>> addresses, bool catchUp = false) {
+    void EmailManager::fetchFromFolder(shared_ptr<vmime::net::folder> folder, shared_ptr<const vector<Address>> addresses, bool catchUp = false) {
         bool sent = (folder->getName().getBuffer() != "INBOX");
         long &lastUid = sent ? lastSentUid : lastReceivedUid;
         long &lastUidValidity = sent ? lastSentUidValidity : lastReceivedUidValidity;
@@ -476,8 +476,8 @@ namespace favor {
 
     void EmailManager::fetchMessages() {
 
-        shared_ptr<list<Address>> addresses  = contactAddresses();
-        shared_ptr<list<Address>> newAddresses  = make_shared<list<Address>>();
+        shared_ptr<vector<Address>> addresses  = contactAddresses();
+        shared_ptr<vector<Address>> newAddresses  = make_shared<vector<Address>>();
 
 
         if (addresses->size() == 0){

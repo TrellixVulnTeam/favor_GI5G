@@ -2,7 +2,7 @@
 
 find_package(Threads)
 
-set(compilation_files favor.cpp processor.cpp reader.cpp worker.cpp accountmanager.cpp message.cpp contact.cpp logger.cpp) #Core files
+set(compilation_files favor.cpp processor.cpp reader.cpp worker.cpp accountmanager.cpp message.cpp contact.cpp logger.cpp messagequeries/messagequery.cpp) #Core files
 LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/lib/sqlite/sqlite3.c) #Sqlite
 add_definitions(-DSQLITE_THREADSAFE=2)
 LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/lib/pugixml/pugixml.cpp)
@@ -49,4 +49,5 @@ add_library(favor SHARED ${compilation_files})
 target_include_directories(favor PUBLIC managers)
 target_include_directories(favor PUBLIC .) #So managers can get at core files
 target_include_directories(favor PUBLIC lib)
+target_include_directories(favor PUBLIC messagequeries)
 target_link_libraries (favor ${compilation_libraries})

@@ -177,8 +177,8 @@ namespace favor {
         }
 
         //TODO: this should be a shared pointer to a vector
-        shared_ptr<list<Address>> AccountManager::contactAddresses() {
-            shared_ptr<list<Address>> ret = make_shared<list<Address>>();
+        shared_ptr<vector<Address>> AccountManager::contactAddresses() const {
+            shared_ptr<vector<Address>> ret = make_shared<vector<Address>>();
             auto contacts = reader::contactList(type);
             for (auto it = contacts->begin(); it != contacts->end(); ++it){
                 for (int i = 0; i < it->getAddresses().size(); ++i){

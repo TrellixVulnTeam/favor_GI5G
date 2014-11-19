@@ -62,40 +62,14 @@ namespace favor {
             }
         }
 
-        string keysToString(Key key, bool maxOne){
-
-        }
-
-        string verifyAndComputeWhereClause(const vector<Address>* addresses, time_t fromDate, time_t untilDate){
-            //TODO: this makes way less sense as a method when we have to bind the actual parameters later... should we just stringify things in here?
-            //should we make this the last method in the chain and have it actually bind stuff? this all got substantially more complicated very quickly...
-            const char* SELECTION_START = "WHERE ";
-            string selection = SELECTION_START;
-            if (addresses != NULL) {
-                //Nothing to do here
-            }
-            if (fromDate != -1){
-                if (selection != SELECTION_START) selection += " AND ";
-                selection += "date >= ?";
-            }
-            if (untilDate != -1){
-                if (selection != SELECTION_START) selection += " AND ";
-                selection += "date <= ?";
-            }
-        }
-
-        template <typename T>
-        T sqlComputeCommand(const string& cmd, const vector<Address>* addresses, const string& tableName, Key key, time_t fromDate, time_t untilDate){
-            string where = verifyAndComputeWhereClause(addresses, fromDate, untilDate);
-        }
 
         shared_ptr<vector<Message>> query(const vector<Address>* addresses, const string& tableName, Key keys, time_t fromDate, time_t untilDate){
-            string where = verifyAndComputeWhereClause(addresses, fromDate, untilDate);
+//            string where = verifyAndComputeWhereClause(addresses, fromDate, untilDate);
         }
 
         shared_ptr<vector<Message>> queryConversation(const AccountManager* account, const Contact& c, Key keys, time_t fromDate, time_t untilDate, bool sent){
             const vector<Address>* addresses = &(c.getAddresses());
-            string where = verifyAndComputeWhereClause(addresses, fromDate, untilDate);
+//            string where = verifyAndComputeWhereClause(addresses, fromDate, untilDate);
         }
 
         shared_ptr<vector<Message>> queryAll(const AccountManager* account, const Key keys, time_t fromDate, time_t untilDate, bool sent){
@@ -106,18 +80,20 @@ namespace favor {
         }
 
         long sum(const AccountManager* account, const Contact& c, Key key, time_t fromDate, time_t untilDate, bool sent){
-            return sqlComputeCommand<long>("SUM", &(c.getAddresses()), account->getTableName(sent), key, fromDate, untilDate);
+            shared_ptr<vector<Address>> addrs = make_shared<vector<Address>>();
+
+            CollationQuery<long> query(account, )
         }
         double average(const AccountManager* account, const Contact& c, Key key, time_t fromDate, time_t untilDate, bool sent){
-            return sqlComputeCommand<double>("AVG", &(c.getAddresses()), account->getTableName(sent), key, fromDate, untilDate);
+
         }
 
         double averageAll(const AccountManager* account, Key key, time_t fromDate, time_t untilDate, bool sent){
-            return sqlComputeCommand<double>("AVG", NULL, account->getTableName(sent), key, fromDate, untilDate);
+
         }
 
         long sumAll(const AccountManager* account, Key key, time_t fromDate, time_t untilDate, bool sent){
-            return sqlComputeCommand<long>("SUM", NULL, account->getTableName(sent), key, fromDate, untilDate);
+
         }
 
 
