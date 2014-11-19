@@ -1,5 +1,4 @@
 #include "reader.h"
-#include "logger.h"
 
 namespace favor {
     namespace reader {
@@ -14,6 +13,9 @@ namespace favor {
             thread_local int contactsHolderCount[NUMBER_OF_TYPES] = {0};
             list<Contact>* _contacts[NUMBER_OF_TYPES];
             bool valid[NUMBER_OF_TYPES] = {false};
+
+            enum QueryBindables {ADDRESSES_START, FROM_DATE, UNTIL_DATE};
+            typedef std::unordered_map<int, int> Indices;
         }
 
         void initialize() {
@@ -63,13 +65,132 @@ namespace favor {
         }
 
 
+        /*
+        SQLITE HELPER METHODS
+         */
+
+        //Returns the computed string, the indices to be used for getting the appropriate values later
+        std::pair<string, Indices> computeKeys(Key keys, int keyOffset = 0){
+            string keystring = "(";
+            Indices keyIndices;
+            int currentKeyIndex = keyOffset;
+            if (keys & ADDRESS){
+                keystring += "address,";
+                keyIndices[ADDRESS] = currentKeyIndex++;
+            }
+            if (keys & DATE){
+                keystring += "date,";
+                keyIndices[DATE] = currentKeyIndex++;
+            }
+            if (keys & CHARCOUNT){
+                keystring += "charcount,";
+                keyIndices[CHARCOUNT] = currentKeyIndex++;
+            }
+            if (keys & MEDIA){
+                keystring += "media,";
+                keyIndices[MEDIA] = currentKeyIndex++;
+            }
+            if (keys & BODY){
+                keystring += "body,";
+                keyIndices[BODY] = currentKeyIndex;
+            }
+            keystring[keystring.length()-1] = ')'; //Replace last comma with paren
+            return std::pair<string, Indices>(keystring, keyIndices);
+        }
+
+        //Returns the computed string, the indices to be used for binding corresponding terms later
+        std::pair<string, Indices> computeSelection(const vector<Address>* addresses, time_t fromDate, time_t untilDate, int bindingOffset = 0){
+            string selection = "WHERE ";
+            bool fresh = true;
+            int currentBinding = bindingOffset;
+            Indices bindings;
+            if (addresses != NULL){
+                fresh = false;
+                if (addresses->size() == 0 ){
+                    selection += "1=2"; //Always false, returns nothing
+                } else {
+                    selection += "(";
+                    bindings[ADDRESSES_START] = currentBinding++;
+                    for (int i = 0; i < addresses->size(); ++i){
+                        selection += "address=\""+(*addresses)[i].addr+"\"";
+                        if (i != addresses->size() -1 ) selection += " OR ";
+                    }
+                    selection += ")";
+                }
+            }
+            if (fromDate != -1){
+                if (!fresh) selection += " AND ";
+                fresh = false;
+                selection += "date >= ?";
+                bindings[FROM_DATE] = currentBinding++;
+            }
+            if (untilDate != -1){
+                if (!fresh) selection += " AND ";
+                fresh = false;
+                selection += "date <= ?";
+                bindings[UNTIL_DATE] = currentBinding++;
+            }
+            if (fresh) return std::pair<string, Indices>("", bindings);
+            else return std::pair<string, Indices>(selection, bindings);
+        }
+
+        void bindSelection(const vector<Address>* addresses, time_t fromDate, time_t untilDate, sqlite3_stmt* stmt, Indices bindings){
+            if (bindings.count(ADDRESSES_START)){
+                for (int i = 0; i < addresses->size(); ++i){
+                    sqlite3_bind_text(stmt, bindings[ADDRESSES_START]+i, (*addresses)[i].addr.c_str(), (*addresses)[i].addr.length(), SQLITE_STATIC);
+                }
+            }
+            if (bindings.count(FROM_DATE)) sqlite3_bind_int64(stmt, bindings[FROM_DATE], fromDate);
+            if (bindings.count(UNTIL_DATE)) sqlite3_bind_int64(stmt, bindings[UNTIL_DATE], untilDate);
+        }
+
+
+        enum ComputeCommand {SUM, COUNT, AVERAGE};
+        const char* const ComputeCommandName[3] = {"SUM", "COUNT", "AVG"};
+
+        template <typename T>
+        T sqlComputeCommand(ComputeCommand cmd, const vector<Address>* addresses, const string& tableName, Key key, time_t fromDate, time_t untilDate){
+            sqlite3_stmt* stmt;
+            string sql = "SELECT "+string(ComputeCommandName[cmd]);
+
+            std::pair<string, Indices> keyResult = computeKeys(key);
+            sql += keyResult.first;
+            Indices keyIndices = keyResult.second;
+            if (keyIndices.size() > 1){
+                logger::error("Attempted to run SQLite collation command "+string(ComputeCommandName[cmd])+" with multi-column flags"+as_string((int)key));
+                throw queryException("SQLite collation commands should only be run on a single column");
+            }
+
+            sql += " FROM "+tableName+" ";
+
+            std::pair<string, Indices> selectionResult = computeSelection(addresses, fromDate, untilDate);
+            sql += selectionResult.first;
+            Indices selectionIndices = selectionResult.second;
+
+            sql += ";";
+
+            sqlv(sqlite3_prepare(db, sql.c_str(), sql.length(), &stmt, NULL));
+            bindSelection(addresses, fromDate, untilDate, stmt, selectionIndices);
+            sqlv(sqlite3_step(stmt));
+            T result;
+            switch(cmd){
+                case SUM: result = sqlite3_column_int64(stmt, 0);
+                case COUNT: result = sqlite3_column_int64(stmt, 0);
+                case AVERAGE: result = sqlite3_column_double(stmt, 0);
+            }
+            sqlv(sqlite3_finalize(stmt));
+            return result;
+        }
+
         shared_ptr<vector<Message>> query(const vector<Address>* addresses, const string& tableName, Key keys, time_t fromDate, time_t untilDate){
-//            string where = verifyAndComputeWhereClause(addresses, fromDate, untilDate);
+            sqlite3_stmt* stmt;
+            string sql = "SELECT ";
         }
 
         shared_ptr<vector<Message>> queryConversation(const AccountManager* account, const Contact& c, Key keys, time_t fromDate, time_t untilDate, bool sent){
             const vector<Address>* addresses = &(c.getAddresses());
-//            string where = verifyAndComputeWhereClause(addresses, fromDate, untilDate);
+            //TODO: this will be a little more complicated but should be viable;  we can use the same string twice from the selection computation,
+            // and just get the new binding indices with math using whatever number we would've used the offset for
         }
 
         shared_ptr<vector<Message>> queryAll(const AccountManager* account, const Key keys, time_t fromDate, time_t untilDate, bool sent){
@@ -80,21 +201,20 @@ namespace favor {
         }
 
         long sum(const AccountManager* account, const Contact& c, Key key, time_t fromDate, time_t untilDate, bool sent){
-            shared_ptr<vector<Address>> addrs = make_shared<vector<Address>>();
-
-            CollationQuery<long> query(account, )
+            return sqlComputeCommand<long>(SUM, &(c.getAddresses()), account->getTableName(sent), key, fromDate, untilDate);
         }
         double average(const AccountManager* account, const Contact& c, Key key, time_t fromDate, time_t untilDate, bool sent){
-
-        }
-
-        double averageAll(const AccountManager* account, Key key, time_t fromDate, time_t untilDate, bool sent){
-
+            return sqlComputeCommand<double>(AVERAGE, &(c.getAddresses()), account->getTableName(sent), key, fromDate, untilDate);
         }
 
         long sumAll(const AccountManager* account, Key key, time_t fromDate, time_t untilDate, bool sent){
-
+            return sqlComputeCommand<long>(SUM, NULL, account->getTableName(sent), key, fromDate, untilDate);
         }
+
+        double averageAll(const AccountManager* account, Key key, time_t fromDate, time_t untilDate, bool sent){
+            return sqlComputeCommand<double>(AVERAGE, NULL, account->getTableName(sent), key, fromDate, untilDate);
+        }
+
 
 
         void refreshAccountList() {

@@ -140,7 +140,7 @@ namespace favor {
         //TODO: &msg should really be const. There's just no reason for it not to be. Either solve the root issue here (which is the utf8 library
         //not liking a const iterator) or if we end up having to copy the string - say to remove whitespace efficiently - we should just do the UTF8
         //checks afterwards
-        void AccountManager::holdMessage(bool sent, long int id, time_t date, string address, bool media, string msg) {
+        void AccountManager::holdMessage(bool sent, long int id, time_t date, const string& address, bool media, string msg) {
             //Must be UTF8
             string::iterator utf8End = utf8::find_invalid(msg.begin(), msg.end());
             if (utf8End != msg.end()) {
@@ -156,8 +156,8 @@ namespace favor {
             heldMessages.emplace_back(Message(type, sent, id, date, address, media, msg, length));
         }
 
-        void AccountManager::holdMessageFailure(bool sent, long int id) {
-            heldMessages.emplace_back(Message(type, sent, id, 0, "", 0, "", 0));
+        void AccountManager::holdMessageFailure(bool sent, long int id, const string& address) {
+            heldMessages.emplace_back(Message(type, sent, id, 0, address, 0, "", 0));
         }
 
         //TODO: untested since minor refactor. should be identical though

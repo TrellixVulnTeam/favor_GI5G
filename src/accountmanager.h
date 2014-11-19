@@ -63,9 +63,9 @@ namespace favor {
 
             void truncateReceivedTable();
 
-            void holdMessage(bool sent, long int id, time_t date, string address, bool media, string msg);
+            void holdMessage(bool sent, long int id, time_t date, const string& address, bool media, string msg);
 
-            void holdMessageFailure(bool sent, long int id);
+            void holdMessageFailure(bool sent, long int id, const string& address);
 
             void countAddress(const string &address);
 

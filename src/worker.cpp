@@ -219,10 +219,12 @@ namespace favor {
         void AccountManager::saveMessage(const Message& m, sqlite3_stmt* stmt) {
             sqlv(sqlite3_bind_int64(stmt, 1, m.id));
             sqlv(sqlite3_bind_text(stmt, 2, m.address.c_str(), m.address.length(), SQLITE_STATIC));
-            sqlv(sqlite3_bind_int64(stmt, 3, m.date));
-            sqlv(sqlite3_bind_int64(stmt, 4, m.charCount));
-            sqlv(sqlite3_bind_int(stmt, 5, m.media));
-            if (SAVE_BODY) sqlv(sqlite3_bind_text(stmt, 6, m.body.c_str(), m.body.length(), SQLITE_STATIC));
+            if (!m.failure()){
+                sqlv(sqlite3_bind_int64(stmt, 3, m.date));
+                sqlv(sqlite3_bind_int64(stmt, 4, m.charCount));
+                sqlv(sqlite3_bind_int(stmt, 5, m.media));
+                if (SAVE_BODY) sqlv(sqlite3_bind_text(stmt, 6, m.body.c_str(), m.body.length(), SQLITE_STATIC));
+            }
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_reset(stmt));
         }

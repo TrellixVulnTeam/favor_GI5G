@@ -5,6 +5,10 @@ namespace favor {
             type(t), sent(s), id(i), date(d), address(a), media(m), body(b), charCount(cc) {
     }
 
+    bool Message::failure() const {
+        return (date == 0 && charCount == 0);
+    }
+
     string Message::prettyDate() const {
         //TODO: NYI
 

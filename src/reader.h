@@ -4,7 +4,7 @@
 #include "favor.h"
 #include "accountmanager.h"
 #include "datalock.h"
-#include "messagequery.h"
+#include "logger.h"
 
 namespace favor {
     namespace reader {

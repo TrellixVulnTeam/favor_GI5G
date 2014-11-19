@@ -96,8 +96,9 @@ enum Key{
 inline Key operator|(Key lhs, Key rhs){
     return static_cast<Key>(static_cast<int>(lhs) | static_cast<int>(rhs));
 }
-#define RECEIVED_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, body TEXT, PRIMARY KEY(id))"
-#define SENT_TABLE_SCHEMA "(id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, body TEXT, PRIMARY KEY(id, address))"
+//We need nulls so that averages work properly with messages we failed to record
+#define RECEIVED_TABLE_SCHEMA "(id INTEGER NOT NULL, address TEXT NOT NULL, date INTEGER, charcount INTEGER, media INTEGER, body TEXT, PRIMARY KEY(id))"
+#define SENT_TABLE_SCHEMA "(id INTEGER NOT NULL, address TEXT NOT NULL, date INTEGER, charcount INTEGER, media INTEGER, body TEXT, PRIMARY KEY(id, address))"
 /*Note:
  * Date is more selective than address and in that sense might seem like a better candidate for
  * being first in the index, but we will commonly query specifying an address and no date at all.

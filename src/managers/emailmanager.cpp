@@ -245,6 +245,8 @@ namespace favor {
         * Probably just a rounding quirk, but something word recording */
 
 
+        bool failure = false;
+
         const time_t date = toTime(mp.getDate());
 
         const long uid = stoi(m->getUID()); //stoi function may not be implemented on Android but this mail client is dekstop-only anyway
@@ -272,8 +274,7 @@ namespace favor {
                     }
                 } catch (badMessageDataException& e){
                     logger::warning("Failed to parse html text part of message with UID "+as_string(uid));
-                    holdMessageFailure(sent, uid);
-                    return;
+                    failure = true;
                 }
             }
             else if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_PLAIN) {
@@ -282,8 +283,7 @@ namespace favor {
             }
             else {
                 logger::warning("Failed to parse message with text part of type: "+tp->getType().getType()+" with UID "+as_string(uid));
-                holdMessageFailure(sent, uid);
-                return;
+                failure = true;
             }
         }
 
@@ -297,12 +297,14 @@ namespace favor {
                     shared_ptr<const vmime::mailboxGroup> grp = dynamic_pointer_cast<const vmime::mailboxGroup>(addr);
                     //Remember email addresses should be converted to lowercase first
                     for (int i = 0; i < grp->getMailboxCount(); ++i) {
-                        holdMessage(sent, uid, date, lowercase(grp->getMailboxAt(i)->getEmail().toString()), media, body.str());
+                        if (failure) holdMessageFailure(sent, uid, lowercase(grp->getMailboxAt(i)->getEmail().toString()));
+                        else holdMessage(sent, uid, date, lowercase(grp->getMailboxAt(i)->getEmail().toString()), media, body.str());
                     }
                 }
                 else {
                     resultAddr = dynamic_pointer_cast<const vmime::mailbox>(addr);
-                    holdMessage(sent, uid, date, lowercase(resultAddr->getEmail().toString()), media, body.str());
+                    if (failure) holdMessageFailure(sent, uid, lowercase(resultAddr->getEmail().toString()));
+                    else holdMessage(sent, uid, date, lowercase(resultAddr->getEmail().toString()), media, body.str());
                 }
             }
         }

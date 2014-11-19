@@ -84,6 +84,22 @@ namespace favor {
     #endif
     }
 
+    string as_string(float f){
+    #ifdef ANDROID
+    //TODO: should be quick
+    #else
+        return to_string(f);
+    #endif
+    }
+
+    string as_string(double d){
+    #ifdef ANDROID
+    //TODO: should be quick
+    #else
+        return to_string(d);
+    #endif
+    }
+
     string as_string(const rapidjson::Document &json) {
         rapidjson::StringBuffer buff;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buff);

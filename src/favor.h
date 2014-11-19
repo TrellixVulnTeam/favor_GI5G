@@ -53,6 +53,10 @@ namespace favor {
 
     string as_string(long l);
 
+    string as_string(float f);
+
+    string as_string(double d);
+
     string as_string(const Message& m);
 
     string as_string(const Address& a);

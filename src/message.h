@@ -20,6 +20,8 @@ namespace favor {
 
         string prettyDate() const;
 
+        bool failure() const;
+
     };
 }
 

@@ -13,38 +13,9 @@ int main(int argc, char **argv) {
     worker::buildDatabase();
     reader::refreshAll();
 
+    double avg = reader::average(reader::accountList()->front(), reader::contactList(TYPE_EMAIL)->front(), CHARCOUNT, 500, -1, true);
+    logger::info("Average character count length sent to "+reader::contactList(TYPE_EMAIL)->front().displayName+": "+as_string(avg));
 
-    //AccountManager::addAccount("skypetest", favor::TYPE_SKYPE, "{}");
-    auto addrs = reader::addresses(TYPE_EMAIL);
-    Address& a = addrs->front();
-    cout << "good addr exists: " << reader::addressExists(a.addr, a.type) << endl;
-    cout << "bad addr exists: " << reader::addressExists("NOPE", a.type) << endl;
-
-    for (int i = 0; i < 5; ++i){
-        auto contacts = reader::contactList(TYPE_EMAIL);
-        logger::info("Contacts count :"+as_string((int)contacts->size()));
-        worker::createContactFromAddress(a, "Counting test");
-    }
-
-   // reader::accountList()->front()->destroy();
-    //reader::accountList()->front()->updateAddresses();
-
-//    Address t("test@test.com", 0, -1, TYPE_EMAIL);
-//    logger::info("A");
-//    addrs->push_back(t);
-//    worker::rewriteAddressTable(*addrs, TYPE_EMAIL);    logger::info("A");
-//    worker::createContactFromAddress(t, "Combo test");
-
-
-    //MessageType t, bool s, long int i, std::time_t d, string a, bool m, const string& b, size_t cc)
-    //favor::message m(favor::TYPE_EMAIL, false, 5, 500, "test@test.com", true, "this is a test message", 25);
-    //favor::worker::saveMessage(&m, testsql);
-
-    /*
-    This seem to be generally good, except it's hard to know because it seems like one of the emails I'm running tests on, after being processed for whitespace,
-    starts including a character that's causing printing via cout << to terminate early? It's hard to know, but we'll be able to know for certain ocne we start
-    saving results to the database.
-     */
 
     return 0;
 }
