@@ -21,7 +21,7 @@ namespace favor {
         bool addressExists(const string& addr, const MessageType &t);
 
         //Computation getters
-        shared_ptr<vector<Message>> queryConversation(const AccountManager* account, const Contact& c, Key keys, time_t fromDate, time_t untilDate, bool sent);
+        shared_ptr<vector<Message>> queryConversation(const AccountManager* account, const Contact& c, Key keys, time_t fromDate, time_t untilDate);
         shared_ptr<vector<Message>> queryAll(const AccountManager* account, Key keys, time_t fromDate, time_t untilDate, bool sent);
         shared_ptr<vector<Message>> queryContact(const AccountManager* account, const Contact& c, Key keys, time_t fromDate, time_t untilDate, bool sent);
         long sum(const AccountManager* account, const Contact& c, Key key, time_t fromDate, time_t untilDate, bool sent);

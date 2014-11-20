@@ -222,8 +222,8 @@ namespace favor {
             if (!m.failure()){
                 sqlv(sqlite3_bind_int64(stmt, 3, m.date));
                 sqlv(sqlite3_bind_int64(stmt, 4, m.charCount));
-                sqlv(sqlite3_bind_int(stmt, 5, m.media));
-                if (SAVE_BODY) sqlv(sqlite3_bind_text(stmt, 6, m.body.c_str(), m.body.length(), SQLITE_STATIC));
+                sqlv(sqlite3_bind_int(stmt, 5, m.media()));
+                if (SAVE_BODY) sqlv(sqlite3_bind_text(stmt, 6, m.body().c_str(), m.body().length(), SQLITE_STATIC));
             }
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_reset(stmt));

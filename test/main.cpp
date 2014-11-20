@@ -13,8 +13,14 @@ int main(int argc, char **argv) {
     worker::buildDatabase();
     reader::refreshAll();
 
-    double avg = reader::average(reader::accountList()->front(), reader::contactList(TYPE_EMAIL)->front(), CHARCOUNT, 500, -1, true);
+    double avg = reader::average(reader::accountList()->front(), reader::contactList(TYPE_EMAIL)->front(), KEY_CHARCOUNT, 500, -1, true);
     logger::info("Average character count length sent to "+reader::contactList(TYPE_EMAIL)->front().displayName+": "+as_string(avg));
+    logger::info("List messages from"+reader::contactList(TYPE_EMAIL)->back().displayName);
+    auto result = reader::queryContact(reader::accountList()->front(), reader::contactList(TYPE_EMAIL)->back(), KEY_ALL, 500, 1411419510, false);
+    for (auto it = result->begin(); it != result->end(); ++it){
+        logger::info(as_string(*it));
+    }
+
 
 
     return 0;

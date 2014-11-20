@@ -110,7 +110,7 @@ namespace favor {
     string as_string(const Message &m) {
         //TODO: update this to account for missing values (which there will be sometimes when we pull from the DB)
         string result = "[Message ID: "+as_string(m.id)+" | Sent? " + as_string(m.sent)+" | Date: "+m.prettyDate()+" | Address: "+m.address;
-        result += " | Media? "+as_string(m.media) + " | Body Length: "+as_string((long)m.charCount)+ "| Body: <<"+ m.body+">>]";
+        result += " | Media? "+as_string(m.media()) + " | Body Length: "+as_string((long)m.charCount)+ "| Body: <<"+ m.body()+">>]";
         return result;
     }
 

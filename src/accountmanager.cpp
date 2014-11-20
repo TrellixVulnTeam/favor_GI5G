@@ -153,11 +153,11 @@ namespace favor {
             cleanWhitespace(msg);
             size_t length = utf8::distance(msg.begin(), msg.end());
 
-            heldMessages.emplace_back(Message(type, sent, id, date, address, media, msg, length));
+            heldMessages.emplace_back(Message(type, sent, id, date, address, media, length, msg));
         }
 
         void AccountManager::holdMessageFailure(bool sent, long int id, const string& address) {
-            heldMessages.emplace_back(Message(type, sent, id, 0, address, 0, "", 0));
+            heldMessages.emplace_back(Message::createFailure(type, sent, id, address));
         }
 
         //TODO: untested since minor refactor. should be identical though

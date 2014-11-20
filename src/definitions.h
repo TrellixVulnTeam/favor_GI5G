@@ -85,12 +85,13 @@ not even compile.
  * CREATE TABLE t(x INTEGER PRIMARY KEY DESC, y, z);"
  */
 enum Key{
-    ADDRESS = 1 << 0, //0 0001
-    DATE = 1 << 1, //0 0010
-    CHARCOUNT = 1 << 2, //0 0100
-    MEDIA = 1 << 3, //0 1000
-    BODY = 1 << 4, //1 0000
-    ALL = 31    //1 1111
+    KEY_ADDRESS = 1 << 0, //00 0001
+    KEY_DATE = 1 << 1, //00 0010
+    KEY_CHARCOUNT = 1 << 2, //00 0100
+    KEY_MEDIA = 1 << 3, //00 1000
+    KEY_BODY = 1 << 4, //01 0000
+    KEY_ID = 1 << 5, //10 000
+    KEY_ALL = 63    //11 1111
 
 };
 inline Key operator|(Key lhs, Key rhs){

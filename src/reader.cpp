@@ -66,40 +66,44 @@ namespace favor {
 
 
         /*
-        SQLITE HELPER METHODS
+        QUERY HELPER METHODS
          */
 
-        //Returns the computed string, the indices to be used for getting the appropriate values later
-        std::pair<string, Indices> computeKeys(Key keys, int keyOffset = 0){
-            string keystring = "(";
+        //Returns the computed string, the indices to be used for getting the appropriate values later. SQLite indices always from 0
+        std::pair<string, Indices> computeKeys(Key keys){
+            string keystring;
             Indices keyIndices;
-            int currentKeyIndex = keyOffset;
-            if (keys & ADDRESS){
+            int currentKeyIndex = 0;
+            if (keys & KEY_ADDRESS){
                 keystring += "address,";
-                keyIndices[ADDRESS] = currentKeyIndex++;
+                keyIndices[KEY_ADDRESS] = currentKeyIndex++;
             }
-            if (keys & DATE){
+            if (keys & KEY_DATE){
                 keystring += "date,";
-                keyIndices[DATE] = currentKeyIndex++;
+                keyIndices[KEY_DATE] = currentKeyIndex++;
             }
-            if (keys & CHARCOUNT){
+            if (keys & KEY_CHARCOUNT){
                 keystring += "charcount,";
-                keyIndices[CHARCOUNT] = currentKeyIndex++;
+                keyIndices[KEY_CHARCOUNT] = currentKeyIndex++;
             }
-            if (keys & MEDIA){
+            if (keys & KEY_MEDIA){
                 keystring += "media,";
-                keyIndices[MEDIA] = currentKeyIndex++;
+                keyIndices[KEY_MEDIA] = currentKeyIndex++;
             }
-            if (keys & BODY){
+            if (keys & KEY_BODY){
                 keystring += "body,";
-                keyIndices[BODY] = currentKeyIndex;
+                keyIndices[KEY_BODY] = currentKeyIndex;
             }
-            keystring[keystring.length()-1] = ')'; //Replace last comma with paren
+            if (keys & KEY_ID){
+                keystring += "id,";
+                keyIndices[KEY_ID] = currentKeyIndex;
+            }
+            keystring = keystring.substr(0, keystring.length()-1); //Strip last comma
             return std::pair<string, Indices>(keystring, keyIndices);
         }
 
-        //Returns the computed string, the indices to be used for binding corresponding terms later
-        std::pair<string, Indices> computeSelection(const vector<Address>* addresses, time_t fromDate, time_t untilDate, int bindingOffset = 0){
+        //Returns the computed string, the indices to be used for binding corresponding terms later. SQLite bindings always from 1
+        std::pair<string, Indices> computeSelection(const vector<Address>* addresses, time_t fromDate, time_t untilDate, int bindingOffset = 1){
             string selection = "WHERE ";
             bool fresh = true;
             int currentBinding = bindingOffset;
@@ -112,7 +116,7 @@ namespace favor {
                     selection += "(";
                     bindings[ADDRESSES_START] = currentBinding++;
                     for (int i = 0; i < addresses->size(); ++i){
-                        selection += "address=\""+(*addresses)[i].addr+"\"";
+                        selection += "address=?";
                         if (i != addresses->size() -1 ) selection += " OR ";
                     }
                     selection += ")";
@@ -137,13 +141,41 @@ namespace favor {
         void bindSelection(const vector<Address>* addresses, time_t fromDate, time_t untilDate, sqlite3_stmt* stmt, Indices bindings){
             if (bindings.count(ADDRESSES_START)){
                 for (int i = 0; i < addresses->size(); ++i){
-                    sqlite3_bind_text(stmt, bindings[ADDRESSES_START]+i, (*addresses)[i].addr.c_str(), (*addresses)[i].addr.length(), SQLITE_STATIC);
+                    sqlv(sqlite3_bind_text(stmt, bindings[ADDRESSES_START]+i, (*addresses)[i].addr.c_str(), (*addresses)[i].addr.length(), SQLITE_STATIC));
                 }
             }
-            if (bindings.count(FROM_DATE)) sqlite3_bind_int64(stmt, bindings[FROM_DATE], fromDate);
-            if (bindings.count(UNTIL_DATE)) sqlite3_bind_int64(stmt, bindings[UNTIL_DATE], untilDate);
+            if (bindings.count(FROM_DATE)) sqlv(sqlite3_bind_int64(stmt, bindings[FROM_DATE], fromDate));
+            if (bindings.count(UNTIL_DATE)) sqlv(sqlite3_bind_int64(stmt, bindings[UNTIL_DATE], untilDate));
         }
 
+        Message buildMessage(sqlite3_stmt* stmt, Indices keyIndices, bool sent, MessageType type){
+            if (keyIndices.count(KEY_BODY)) {
+                return Message(type,
+                        sent,
+                        (keyIndices.count(KEY_ID) ? sqlite3_column_int64(stmt, keyIndices[KEY_ID]) : Message::UNKNOWN_NUMERIC_VALUE),
+                        (keyIndices.count(KEY_DATE) ? sqlite3_column_int64(stmt, keyIndices[KEY_DATE]) : Message::UNKNOWN_NUMERIC_VALUE),
+                        (keyIndices.count(KEY_ADDRESS) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, keyIndices[KEY_ADDRESS])) : Message::UNKNOWN_ADDRESS_VALUE),
+                        (keyIndices.count(KEY_MEDIA) ? (bool) sqlite3_column_int(stmt, keyIndices[KEY_MEDIA]) : Message::UNKNOWN_NUMERIC_VALUE),
+                        (keyIndices.count(KEY_CHARCOUNT) ? sqlite3_column_int64(stmt, keyIndices[KEY_CHARCOUNT]) : Message::UNKNOWN_NUMERIC_VALUE),
+                        reinterpret_cast<const char *>(sqlite3_column_text(stmt, keyIndices[KEY_BODY]))
+                );
+            }
+            else {
+                return Message(type,
+                        sent,
+                        (keyIndices.count(KEY_ID) ? sqlite3_column_int64(stmt, keyIndices[KEY_ID]) : Message::UNKNOWN_NUMERIC_VALUE),
+                        (keyIndices.count(KEY_DATE) ? sqlite3_column_int64(stmt, keyIndices[KEY_DATE]) : Message::UNKNOWN_NUMERIC_VALUE),
+                        (keyIndices.count(KEY_ADDRESS) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, keyIndices[KEY_ADDRESS])) : Message::UNKNOWN_ADDRESS_VALUE),
+                        (keyIndices.count(KEY_MEDIA) ? (bool) sqlite3_column_int(stmt, keyIndices[KEY_MEDIA]) : Message::UNKNOWN_NUMERIC_VALUE),
+                        (keyIndices.count(KEY_CHARCOUNT) ? sqlite3_column_int64(stmt, keyIndices[KEY_CHARCOUNT]) : Message::UNKNOWN_NUMERIC_VALUE)
+                );
+            }
+
+        }
+
+        /*
+          ACTUAL QUERY METHODS
+         */
 
         enum ComputeCommand {SUM, COUNT, AVERAGE};
         const char* const ComputeCommandName[3] = {"SUM", "COUNT", "AVG"};
@@ -151,7 +183,7 @@ namespace favor {
         template <typename T>
         T sqlComputeCommand(ComputeCommand cmd, const vector<Address>* addresses, const string& tableName, Key key, time_t fromDate, time_t untilDate){
             sqlite3_stmt* stmt;
-            string sql = "SELECT "+string(ComputeCommandName[cmd]);
+            string sql = "SELECT "+string(ComputeCommandName[cmd])+"(";
 
             std::pair<string, Indices> keyResult = computeKeys(key);
             sql += keyResult.first;
@@ -161,7 +193,7 @@ namespace favor {
                 throw queryException("SQLite collation commands should only be run on a single column");
             }
 
-            sql += " FROM "+tableName+" ";
+            sql += ") FROM "+tableName+" ";
 
             std::pair<string, Indices> selectionResult = computeSelection(addresses, fromDate, untilDate);
             sql += selectionResult.first;
@@ -169,7 +201,7 @@ namespace favor {
 
             sql += ";";
 
-            sqlv(sqlite3_prepare(db, sql.c_str(), sql.length(), &stmt, NULL));
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             bindSelection(addresses, fromDate, untilDate, stmt, selectionIndices);
             sqlv(sqlite3_step(stmt));
             T result;
@@ -182,22 +214,48 @@ namespace favor {
             return result;
         }
 
-        shared_ptr<vector<Message>> query(const vector<Address>* addresses, const string& tableName, Key keys, time_t fromDate, time_t untilDate){
+        shared_ptr<vector<Message>> query(const vector<Address>* addresses, const string& tableName, bool sent, MessageType type, Key keys, time_t fromDate, time_t untilDate){
             sqlite3_stmt* stmt;
             string sql = "SELECT ";
+
+            std::pair<string, Indices> keyResult = computeKeys(keys);
+            sql += keyResult.first;
+            Indices keyIndices = keyResult.second;
+
+            sql += " FROM "+tableName+" ";
+
+            std::pair<string, Indices> selectionResult = computeSelection(addresses, fromDate, untilDate);
+            sql += selectionResult.first;
+            Indices selectionIndices = selectionResult.second;
+
+            sql += ";";
+
+            logger::info(sql); //TODO: TESTCODE
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            bindSelection(addresses, fromDate, untilDate, stmt, selectionIndices);
+            shared_ptr<vector<Message>> ret = std::make_shared<vector<Message>>();
+            int result;
+            while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+                ret->push_back(buildMessage(stmt, keyIndices, sent, type));
+            }
+            sqlv(result); //Make sure we broke out of the loop with good results
+            sqlv(sqlite3_finalize(stmt));
+            return ret;
         }
 
-        shared_ptr<vector<Message>> queryConversation(const AccountManager* account, const Contact& c, Key keys, time_t fromDate, time_t untilDate, bool sent){
+        shared_ptr<vector<Message>> queryConversation(const AccountManager* account, const Contact& c, Key keys, time_t fromDate, time_t untilDate){
             const vector<Address>* addresses = &(c.getAddresses());
+            const string sentTableName(account->getTableName(true));
+            const string receivedTableName(account->getTableName(false));
             //TODO: this will be a little more complicated but should be viable;  we can use the same string twice from the selection computation,
             // and just get the new binding indices with math using whatever number we would've used the offset for
         }
 
         shared_ptr<vector<Message>> queryAll(const AccountManager* account, const Key keys, time_t fromDate, time_t untilDate, bool sent){
-            return query(NULL, account->getTableName(sent), keys, fromDate, untilDate);
+            return query(NULL, account->getTableName(sent), sent, account->type, keys, fromDate, untilDate);
         }
         shared_ptr<vector<Message>> queryContact(const AccountManager* account, const Contact& c, Key keys, time_t fromDate, time_t untilDate, bool sent){
-            return query(&(c.getAddresses()), account->getTableName(sent), keys, fromDate, untilDate);
+            return query(&(c.getAddresses()), account->getTableName(sent), sent, account->type, keys, fromDate, untilDate);
         }
 
         long sum(const AccountManager* account, const Contact& c, Key key, time_t fromDate, time_t untilDate, bool sent){
@@ -215,6 +273,9 @@ namespace favor {
             return sqlComputeCommand<double>(AVERAGE, NULL, account->getTableName(sent), key, fromDate, untilDate);
         }
 
+        /*
+           REFRESH AND OTHER GETTERS
+         */
 
 
         void refreshAccountList() {
