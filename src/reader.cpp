@@ -243,12 +243,48 @@ namespace favor {
             return ret;
         }
 
+        //TODO: TEST THIS METHOD
         shared_ptr<vector<Message>> queryConversation(const AccountManager* account, const Contact& c, Key keys, time_t fromDate, time_t untilDate){
             const vector<Address>* addresses = &(c.getAddresses());
             const string sentTableName(account->getTableName(true));
             const string receivedTableName(account->getTableName(false));
-            //TODO: this will be a little more complicated but should be viable;  we can use the same string twice from the selection computation,
-            // and just get the new binding indices with math using whatever number we would've used the offset for
+
+            sqlite3_stmt *stmt;
+            string sql = "SELECT ";
+            std::pair<string, Indices> keyResult = computeKeys(keys);
+            std::pair<string, Indices> selectionResult = computeSelection(addresses, fromDate, untilDate);
+
+            sql += keyResult.first+",1 as sent";
+            sql += " FROM "+sentTableName+selectionResult.first+" UNION SELECT ";
+
+            sql += keyResult.first+",0 as sent";
+            sql += "FROM "+receivedTableName+" "+selectionResult.first;
+
+            sql += " ORDER BY date " DB_SORT_ORDER ";";
+
+
+            sql += selectionResult.first;
+            Indices selectionIndices = selectionResult.second;
+
+            Indices keyIndices = keyResult.second;
+
+            logger::info(sql); //TODO: testcode
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            bindSelection(addresses, fromDate, untilDate, stmt, selectionIndices); //Bind the first set
+            for (auto it = keyIndices.begin(); it != keyIndices.end(); ++it){
+                it->second += keyIndices.size(); //Slide every index over by the number of indices so we can bind the second set
+            }
+            bindSelection(addresses, fromDate, untilDate, stmt, selectionIndices);
+
+            shared_ptr<vector<Message>> ret = std::make_shared<vector<Message>>();
+            int result;
+
+            while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+                ret->push_back(buildMessage(stmt, keyIndices, (bool) sqlite3_column_int(stmt, keyIndices.size()+1), account->type));
+            }
+            sqlv(result); //Make sure we broke out of the loop with good results
+            sqlv(sqlite3_finalize(stmt));
+            return ret;
         }
 
         shared_ptr<vector<Message>> queryAll(const AccountManager* account, const Key keys, time_t fromDate, time_t untilDate, bool sent){

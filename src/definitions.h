@@ -47,6 +47,7 @@ namespace favor {
 
 //Database --------------------------------------------------------------------------------
 #define DB_PATH_FULL (string(favor::dbPath)+"/favor.db").c_str()
+#define DB_SORT_ORDER "DESC"
 
 
 //Accounts table
@@ -106,7 +107,7 @@ inline Key operator|(Key lhs, Key rhs){
  * In this case, if address was not first, we could not even use the index at all. Also, queries are
  * sorted DESC.
  */
-#define MESSAGE_INDEX_SCHEMA "(address DESC, date DESC)"
+#define MESSAGE_INDEX_SCHEMA "(address " DB_SORT_ORDER ", date " DB_SORT_ORDER ")"
 
 
 

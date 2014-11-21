@@ -1,6 +1,8 @@
 Just getting things set up right now. 
 
 Todo (in order):
+ - Test/finish queryConversation method, and make sure all the queries are returning their messages properly sorted (and if not, what we need to work out so the database will do this 
+ automatically).
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
  further down the road.
