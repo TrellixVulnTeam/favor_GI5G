@@ -125,13 +125,13 @@ namespace favor {
             if (fromDate != -1){
                 if (!fresh) selection += " AND ";
                 fresh = false;
-                selection += "date >= ?";
+                selection += "date >=?";
                 bindings[FROM_DATE] = currentBinding++;
             }
             if (untilDate != -1){
                 if (!fresh) selection += " AND ";
                 fresh = false;
-                selection += "date <= ?";
+                selection += "date <=?";
                 bindings[UNTIL_DATE] = currentBinding++;
             }
             if (fresh) return std::pair<string, Indices>("", bindings);
@@ -228,9 +228,8 @@ namespace favor {
             sql += selectionResult.first;
             Indices selectionIndices = selectionResult.second;
 
-            sql += ";";
+            sql += " ORDER BY date " DB_SORT_ORDER ";";
 
-            logger::info(sql); //TODO: TESTCODE
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             bindSelection(addresses, fromDate, untilDate, stmt, selectionIndices);
             shared_ptr<vector<Message>> ret = std::make_shared<vector<Message>>();
@@ -255,24 +254,21 @@ namespace favor {
             std::pair<string, Indices> selectionResult = computeSelection(addresses, fromDate, untilDate);
 
             sql += keyResult.first+",1 as sent";
-            sql += " FROM "+sentTableName+selectionResult.first+" UNION SELECT ";
+            sql += " FROM "+sentTableName+" "+selectionResult.first+" UNION SELECT ";
 
             sql += keyResult.first+",0 as sent";
-            sql += "FROM "+receivedTableName+" "+selectionResult.first;
+            sql += " FROM "+receivedTableName+" "+selectionResult.first;
 
             sql += " ORDER BY date " DB_SORT_ORDER ";";
 
-
-            sql += selectionResult.first;
             Indices selectionIndices = selectionResult.second;
 
             Indices keyIndices = keyResult.second;
 
-            logger::info(sql); //TODO: testcode
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             bindSelection(addresses, fromDate, untilDate, stmt, selectionIndices); //Bind the first set
-            for (auto it = keyIndices.begin(); it != keyIndices.end(); ++it){
-                it->second += keyIndices.size(); //Slide every index over by the number of indices so we can bind the second set
+            for (auto it = selectionIndices.begin(); it != selectionIndices.end(); ++it){
+                it->second += selectionIndices.size(); //Slide every index over by the number of indices so we can bind the second set
             }
             bindSelection(addresses, fromDate, untilDate, stmt, selectionIndices);
 

@@ -1,8 +1,6 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - Test/finish queryConversation method, and make sure all the queries are returning their messages properly sorted (and if not, what we need to work out so the database will do this 
- automatically).
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
  further down the road.
@@ -14,6 +12,7 @@ Todo (in order):
  - In the worker address table computing code, we need to figure out what we're doing with suggested names (how to use/store them, whether to save them or give them to the reader, etc.)
  - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts'). Also take this time to verify
  stuff still works with the list -> vector switch (not that that should actually change anything)
+  - Spend some time with a query analyzer and make sure that SQLlite is getting the best use possible out of our indices, and think about what might be worth changing if not.
   - SQLite extended error codes? See about making use of these.
   - See about a const version of the DataLock, or just about making DataLocks return only const references (if the former, watch out for slicing). Only the reader should be updating its 
   cached info anyway...

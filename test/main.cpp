@@ -21,6 +21,12 @@ int main(int argc, char **argv) {
         logger::info(as_string(*it));
     }
 
+    logger::info("List conversations including"+reader::contactList(TYPE_EMAIL)->back().displayName);
+    auto result2 = reader::queryConversation(reader::accountList()->front(), reader::contactList(TYPE_EMAIL)->back(), KEY_ALL, 500, -1);
+    for (auto it = result2->begin(); it != result2->end(); ++it){
+        logger::info(as_string(*it));
+    }
+
 
 
     return 0;
