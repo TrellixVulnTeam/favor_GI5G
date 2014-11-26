@@ -67,7 +67,7 @@ namespace favor {
 
 //Contacts table
 #define CONTACT_TABLE "contacts"
-#define CONTACT_TABLE_SCHEMA "(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, INTEGER type_flags NOT NULL)"
+#define CONTACT_TABLE_SCHEMA "(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, type_flags INTEGER NOT NULL)"
 
 //Addresses table
 /*Note:

@@ -342,7 +342,7 @@ namespace favor {
                 //Canonical contacts added to hash table, and record any new flags
             }
             sqlv(result);
-
+            sqlv(sqlite3_finalize(stmt));
             //Get this manually because the method to get it from outside the worker could trigger infinite recursion if it's invalid
             DataLock<list<Contact>> contacts = DataLock<list<Contact>>(&contactsMutex, &contactsHolderCount, _contacts);
             contacts->clear();
@@ -382,16 +382,19 @@ namespace favor {
             sqlv(sqlite3_finalize(stmt));
             return ret;
         }
-
-        //TODO: ENTIRELY UNTESTED
+        
         shared_ptr<list<Address>> addresses(const MessageTypeFlag &ts, bool contactRelevantOnly){
+            if (ts == FLAG_EMPTY){
+                logger::warning("addresses called with empty MessageTypeFlag");
+                return std::make_shared<list<Address>>();
+            }
             sqlite3_stmt* stmt;
             string sql;
             for (short i = 0; i < NUMBER_OF_TYPES; ++i){
                 if (MessageTypeFlags[i] & ts){
+                    if (i > 0) sql += " UNION ";
                     if (contactRelevantOnly) sql += "SELECT *,? as type FROM " ADDRESS_TABLE(i)" WHERE contact_id IS NOT NULL";
                     else sql += "SELECT *,? as type FROM " ADDRESS_TABLE(i);
-                    if (i > 0) sql += " UNION ";
                 }
             }
             sql += ";";
@@ -400,7 +403,7 @@ namespace favor {
 
             int bindingIndex = 1;
             for (short i = 0; i < NUMBER_OF_TYPES; ++i){
-                if (MessageTypeFlags[i] & ts){} sqlv(sqlite3_bind_int(stmt, bindingIndex++, i));
+                if (MessageTypeFlags[i] & ts) sqlv(sqlite3_bind_int(stmt, bindingIndex++, i));
             }
 
             int result;

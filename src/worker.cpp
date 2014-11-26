@@ -75,11 +75,11 @@ namespace favor {
         }
 
         long createContact(const string& displayName, MessageType type){
-            //TODO: this needs to bind to relevnat types as well, so that we insert that too
-            string sql = "INSERT INTO " CONTACT_TABLE "(display_name) VALUES(?)";
+            string sql = "INSERT INTO " CONTACT_TABLE "(display_name,type_flags) VALUES(?,?)";
             sqlite3_stmt* stmt;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             sqlv(sqlite3_bind_text(stmt, 1, displayName.c_str(), displayName.length(), SQLITE_STATIC));
+            sqlv(sqlite3_bind_int(stmt, 2, MessageTypeFlags[type]));
             sqlv(sqlite3_step(stmt));
             long contactId = sqlite3_last_insert_rowid(db);
             sqlv(sqlite3_finalize(stmt));
