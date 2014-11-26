@@ -37,6 +37,17 @@ namespace favor {
     enum MessageType {
         TYPE_EMAIL = 0, TYPE_ANDROIDTEXT = 1, TYPE_LINE = 2, TYPE_SKYPE = 3, NUMBER_OF_TYPES = 4
     };
+    enum MessageTypeFlag {
+        FLAG_EMPTY = 0,
+        FLAG_EMAIL = 1 << TYPE_EMAIL,
+        FLAG_ANDROIDTEXT = 1 << TYPE_ANDROIDTEXT,
+        FLAG_LINE = 1 << TYPE_LINE,
+        FLAG_SKYPE = 1 < TYPE_SKYPE
+    };
+    inline MessageTypeFlag operator|(MessageTypeFlag lhs, MessageTypeFlag rhs){
+        return static_cast<MessageTypeFlag>(static_cast<int>(lhs) | static_cast<int>(rhs));
+    }
+    const MessageTypeFlag MessageTypeFlags[NUMBER_OF_TYPES] = {FLAG_EMAIL, FLAG_ANDROIDTEXT, FLAG_LINE, FLAG_SKYPE};
     extern const char *MessageTypeName[];
 }
 
@@ -55,15 +66,15 @@ namespace favor {
 #define ACCOUNT_TABLE_SCHEMA "(name TEXT NOT NULL, type INTEGER NOT NULL, details_json TEXT, PRIMARY KEY(name, type))"
 
 //Contacts table
-#define CONTACT_TABLE(type) "contacts_" + string(MessageTypeName[type]) + ""
-#define CONTACT_TABLE_SCHEMA "(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL)"
+#define CONTACT_TABLE "contacts"
+#define CONTACT_TABLE_SCHEMA "(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, INTEGER type_flags NOT NULL)"
 
 //Addresses table
 /*Note:
 The foreign key here can be null, and this is intentional. In cases where it is null, the address is not attached to a contact.
  */
 #define ADDRESS_TABLE(type) "addresses_" +string(MessageTypeName[type]) + ""
-#define ADDRESS_TABLE_SCHEMA(type) "(address TEXT NOT NULL UNIQUE, count INTEGER NOT NULL, contact_id INTEGER REFERENCES " CONTACT_TABLE(type) "(id))"
+#define ADDRESS_TABLE_SCHEMA "(address TEXT NOT NULL UNIQUE, count INTEGER NOT NULL, contact_id INTEGER REFERENCES " CONTACT_TABLE "(id))"
 
 #define ADDRESS_INDEX "i_" ADDRESS_TABLE
 #define ADDRESS_INDEX_SCHEMA "(contact_name)"
@@ -85,18 +96,20 @@ not even compile.
  * "But the following declaration does not result in "x" being an alias for the rowid:
  * CREATE TABLE t(x INTEGER PRIMARY KEY DESC, y, z);"
  */
-enum Key{
-    KEY_ADDRESS = 1 << 0, //00 0001
-    KEY_DATE = 1 << 1, //00 0010
-    KEY_CHARCOUNT = 1 << 2, //00 0100
-    KEY_MEDIA = 1 << 3, //00 1000
-    KEY_BODY = 1 << 4, //01 0000
-    KEY_ID = 1 << 5, //10 000
-    KEY_ALL = 63    //11 1111
+namespace favor{
+    enum Key{
+        KEY_ADDRESS = 1 << 0, //00 0001
+        KEY_DATE = 1 << 1, //00 0010
+        KEY_CHARCOUNT = 1 << 2, //00 0100
+        KEY_MEDIA = 1 << 3, //00 1000
+        KEY_BODY = 1 << 4, //01 0000
+        KEY_ID = 1 << 5, //10 000
+        KEY_ALL = 63    //11 1111
 
-};
-inline Key operator|(Key lhs, Key rhs){
-    return static_cast<Key>(static_cast<int>(lhs) | static_cast<int>(rhs));
+    };
+    inline Key operator|(Key lhs, Key rhs){
+        return static_cast<Key>(static_cast<int>(lhs) | static_cast<int>(rhs));
+    }
 }
 //We need nulls so that averages work properly with messages we failed to record
 #define RECEIVED_TABLE_SCHEMA "(id INTEGER NOT NULL, address TEXT NOT NULL, date INTEGER, charcount INTEGER, media INTEGER, body TEXT, PRIMARY KEY(id))"

@@ -25,9 +25,9 @@ namespace favor {
 
         void buildDatabase() {
             exec("CREATE TABLE IF NOT EXISTS " ACCOUNT_TABLE ACCOUNT_TABLE_SCHEMA ";");
+            exec("CREATE TABLE IF NOT EXISTS " CONTACT_TABLE CONTACT_TABLE_SCHEMA ";");
             for (int i = 0; i < NUMBER_OF_TYPES; ++i) {
-                exec("CREATE TABLE IF NOT EXISTS " CONTACT_TABLE(i) CONTACT_TABLE_SCHEMA ";");
-                exec("CREATE TABLE IF NOT EXISTS " ADDRESS_TABLE(i) ADDRESS_TABLE_SCHEMA(i) ";");
+                exec("CREATE TABLE IF NOT EXISTS " ADDRESS_TABLE(i) ADDRESS_TABLE_SCHEMA ";");
             }
             //We don't build per account here because there won't be any accounts right after we just built the database
         }
@@ -63,8 +63,8 @@ namespace favor {
             * When the WHERE is omitted from a DELETE statement and the table being deleted has no triggers,
             * SQLite uses an optimization to erase the entire table content without having to visit each row of the table individually.
             */
+            exec("DELETE FROM " CONTACT_TABLE ";");
             for (int i = 0; i < NUMBER_OF_TYPES; ++i) {
-                exec("DELETE FROM " CONTACT_TABLE(i) ";");
                 exec("DELETE FROM " ADDRESS_TABLE(i) ";");
             }
             auto l = reader::accountList();
@@ -75,14 +75,15 @@ namespace favor {
         }
 
         long createContact(const string& displayName, MessageType type){
-            string sql = "INSERT INTO " CONTACT_TABLE(type) "(display_name) VALUES(?)";
+            //TODO: this needs to bind to relevnat types as well, so that we insert that too
+            string sql = "INSERT INTO " CONTACT_TABLE "(display_name) VALUES(?)";
             sqlite3_stmt* stmt;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             sqlv(sqlite3_bind_text(stmt, 1, displayName.c_str(), displayName.length(), SQLITE_STATIC));
             sqlv(sqlite3_step(stmt));
             long contactId = sqlite3_last_insert_rowid(db);
             sqlv(sqlite3_finalize(stmt));
-            reader::invalidateContactList(type);
+            reader::invalidateContactList();
             return contactId;
         }
 

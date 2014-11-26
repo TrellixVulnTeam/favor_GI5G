@@ -13,16 +13,16 @@ int main(int argc, char **argv) {
     worker::buildDatabase();
     reader::refreshAll();
 
-    double avg = reader::average(reader::accountList()->front(), reader::contactList(TYPE_EMAIL)->front(), KEY_CHARCOUNT, 500, -1, true);
-    logger::info("Average character count length sent to "+reader::contactList(TYPE_EMAIL)->front().displayName+": "+as_string(avg));
-    logger::info("List messages from"+reader::contactList(TYPE_EMAIL)->back().displayName);
-    auto result = reader::queryContact(reader::accountList()->front(), reader::contactList(TYPE_EMAIL)->back(), KEY_ALL, 500, 1411419510, false);
+    double avg = reader::average(reader::accountList()->front(), reader::contactList()->front(), KEY_CHARCOUNT, 500, -1, true);
+    logger::info("Average character count length sent to "+reader::contactList()->front().displayName+": "+as_string(avg));
+    logger::info("List messages from"+reader::contactList()->back().displayName);
+    auto result = reader::queryContact(reader::accountList()->front(), reader::contactList()->back(), KEY_ALL, 500, 1411419510, false);
     for (auto it = result->begin(); it != result->end(); ++it){
         logger::info(as_string(*it));
     }
 
-    logger::info("List conversations including"+reader::contactList(TYPE_EMAIL)->back().displayName);
-    auto result2 = reader::queryConversation(reader::accountList()->front(), reader::contactList(TYPE_EMAIL)->back(), KEY_ALL, 500, -1);
+    logger::info("List conversations including"+reader::contactList()->back().displayName);
+    auto result2 = reader::queryConversation(reader::accountList()->front(), reader::contactList()->back(), KEY_ALL, 500, -1);
     for (auto it = result2->begin(); it != result2->end(); ++it){
         logger::info(as_string(*it));
     }

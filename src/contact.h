@@ -9,22 +9,25 @@ namespace favor {
     public:
         const long id;
         const string displayName;
-        const MessageType type;
 
-        Contact(long ident, string name, MessageType t);
-        Contact(long ident, string name, MessageType t, const Address& addr);
-        Contact(long ident, string name, MessageType t, const vector <Address> &addrs);
+        Contact(long ident, string name, MessageTypeFlag ts);
+        Contact(long ident, string name, MessageTypeFlag ts, const Address& addr);
+        Contact(long ident, string name, MessageTypeFlag ts, const vector <Address> &addrs);
 
         bool operator==(const Contact& rhs) const{
-            return id == rhs.id && displayName == rhs.displayName && type == rhs.type;
+            return id == rhs.id && displayName == rhs.displayName && types == rhs.types;
         }
 
         void addAddress(const Address& addr);
         const vector<Address>& getAddresses() const;
 
+        bool hasType(MessageType type);
+
+
 
     private:
         vector<Address> addresses;
+        MessageTypeFlag types;
 
     };
 }

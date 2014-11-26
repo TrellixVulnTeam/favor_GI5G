@@ -15,9 +15,10 @@ namespace favor {
 
         //Getters
         DataLock<list<AccountManager*>> accountList();
-        DataLock<list<Contact>> contactList(const MessageType &t);
+        DataLock<list<Contact>> contactList();
 
-        shared_ptr<list<Address>> addresses(const MessageType &t); //We should really only need this internally
+        shared_ptr<list<Address>> addresses(const MessageTypeFlag &ts, bool contactRelevantOnly = false); //We should really only need these internally
+        shared_ptr<list<Address>> addresses(const MessageType &t, bool contactRelevantOnly = false);
         bool addressExists(const string& addr, const MessageType &t);
 
         //Computation getters
@@ -33,12 +34,12 @@ namespace favor {
         //Writers (the specific add/removes should be called exclusively by the worker)
         void removeAccount(AccountManager* account);
         void addAccount(AccountManager* account);
-        void invalidateContactList(MessageType t);
+        void invalidateContactList();
 
         void refreshAll();
 
         void refreshAccountList();
-        void refreshContactList(const MessageType &t);
+        void refreshContactList();
     }
 }
 

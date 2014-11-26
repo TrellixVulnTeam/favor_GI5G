@@ -1,10 +1,7 @@
 Just getting things set up right now. 
 
 Todo (in order): 
- - Contacts should not be type specific; we only need one contact table, and we can store a list of the types of addresses it holds in a single long using bit flags. The same way we're
- handling database keys, we just treat each binary bit as the presence marker for a given type. We'll either need to write something to change these bit flag numbers into normal types
- (easier, but probably worse in the long run) or more likely just change the type numbers themselves to be bit flag numbers - this makes them nonconsecutive, but we can just declare a
- constant array that will hold them consecutively for the purposes of iterating them.
+ - Track down every use of the contact constructor, which is very differeny post refactor and necessitates changing these.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
  further down the road.

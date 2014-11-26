@@ -9,10 +9,10 @@ namespace favor {
             thread_local int accountsHolderCount = 0;
             list<AccountManager*>* _accounts; //Have to hold pointers for polymorphism, list is pointer for uniformity with other data
 
-            std::mutex contactsMutex[NUMBER_OF_TYPES];
-            thread_local int contactsHolderCount[NUMBER_OF_TYPES] = {0};
-            list<Contact>* _contacts[NUMBER_OF_TYPES];
-            bool valid[NUMBER_OF_TYPES] = {false};
+            std::mutex contactsMutex;
+            thread_local int contactsHolderCount = 0;
+            list<Contact>* _contacts;
+            bool contactsValid = false;
 
             enum QueryBindables {ADDRESSES_START, FROM_DATE, UNTIL_DATE};
             typedef std::unordered_map<int, int> Indices;
@@ -21,9 +21,7 @@ namespace favor {
         void initialize() {
             sqlv(sqlite3_open_v2(DB_PATH_FULL, &db, SQLITE_OPEN_READONLY, NULL));
             _accounts = new std::list<AccountManager*>;
-            for (int i = 0; i < NUMBER_OF_TYPES; ++i){
-                _contacts[i] = new std::list<Contact>;
-            }
+            _contacts = new std::list<Contact>;
         }
 
         void cleanup() {
@@ -36,9 +34,9 @@ namespace favor {
         }
 
 
-        DataLock<list<Contact>> contactList(const MessageType& t){
-            if (!valid[t]) refreshContactList(t);
-            return DataLock<list<Contact>>(&contactsMutex[t], &contactsHolderCount[t], _contacts[t]);
+        DataLock<list<Contact>> contactList(){
+            if (!contactsValid) refreshContactList();
+            return DataLock<list<Contact>>(&contactsMutex, &contactsHolderCount, _contacts);
         }
 
         void removeAccount(AccountManager* account){
@@ -51,17 +49,15 @@ namespace favor {
         }
 
         //Something has changed, and the contacts list needs refreshing
-        void invalidateContactList(MessageType t){
-            DataLock<list<Contact>>(&contactsMutex[t], &contactsHolderCount[t], _contacts[t]); //Just for locking purposes
-            valid[t] = false;
+        void invalidateContactList(){
+            DataLock<list<Contact>>(&contactsMutex, &contactsHolderCount, _contacts); //Just for locking purposes
+            contactsValid = false;
         }
 
 
         void refreshAll() {
             refreshAccountList();
-            for (int i = 0; i < NUMBER_OF_TYPES; ++i) {
-                refreshContactList((MessageType)i);
-            }
+            refreshContactList();
         }
 
 
@@ -242,7 +238,6 @@ namespace favor {
             return ret;
         }
 
-        //TODO: TEST THIS METHOD
         shared_ptr<vector<Message>> queryConversation(const AccountManager* account, const Contact& c, Key keys, time_t fromDate, time_t untilDate){
             const vector<Address>* addresses = &(c.getAddresses());
             const string sentTableName(account->getTableName(true));
@@ -329,26 +324,30 @@ namespace favor {
             sqlv(sqlite3_finalize(stmt));
         }
 
-        void refreshContactList(const MessageType &t){
+        void refreshContactList(){
+            //TODO: much fixing on this method, needs testing
             sqlite3_stmt* stmt;
-            string sql = "SELECT * FROM " CONTACT_TABLE(t) ";";
+            string sql = "SELECT * FROM " CONTACT_TABLE ";";
             int result;
-            shared_ptr<list<Address>> addrs = addresses(t);
             std::unordered_map<int, Contact> contactHolder;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+
+            MessageTypeFlag flags = FLAG_EMPTY;
 
             while ((result = sqlite3_step(stmt)) == SQLITE_ROW){
                 int id = sqlite3_column_int(stmt, 0);
                 //contactHolder[id] = Contact(id, reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)), t); is no good
-                contactHolder.emplace(id, Contact(id, reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)), t));
-                //Canonical contacts added to hash table
+                contactHolder.emplace(id, Contact(id, reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)), (MessageTypeFlag) sqlite3_column_int(stmt, 2)));
+                flags = flags | ((MessageTypeFlag) sqlite3_column_int(stmt, 2));
+                //Canonical contacts added to hash table, and record any new flags
             }
             sqlv(result);
 
             //Get this manually because the method to get it from outside the worker could trigger infinite recursion if it's invalid
-            DataLock<list<Contact>> contacts = DataLock<list<Contact>>(&contactsMutex[t], &contactsHolderCount[t], _contacts[t]);
+            DataLock<list<Contact>> contacts = DataLock<list<Contact>>(&contactsMutex, &contactsHolderCount, _contacts);
             contacts->clear();
 
+            shared_ptr<list<Address>> addrs = addresses(flags); //TODO: make this a union of the types we find in contacts
             for (auto it = addrs->begin(); it != addrs->end(); it++){
                 //TODO: this could conceivably, possible, throw an exception for being out of bounds, though it shouldn't
                 //given the check we're making. we can catch it and rethrow it as bad data if it ever happens somehow though
@@ -359,12 +358,14 @@ namespace favor {
             for (auto it = contactHolder.begin(); it != contactHolder.end(); it++){
                 contacts->push_back(it->second);
             }
-            valid[t] = true;
+            contactsValid = true;
         }
 
-        shared_ptr<list<Address>> addresses(const MessageType &t){
+        shared_ptr<list<Address>> addresses(const MessageType &t, bool contactRelevantOnly){
             sqlite3_stmt* stmt;
-            string sql = "SELECT * FROM " ADDRESS_TABLE(t) ";";
+            string sql;
+            if (contactRelevantOnly) sql = "SELECT * FROM " ADDRESS_TABLE(t) " WHERE contact_id IS NOT NULL;";
+            else sql = "SELECT * FROM " ADDRESS_TABLE(t) ";";
             int result;
             shared_ptr<list<Address>> ret = std::make_shared<list<Address>>();
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
@@ -374,6 +375,42 @@ namespace favor {
                         sqlite3_column_int(stmt, 1),
                         sqlite3_column_type(stmt, 2) == SQLITE_NULL ? -1 : sqlite3_column_int(stmt, 2),
                         t));
+                //-1 if there's no corresponding contact, otherwise that contact's ID
+
+            }
+            sqlv(result);
+            sqlv(sqlite3_finalize(stmt));
+            return ret;
+        }
+
+        //TODO: ENTIRELY UNTESTED
+        shared_ptr<list<Address>> addresses(const MessageTypeFlag &ts, bool contactRelevantOnly){
+            sqlite3_stmt* stmt;
+            string sql;
+            for (short i = 0; i < NUMBER_OF_TYPES; ++i){
+                if (MessageTypeFlags[i] & ts){
+                    if (contactRelevantOnly) sql += "SELECT *,? as type FROM " ADDRESS_TABLE(i)" WHERE contact_id IS NOT NULL";
+                    else sql += "SELECT *,? as type FROM " ADDRESS_TABLE(i);
+                    if (i > 0) sql += " UNION ";
+                }
+            }
+            sql += ";";
+
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+
+            int bindingIndex = 1;
+            for (short i = 0; i < NUMBER_OF_TYPES; ++i){
+                if (MessageTypeFlags[i] & ts){} sqlv(sqlite3_bind_int(stmt, bindingIndex++, i));
+            }
+
+            int result;
+            shared_ptr<list<Address>> ret = std::make_shared<list<Address>>();
+            while ((result = sqlite3_step(stmt)) == SQLITE_ROW){
+                ret->push_back(Address(
+                        reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)),
+                        sqlite3_column_int(stmt, 1),
+                        sqlite3_column_type(stmt, 2) == SQLITE_NULL ? -1 : sqlite3_column_int(stmt, 2),
+                        (MessageType) sqlite3_column_int(stmt, 3)));
                         //-1 if there's no corresponding contact, otherwise that contact's ID
 
             }

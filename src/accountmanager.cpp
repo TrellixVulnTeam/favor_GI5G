@@ -176,13 +176,15 @@ namespace favor {
             addressNames[address] = name;
         }
 
-        //TODO: this should be a shared pointer to a vector
+        //TODO: test this after changes
         shared_ptr<vector<Address>> AccountManager::contactAddresses() const {
             shared_ptr<vector<Address>> ret = make_shared<vector<Address>>();
-            auto contacts = reader::contactList(type);
+            auto contacts = reader::contactList();
             for (auto it = contacts->begin(); it != contacts->end(); ++it){
-                for (int i = 0; i < it->getAddresses().size(); ++i){
-                    ret->push_back(it->getAddresses()[i]);
+                if (it->hasType(type)) {
+                    for (int i = 0; i < it->getAddresses().size(); ++i){
+                        ret->push_back(it->getAddresses()[i]);
+                    }
                 }
             }
             return ret;
