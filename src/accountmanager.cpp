@@ -183,7 +183,7 @@ namespace favor {
             for (auto it = contacts->begin(); it != contacts->end(); ++it){
                 if (it->hasType(type)) {
                     for (int i = 0; i < it->getAddresses().size(); ++i){
-                        ret->push_back(it->getAddresses()[i]);
+                        if (it->getAddresses()[i].type == type) ret->push_back(it->getAddresses()[i]);
                     }
                 }
             }

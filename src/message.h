@@ -7,7 +7,7 @@ namespace favor {
     class Message {
     private:
 
-        const std::shared_ptr<const string> bodyPtr;
+        const std::shared_ptr<string> bodyPtr;
         const short mediaVal; //Represents a bool, but we need a little breathing room to know when we don't know
     public:
         static constexpr long FAIL_VALUE = -2;

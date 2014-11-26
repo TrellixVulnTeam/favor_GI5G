@@ -82,11 +82,13 @@ namespace favor{
         JNIEXPORT jobjectArray JNICALL contactAddresses(JNIEnv* env, jobject callingObj, jint type){
 
             list<Address> ret;
-            auto contacts = reader::contactList(static_cast<MessageType>(type));
+            auto contacts = reader::contactList();
             logger::info("ContactsList length: "+as_string((int)contacts->size()));
             for (auto it = contacts->begin(); it != contacts->end(); ++it){
-                for (int i = 0; i < it->getAddresses().size(); ++i){
-                    ret.push_back(it->getAddresses()[i]);
+                if (it->hasType((MessageType) type)){
+                    for (int i = 0; i < it->getAddresses().size(); ++i){
+                        if (it->getAddresses()[i].type == type) ret.push_back(it->getAddresses()[i]);
+                    }
                 }
             }
 

@@ -2,7 +2,7 @@
 
 namespace favor {
     Message::Message(MessageType t, bool s, long int i, std::time_t d, string a, short m, long cc, const string& b) :
-            type(t), sent(s), id(i), date(d), address(a), mediaVal(m), bodyPtr(std::make_shared<const string>(b)), charCount(cc) {}
+            type(t), sent(s), id(i), date(d), address(a), mediaVal(m), bodyPtr(std::make_shared<string>(b)), charCount(cc) {}
 
     Message::Message(MessageType t, bool s, long int i, std::time_t d, string a, short m, long cc) :
             type(t), sent(s), id(i), date(d), address(a), mediaVal(m), bodyPtr(NULL), charCount(cc) {}
@@ -16,7 +16,7 @@ namespace favor {
     }
 
     const string& Message::body() const{
-        return (*bodyPtr);
+        return (*bodyPtr.get());
     }
 
     bool Message::media() const{
