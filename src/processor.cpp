@@ -1,3 +1,4 @@
+#include <limits.h>
 #include "processor.h"
 
 namespace favor {
@@ -5,50 +6,87 @@ namespace favor {
         namespace {
 
             enum ResultType {AVG_CHARS, AVG_RESPONSE, TOTAL_CHARS, TOTAL_RESPONSE, TOTAL_MESSAGES};
+
+            size_t resultKey(ResultType t,  long contactId, long fromDate, long untilDate){
+                //Shift bits here so identical values don't cancel each other out
+                //Contact IDs and resultType are small so get shifted left
+                return (std::hash<long>()(fromDate) ^
+                        (std::hash<long>()(contactId) << 1) ^
+                        ((std::hash<long>()(untilDate) << 1) >> 1) ^
+                        (std::hash<long>()(t) << 2));
+            }
+
             class Result {
             private:
                 const ResultType type;
                 long fromDate;
                 long untilDate;
                 long contactId;
-                const shared_ptr<void> data; //TODO: if this doesn't work (or even if it does) we might be able to get away with a normal pointer here as long as we're careful
-                //not to copy this object. remember we have noncopyable macros
+                const shared_ptr<void> data; //http://stackoverflow.com/questions/5913396/why-do-stdshared-ptrvoid-work - wizardy.
+                // TODO: verification of wizardy, specifically just write a tiny test with similar assignment and make sure destructors are firing properly
+                Result(ResultType t, long contact, long fromD, long untilD) : type(t), fromDate(fromD), untilDate(untilD), contactId(contact) {}
+
+                template <typename T>
+                void setValue(T input){
+                    data = std::make_shared<T>(input);
+                }
 
             public:
+                template <typename T>
+                friend Result makeResult(ResultType t, long contact, long fromD, long untilD, T input);
+
                 template<typename T>
-                T& getData(){
+                T getData(){
                     T* ptr = data.get();
                     return *ptr;
                 }
 
-//                template<typename T>
-//                void setData(T& input){
-//                    data = std::make_shared<T>(input);
-//                }
-
-                //TODO: a hashcode method that gives us some sort of ID based on contactId, fromDate and untilDate. We can't produce something flawlessly unique without using
-                //three times as many bits as fit in a long (becaues information loss) so this will just have to be our "best guess". hopefully we can find a data structuer that
-                //handles collisions for us, but if not, on collision we look for the exact item by checking for perfect equality on these three attributes
-
-                template<typename T>
-                Result(ResultType t, long contact, long fromD, long untilD, T& input) :
-                        fromDate(fromD), untilDate(untilD), contactId(contact), data(std::make_shared<T>(input)){}
+                size_t key(){
+                    return resultKey(type, fromDate, untilDate, contactId);
+                }
             };
 
             template<typename T>
+            Result makeResult(ResultType t, long contact, long fromD, long untilD, T input){
+                Result ret(t, contact, fromD, untilD);
+                ret.setValue<T>(input);
+                return ret;
+            }
+
+
+            std::unordered_map<size_t, Result> cache;
+            std::unordered_map<size_t, std::mutex> cacheLocks;
+
+
+            template<typename T>
             void cacheResult(ResultType t, long contactId, long fromDate, long untilDate, T& input){
-                //TODO: construct the result and drop it in the cache. we need to do some long and hard thinking about what data structure to use here because while we need to
-                //be able to look for something by fromDate/untilDate/contactId, I'm not super interested in writing my own hash table just for this.
+                Result res = makeResult(t, contactId, fromDate, untilDate, input);
+                cacheLocks[res.key()].lock();
+                cache[res.key()] = res;
+                cacheLocks[res.key()].unlock();
             }
 
             template<typename T>
             T getResult(ResultType t, long contactId, long fromDate, long untilDate){
-
+                long key = resultKey(t, contactId, fromDate, untilDate);
+                cacheLocks[key].lock();
+                T data = cache.at(key).getData<T>();
+                cacheLocks[key].unlock();
+                return data;
             }
 
             bool countResult(ResultType t, long contactId, long fromDate, long untilDate){
-                //TODO: look for the result in the cache, return true if it exists. Is there a more elegant way to put the check and get in the same method?
+                long key = resultKey(t, contactId, fromDate, untilDate);
+                cacheLocks[key].lock();
+                bool result = cache.count(resultKey(t, contactId, fromDate, untilDate));
+                cacheLocks[key].unlock();
+                return result;
+
             }
         }
+
+
+
+
     }
 }

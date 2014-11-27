@@ -325,7 +325,7 @@ namespace favor {
         }
 
         void refreshContactList(){
-            //TODO: much fixing on this method, needs testing
+            //TODO: much fixing on this method, seems okay but am still suspicious
             sqlite3_stmt* stmt;
             string sql = "SELECT * FROM " CONTACT_TABLE ";";
             int result;
