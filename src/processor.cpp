@@ -61,7 +61,7 @@ namespace favor {
 
                 template<typename T>
                 T getData(){
-                    T* ptr = data.get();
+                    T* ptr = (T*)data.get();
                     return *ptr;
                 }
 
@@ -115,7 +115,7 @@ namespace favor {
             T getResult(ResultType t, AccountManager* account, const Contact* const contact, long fromD, long untilD){
                 ResultKey key = makeResultKey(t, account, contact, fromD, untilD);
                 cacheLock.lock();
-                T ret = cache.at(key);
+                T ret = cache.at(key).getData<T>();
                 cacheLock.unlock();
                 return ret;
             }
@@ -130,6 +130,30 @@ namespace favor {
         }
 
 
+
+        double averageCharcount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
+            if (countResult(AVG_CHARS, account, &c, fromDate, untilDate)){
+                logger::info("Found AVG CHARS result, returning from cache");
+                return getResult<double>(AVG_CHARS, account, &c, fromDate, untilDate);
+            } else {
+                logger::info("COMPUTING AVG CHARS RESULT");
+                return reader::average(account, c, KEY_CHARCOUNT, fromDate, untilDate, sent);
+            }
+        }
+
+        double averageResponsetime(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
+            //TODO: dat response time computation tho...
+        }
+
+        long totalCharcount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
+
+        }
+        long totalResponsetime(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
+
+        }
+        long totalMessagecount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
+            
+        }
 
 
     }

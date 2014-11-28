@@ -17,6 +17,7 @@ Todo (in order):
  - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts'). Also take this time to verify
  stuff still works with the list -> vector switch (not that that should actually change anything)
   - Spend some time with a query analyzer and make sure that SQLlite is getting the best use possible out of our indices, and think about what might be worth changing if not.
+  - Run some stress tests and figure out if it's worth caching the results of average/sum queries, because if SQL holds these, we almost certainly won't need to.
   - SQLite extended error codes? See about making use of these.
   - See about a const version of the DataLock, or just about making DataLocks return only const references (if the former, watch out for slicing). Only the reader should be updating its 
   cached info anyway...

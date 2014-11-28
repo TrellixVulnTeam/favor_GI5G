@@ -8,8 +8,7 @@
 
 namespace favor {
     namespace processor {
-        //TODO: think about how exactly we want to implement the cache, and also think about whether we should return pairs or a specific "result"
-        //type.
+        //TODO: right now these only support single accounts and contacts, but the underlying query framework is set up to support much more
 
         //AccountManager determines relevant account (limited to one.. for now). NULL means a query on everything.
 
