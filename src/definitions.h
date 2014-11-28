@@ -110,6 +110,8 @@ namespace favor{
     inline Key operator|(Key lhs, Key rhs){
         return static_cast<Key>(static_cast<int>(lhs) | static_cast<int>(rhs));
     }
+
+    enum ResultType {AVG_CHARS, AVG_RESPONSE, TOTAL_CHARS, TOTAL_RESPONSE, TOTAL_MESSAGES};
 }
 //We need nulls so that averages work properly with messages we failed to record
 #define RECEIVED_TABLE_SCHEMA "(id INTEGER NOT NULL, address TEXT NOT NULL, date INTEGER, charcount INTEGER, media INTEGER, body TEXT, PRIMARY KEY(id))"

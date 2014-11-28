@@ -1,8 +1,9 @@
 Just getting things set up right now. 
 
 Todo (in order): 
- - The processor cache needs to record result information about the accounts involved. There's really only two cases - one account (name+type) or multiple accounts (name+types).
- The case where we query a type is really a matter of multiple accounts because addresses by themselves don't make sense without tables to hit.
+ - Processor cache is ALMOST done, but missing a vital part: __result keys must include data on whether the result pertains to data sent or received__.
+ - Many Reader queries are ordering things by date. Can we still do this if we don't select date (I assume not), and if not, how do we handle this? Always select date? Find another
+ way to gaurantee order, or just don't gaurantee order?
  - Contacts have changed pretty substantially, and there are likely to be bugs (GJ me for not having tests yet). Keep an eye out for these, __and test things with more than one 
  address type once we have resources for that__.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections

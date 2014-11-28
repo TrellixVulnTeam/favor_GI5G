@@ -1,8 +1,11 @@
 #include <iostream>
+#include <processor.h>
 #include "../src/favor.h"
 #include "../src/worker.h"
 #include "../src/reader.h"
 #include "../src/logger.h"
+
+#include <chrono>
 //TODO: this should be replaced by a real testing framework ASAP
 
 using namespace std;
@@ -15,10 +18,18 @@ int main(int argc, char **argv) {
     logger::info("A");
 
 
-    reader::accountList()->front()->updateAddresses();
-    reader::accountList()->front()->updateMessages();
+//    reader::accountList()->front()->updateAddresses();
+//    reader::accountList()->front()->updateMessages();
 
-    double avg = reader::average(reader::accountList()->front(), reader::contactList()->front(), KEY_CHARCOUNT, 500, -1, true);logger::info("A");
+    double avg;// = processor::averageCharcount(reader::accountList()->front(), reader::contactList()->front(), 500, -1, true);
+
+    auto start = chrono::steady_clock::now();
+    for (long l = 0; l < 10; l++){
+        avg = processor::averageCharcount(reader::accountList()->front(), reader::contactList()->front(), 500, -1, true);
+    }
+    auto end = chrono::steady_clock::now();
+
+    cout << "Duration: " << chrono::duration<double, milli>(end-start).count() << " ns" << endl;
     logger::info("Average character count length sent to "+reader::contactList()->front().displayName+": "+as_string(avg));
     logger::info("List messages from"+reader::contactList()->back().displayName);
     auto result = reader::queryContact(reader::accountList()->front(), reader::contactList()->back(), KEY_ALL, 500, 1411419510, false);
