@@ -21,10 +21,10 @@ namespace favor {
 
 
         template<typename T>
-        void cacheResult(ResultType t, AccountManager* account, const Contact* const contact, long fromD, long untilD, T input);
+        void cacheResult(ResultType t, AccountManager* account, const Contact* const contact, long fromD, long untilD, bool sent,  T input);
         template<typename T>
-        T getResult(ResultType t, AccountManager* account, const Contact* const contact, long fromD, long untilD);
-        bool countResult(ResultType t, AccountManager* account, const Contact* const contact, long fromD, long untilD);
+        T getResult(ResultType t, AccountManager* account, const Contact* const contact, long fromD, long untilD, bool sent);
+        bool countResult(ResultType t, AccountManager* account, const Contact* const contact, long fromD, long untilD, bool sent);
 
 
     }

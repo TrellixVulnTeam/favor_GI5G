@@ -11,3 +11,4 @@ src/lib/*
 test/lib/*
 .kdev4
 .idea
+test/gtest

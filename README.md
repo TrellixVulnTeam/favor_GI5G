@@ -1,11 +1,11 @@
 Just getting things set up right now. 
 
-Todo (in order): 
- - Processor cache is ALMOST done, but missing a vital part: __result keys must include data on whether the result pertains to data sent or received__.
+Todo (in order):
  - Many Reader queries are ordering things by date. Can we still do this if we don't select date (I assume not), and if not, how do we handle this? Always select date? Find another
  way to gaurantee order, or just don't gaurantee order?
  - Contacts have changed pretty substantially, and there are likely to be bugs (GJ me for not having tests yet). Keep an eye out for these, __and test things with more than one 
  address type once we have resources for that__.
+ - Look at how Google Test works with the NDK, because it does work with the NDK.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
  further down the road.

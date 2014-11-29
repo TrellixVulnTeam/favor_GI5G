@@ -40,7 +40,10 @@ namespace favor {
                     logger::error("SQLite error #" + as_string(result) + ", db says \"" + sqlite3_errmsg(db) + "\"");
                     throw constraintViolationException();
                 }
-                else logger::warning("SQLite constraint failed, db says \"" + string(sqlite3_errmsg(db)) + "\"");
+                else {
+                    logger::warning("SQLite constraint failed, db says \"" + string(sqlite3_errmsg(db)) + "\"");
+                    break;
+                }
             default:
                 logger::error("SQLite error #" + as_string(result) + ", db says \"" + sqlite3_errmsg(db) + "\"");
                 throw sqliteException();
@@ -86,7 +89,10 @@ namespace favor {
 
     string as_string(float f){
     #ifdef ANDROID
-    //TODO: should be quick
+    #define FLOAT_DIGIT_MAX 10
+    char result[FLOAT_DIGIT_MAX] = {0};
+    sprintf(result, "%.7g", f);
+    return string(result);
     #else
         return to_string(f);
     #endif
@@ -94,7 +100,10 @@ namespace favor {
 
     string as_string(double d){
     #ifdef ANDROID
-    //TODO: should be quick
+	#define DOUBLE_DIGIT_MAX 20
+    char result[DOUBLE_DIGIT_MAX] = {0};
+    sprintf(result, "%.15g", d);
+    return string(result);
     #else
         return to_string(d);
     #endif
