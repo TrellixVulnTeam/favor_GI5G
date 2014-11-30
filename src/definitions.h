@@ -39,10 +39,10 @@ namespace favor {
     };
     enum MessageTypeFlag {
         FLAG_EMPTY = 0,
-        FLAG_EMAIL = 1 << TYPE_EMAIL,
-        FLAG_ANDROIDTEXT = 1 << TYPE_ANDROIDTEXT,
-        FLAG_LINE = 1 << TYPE_LINE,
-        FLAG_SKYPE = 1 < TYPE_SKYPE
+        FLAG_EMAIL = 1 << TYPE_EMAIL, //1
+        FLAG_ANDROIDTEXT = 1 << TYPE_ANDROIDTEXT, //2
+        FLAG_LINE = 1 << TYPE_LINE, //4
+        FLAG_SKYPE = 1 < TYPE_SKYPE //8
     };
     inline MessageTypeFlag operator|(MessageTypeFlag lhs, MessageTypeFlag rhs){
         return static_cast<MessageTypeFlag>(static_cast<int>(lhs) | static_cast<int>(rhs));
@@ -50,6 +50,11 @@ namespace favor {
     const MessageTypeFlag MessageTypeFlags[NUMBER_OF_TYPES] = {FLAG_EMAIL, FLAG_ANDROIDTEXT, FLAG_LINE, FLAG_SKYPE};
     extern const char *MessageTypeName[];
 }
+#define NAME_EMAIL "email"
+#define NAME_ANDROIDTEXT "androidtext"
+#define NAME_LINE "line"
+#define NAME_SKYPE "skype"
+
 
 //Constants --------------------------------------------------------------------------------
 #define ADDRESS_CHECK_MESSAGE_COUNT 500 //The number of recent sent messages we look at when determining what addresses to pull

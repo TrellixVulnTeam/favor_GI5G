@@ -7,7 +7,7 @@
 using namespace std;
 
 namespace favor {
-    const char *MessageTypeName[] = {"email", "androidtext", "line", "skype"};
+    const char *MessageTypeName[] = {NAME_EMAIL, NAME_ANDROIDTEXT, NAME_LINE, NAME_SKYPE};
     const char* dbPath = "."; //TODO: This can eventually be something else, but we'll need to ensure the directory exists in that case
 
     void initialize() {
