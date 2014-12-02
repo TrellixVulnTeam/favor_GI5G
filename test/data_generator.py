@@ -20,6 +20,10 @@ class Account:
         self.name = name
         self.accountType = accountType
         self.metrics = {}
+    #     self.addresses = []
+    #
+    # def add_account(self, account):
+    #     self.accounts
 
 
 ADDRESSES = [Address("test1@test.com", TYPE_EMAIL), Address("test2@test.com", TYPE_EMAIL),
@@ -44,8 +48,11 @@ def generate_row(account, addr):
 
     if addr.name not in account.metrics:
         account.metrics[addr.name] = {}
-        account.metrics[addr.name]["charcount"] = 0
-        account.metrics[addr.name]["msgcount"] = 0
+        account.metrics[addr.name]["charcount_sent"] = 0
+        account.metrics[addr.name]["msgcount_sent"] = 0
+        account.metrics[addr.name]["charcount_received"] = 0
+        account.metrics[addr.name]["msgcount_received"] = 0
+
 
     msg_date = datetime.now()
     adjustment = timedelta(seconds=rint(59), minutes=rint(59), hours=rint(23), days=rint(6))
@@ -57,22 +64,27 @@ def generate_row(account, addr):
     msg_charcount = rint(1000)
 
     sql = 'INSERT INTO "' + account.name + "_" + TYPENAMES[addr.addrType] + "_"
-    if account.metrics[addr.name]["msgcount"] % 2 == 0:
+    if (account.metrics[addr.name]["msgcount_sent"] + account.metrics[addr.name]["charcount_received"]) % 2 == 0:
         sql += "sent"
+        account.metrics[addr.name]["charcount_sent"] += msg_charcount
+        account.metrics[addr.name]["msgcount_sent"] += 1
     else:
         sql += "received"
+        account.metrics[addr.name]["charcount_received"] += msg_charcount
+        account.metrics[addr.name]["msgcount_received"] += 1
 
     sql += '" VALUES(' + ",".join(
         str(x) for x in [ID, '"'+address.name+'"', int(msg_date.timestamp()), msg_charcount, getrandbits(1),
                          '"Test message body"']) + ");"
     ID += 1
-    account.metrics[addr.name]["charcount"] += msg_charcount
-    account.metrics[addr.name]["msgcount"] += 1
     return sql
 
 
 def format_row(string):
     return '"'+string.replace('"', '\\"')+'"'+"\\\n"
+
+def format_defstring(string):
+    return string.replace("@", "_at_").replace(".", "_dot_")
 
 
 if __name__ == '__main__':
@@ -87,3 +99,10 @@ if __name__ == '__main__':
     out.write("\"\"\n\n")
     for account in ACCOUNTS:
         out.write('//'+account.name + ":" + str(account.metrics)+"\n")
+        for address in account.metrics:
+            for metric in account.metrics[address]:
+                definition = format_defstring(account.name)+"_"+format_defstring(address)+"_"+metric
+                definition = definition.upper()
+                out.write("#define "+definition+" "+str(account.metrics[address][metric])+"\n")
+
+        out.write("\n")

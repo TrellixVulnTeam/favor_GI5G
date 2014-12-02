@@ -1,5 +1,7 @@
 #include "favor.h"
 #include "reader.h"
+#include "address.h"
+#include "accountmanager.h"
 #include "gtest/gtest.h"
 #include "testdata.h"
 
@@ -13,19 +15,19 @@ class DatabaseTest : public ::testing::Test {
 
         const string contactSeed =
                 //Remember that if these type numbers look weird it's because they're using the type flag constants, not the generic type constants
-                "INSERT INTO" CONTACT_TABLE "VALUES (1, \"EmailTest1\", 1);" //Email
-                "INSERT INTO" CONTACT_TABLE "VALUES (2, \"LineTest2\", 4);" //Line
-                "INSERT INTO" CONTACT_TABLE "VALUES (3, \"LineEmailTest3\", 5);" //Line + Email
-                "INSERT INTO" CONTACT_TABLE "VALUES (4, \"EmailTest4\", 1);"
-                "INSERT INTO" CONTACT_TABLE "VALUES (5, \"EmailTest5\", 1);";
+                "INSERT INTO " CONTACT_TABLE " VALUES (1, \"EmailTest1\", 1);" //Email
+                "INSERT INTO " CONTACT_TABLE " VALUES (2, \"LineTest2\", 4);" //Line
+                "INSERT INTO " CONTACT_TABLE " VALUES (3, \"LineEmailTest3\", 5);" //Line + Email
+                "INSERT INTO " CONTACT_TABLE " VALUES (4, \"EmailTest4\", 1);"
+                "INSERT INTO " CONTACT_TABLE " VALUES (5, \"EmailTest5\", 1);";
 
         const string addressSeed =
                 "INSERT INTO addresses_" NAME_EMAIL " VALUES(\"test1@test.com\", 1, NULL);"
                 "INSERT INTO addresses_" NAME_EMAIL " VALUES(\"test2@test.com\", 2, NULL);"
                 "INSERT INTO addresses_" NAME_EMAIL " VALUES(\"test3@test.com\", 1, 1);" //Bound to EmailTeset1
                 "INSERT INTO addresses_" NAME_EMAIL " VALUES(\"test4@test.com\", 2, 3);" //Bound to LineEmailTest3
-                "INSERT INTO ADDRESSES_" NAME_LINE "VALUES (\"Test1\", 2, 2);" //Bound to LineTest2
-                "INSERT INTO ADDRESSES_" NAME_LINE "VALUES (\"Test2\", 1, 3);"; //Bound to LineEmailTest3
+                "INSERT INTO ADDRESSES_" NAME_LINE " VALUES (\"Test1\", 2, 2);" //Bound to LineTest2
+                "INSERT INTO ADDRESSES_" NAME_LINE " VALUES (\"Test2\", 1, 3);"; //Bound to LineEmailTest3
 
         const string accountSeed =
                 "INSERT INTO accounts VALUES (\"account1@test.com\", 0, \"{}\");" //0 is email
@@ -52,8 +54,12 @@ class DatabaseTest : public ::testing::Test {
         }
 
         virtual void SetUp() override {
-            favor::dbPath = ":memory";
-            favor::initialize();
+            logger::info("initdb");
+            //favor::dbPath = ":memory:";
+            //We skip Favor's init because it will fail some assertions that we don't need for testing anyway
+            worker::initialize();
+            logger::info("worker initted");
+            reader::initialize();
             worker::buildDatabase();
             populateDb();
         }
@@ -63,5 +69,16 @@ class DatabaseTest : public ::testing::Test {
         }
 };
 
-class ReaderDatabaseTest : protected DatabaseTest {};
+class ReaderDatabase : public DatabaseTest {};
+
+
+TEST_F(ReaderDatabase, SQLiteSum){
+    Address Test3("test3@test.com", 1, 1, TYPE_EMAIL);
+    Contact EmailTest1(1, "EmailTest1", MessageTypeFlags[TYPE_EMAIL], Test3);
+    AccountManager* Account1 = AccountManager::buildManager("account1@test.com", TYPE_EMAIL, "{\"password\":\"no\", \"url\":\"imap://imap.no.com\"}");
+    long result = reader::sum(Account1, EmailTest1, KEY_CHARCOUNT, -1, -1, true);
+    delete Account1;
+
+    ASSERT_EQ(result, ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_CHARCOUNT_SENT);
+}
 
