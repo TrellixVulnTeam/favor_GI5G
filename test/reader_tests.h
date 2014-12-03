@@ -47,13 +47,44 @@ class DatabaseTest : public ::testing::Test {
 
 class ReaderDatabase : public DatabaseTest {};
 
+//TODO: these would be better with date restrictions, but we need to think about how to have the python script define those
+//so tha twe can use them. Maybe just pick some at semi-random? As long as we can get to them with definitions, it works out fine
+
 
 TEST_F(ReaderDatabase, SQLiteSum){
     Contact EmailTest1 CONTACT_EmailTest1_ARGS;
     AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
-    long result = reader::sum(Account1, EmailTest1, KEY_CHARCOUNT, -1, -1, true);
-    delete Account1;
 
+    //Also tests sent/true distinction
+    long result = reader::sum(Account1, EmailTest1, KEY_CHARCOUNT, -1, -1, true);
     ASSERT_EQ(result, ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_CHARCOUNT_SENT);
+
+    result = reader::sumAll(Account1, KEY_CHARCOUNT, -1, -1, false);
+    ASSERT_EQ(result, ACCOUNT1_AT_TEST_DOT_COM_OVERALL_CHARCOUNT_RECEIVED);
+
+    delete Account1;
+}
+
+
+TEST_F(ReaderDatabase, SQLiteAverage){
+    Contact LineEmailTest3 CONTACT_LineEmailTest3_ARGS;
+    AccountManager* Account2 = AccountManager::buildManager ACC_account2_at_test_dot_com_ARGS;
+    AccountManager* Account3 = AccountManager::buildManager ACC_account3_ARGS; //Line
+    //TODO: it seems like hte second accountmanager is ending up as a... Skype Manager? wut? that needs fixing
+    //TODO: we should also define to_string for accountmanagers, as evidenced by this case here
+
+    //Also tests contact-address mapping separation across types
+    double result = reader::average(Account2, LineEmailTest3, KEY_CHARCOUNT, -1, -1, true);
+    //test4@test.com is the address bound to LineEmailTest
+    logger::info(as_string(result)+"=~="+as_string(ACCOUNT2_AT_TEST_DOT_COM_TEST4_AT_TEST_DOT_COM_CHARCOUNT_SENT / ACCOUNT2_AT_TEST_DOT_COM_TEST4_AT_TEST_DOT_COM_MSGCOUNT_SENT));
+    ASSERT_EQ((long)result, ACCOUNT2_AT_TEST_DOT_COM_TEST4_AT_TEST_DOT_COM_CHARCOUNT_SENT / ACCOUNT2_AT_TEST_DOT_COM_TEST4_AT_TEST_DOT_COM_MSGCOUNT_SENT);
+
+    //test2 is another address (line this time) boudn to LineEmailTest
+    result = reader::average(Account3, LineEmailTest3, KEY_CHARCOUNT, -1, -1, true);
+    logger::info(as_string(result)+"=~="+as_string(ACCOUNT3_TEST2_CHARCOUNT_SENT / ACCOUNT3_TEST2_MSGCOUNT_SENT));
+    ASSERT_EQ((long)result, ACCOUNT3_TEST2_CHARCOUNT_SENT / ACCOUNT3_TEST2_MSGCOUNT_SENT);
+
+    delete Account2;
+    delete Account3;
 }
 

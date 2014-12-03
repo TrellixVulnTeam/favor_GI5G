@@ -16,6 +16,12 @@
 
 #endif
 
+#ifdef FAVOR_LINE_MANAGER
+
+#include "linemanager.h"
+
+#endif
+
 #ifdef ANDROID
 
 #include "androidtextmanager.h"
@@ -205,6 +211,10 @@ namespace favor {
                 #ifdef FAVOR_SKYPE_MANAGER
                 case TYPE_SKYPE:
                     return new SkypeManager(accNm, detailsJson);
+                #endif
+                #ifdef FAVOR_LINE_MANAGER
+                case TYPE_LINE:
+                    return new LineManager(accNm, detailsJson);
                 #endif
                 default:
                     logger::error("Attempt to initialize manager for unsupported type " + as_string(typ));

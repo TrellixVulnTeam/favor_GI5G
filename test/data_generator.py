@@ -1,5 +1,3 @@
-# TODO: So this could eventually (and maybe should) just generate all our database seed data for consistency's sake, but
-#when I wrote this, all I needed was messages - the other stuff was easy to handwrite - so for now that's all it does
 from time import *
 from datetime import *
 from random import *
@@ -9,7 +7,6 @@ import json
 TYPE_EMAIL = 0
 TYPE_LINE = 2
 
-
 TYPENAMES = {TYPE_EMAIL: "email", TYPE_LINE: "line"}
 TYPEDEFS = {TYPE_EMAIL: "TYPE_EMAIL", TYPE_LINE: "TYPE_LINE"}
 
@@ -17,14 +14,18 @@ TYPEDEFS = {TYPE_EMAIL: "TYPE_EMAIL", TYPE_LINE: "TYPE_LINE"}
 def list_to_string(list):
     return ",".join(str(x) for x in list)
 
+
 def format_row(string):
-    return '"'+string.replace('"', '\\"')+'"'+"\\\n"
+    return '"' + string.replace('"', '\\"') + '"' + "\\\n"
+
 
 def format_defstring(string):
     return string.replace("@", "_at_").replace(".", "_dot_")
 
+
 def rint(max):
     return int(random() * max)
+
 
 class Track:
     IDS = {}
@@ -46,8 +47,8 @@ class Track:
             self.id = Track.IDS[cls]
             Track.MAPS[cls][name] = self
 
-class Address(Track):
 
+class Address(Track):
     def __init__(self, name, addrType, count):
         super().__init__(name, self.__class__)
         self.addrType = addrType
@@ -59,21 +60,22 @@ class Address(Track):
             contact_id = self.contact.id
         else:
             contact_id = "NULL"
-        return "INSERT INTO addresses_"+TYPENAMES[self.addrType]+" VALUES ("+list_to_string(['"'+self.name+'"',
-                                                                                            self.count,
-                                                                                            contact_id])+");"
+        return "INSERT INTO addresses_" + TYPENAMES[self.addrType] + " VALUES (" + list_to_string(
+            ['"' + self.name + '"',
+             self.count,
+             contact_id]) + ");"
+
     def args(self):
         cid = -1
         if self.contact:
             cid = self.contact.id
-        return list_to_string(['"'+self.name+'"', cid, self.count, TYPEDEFS[self.addrType]])
+        return list_to_string(['"' + self.name + '"', cid, self.count, TYPEDEFS[self.addrType]])
 
     def defargs(self):
-        return "#define ADDR_"+format_defstring(self.name)+"_ARGS ("+self.args()+")\n"
+        return "#define ADDR_" + format_defstring(self.name) + "_ARGS (" + self.args() + ")\n"
 
 
 class Contact(Track):
-
     def __init__(self, name, count):
         super().__init__(name, self.__class__)
         self.addresses = []
@@ -89,62 +91,73 @@ class Contact(Track):
             active_types[address.addrType] = True
         flag = 0
         for key in active_types:
-            flag += 2**key
+            flag += 2 ** key
         return flag
 
 
     def sql(self):
-        return "INSERT INTO contacts VALUES("+list_to_string([self.id, '"'+self.name+'"', self.flag()])+");"
+        return "INSERT INTO contacts VALUES(" + list_to_string([self.id, '"' + self.name + '"', self.flag()]) + ");"
 
     def defargs(self):
-        arglist = [self.id, '"'+self.name+'"', "(MessageTypeFlag)"+str(self.flag())]
+        arglist = [self.id, '"' + self.name + '"', "(MessageTypeFlag)" + str(self.flag())]
         if len(self.addresses) > 0:
             addr_vector = "{"
-            a = ["Address("+x.args()+")" for x in self.addresses]
+            a = ["Address(" + x.args() + ")" for x in self.addresses]
             addr_vector += ",".join(a)
             addr_vector += "}"
             arglist.append(addr_vector)
-        return "#define CONTACT_"+format_defstring(self.name)+"_ARGS ("+list_to_string(arglist)+")\n"
+        return "#define CONTACT_" + format_defstring(self.name) + "_ARGS (" + list_to_string(arglist) + ")\n"
 
 
 class Account(Track):
-
     def __init__(self, name, accountType):
         super().__init__(name, self.__class__)
         self.accountType = accountType
         self.metrics = {}
+        self.metrics["overall"] = {}
+        self.metrics["overall"]["charcount_sent"] = 0
+        self.metrics["overall"]["msgcount_sent"] = 0
+        self.metrics["overall"]["charcount_received"] = 0
+        self.metrics["overall"]["msgcount_received"] = 0
 
     def json_escaped(self):
-        return '"'+(json.dumps({"password": "no", "url":"imap://imap.no.com"}).replace('"', "\\\""))+'"'
+        return '"' + (json.dumps({"password": "no", "url": "imap://imap.no.com"}).replace('"', "\\\"")) + '"'
 
     def json_insert(self):
-        return "'"+(json.dumps({"password": "no", "url":"imap://imap.no.com"}).replace('"', "\""))+"'"
+        return "'" + (json.dumps({"password": "no", "url": "imap://imap.no.com"}).replace('"', "\"")) + "'"
 
     def sql(self):
-        return "INSERT INTO accounts VALUES ("+list_to_string(['"'+self.name+'"', self.accountType,
-                                                    self.json_insert()])+");"
+        return "INSERT INTO accounts VALUES (" + list_to_string(['"' + self.name + '"', self.accountType,
+                                                                 self.json_insert()]) + ");"
 
     def senttable(self):
-        return "\"CREATE TABLE \\\"" + self.name +"_"+TYPENAMES[self.accountType]+"_sent\\\"\" SENT_TABLE_SCHEMA \";\"\\\n"
+        return "\"CREATE TABLE \\\"" + self.name + "_" + TYPENAMES[
+            self.accountType] + "_sent\\\"\" SENT_TABLE_SCHEMA \";\"\\\n"
 
     def rectable(self):
-        return "\"CREATE TABLE \\\"" + self.name +"_"+TYPENAMES[self.accountType]+"_received\\\"\" RECEIVED_TABLE_SCHEMA \";\"\\\n"
+        return "\"CREATE TABLE \\\"" + self.name + "_" + TYPENAMES[
+            self.accountType] + "_received\\\"\" RECEIVED_TABLE_SCHEMA \";\"\\\n"
 
     def defargs(self):
-        return "#define ACC_"+format_defstring(self.name)+"_ARGS ("+list_to_string(['"'+self.name+'"', TYPEDEFS[self.accountType],
-                                    self.json_escaped()])+")\n"
+        return "#define ACC_" + format_defstring(self.name) + "_ARGS (" + list_to_string(
+            ['"' + self.name + '"', TYPEDEFS[self.accountType],
+             self.json_escaped()]) + ")\n"
 
 
 MSG_ID = 0
 
+
 def init():
-    con1 = Contact("EmailTest1", 1) #Email
+    "WARNING: IF YOU CHANGE THE DEFINITIONS IN THIS METHOD AND REGENERATE THE DATA, TESTS RELYING ON SPECIFIC DATABASE \
+    CONFIGURATIONS (THERE ARE MANY) MAY CEASE TO COMPILE AND/OR SUCCEED. PLEASE PROCEED CAREFULLY."
+
+    con1 = Contact("EmailTest1", 1)  #Email
     con1.add_address(Address("test3@test.com", TYPE_EMAIL, 1))
 
-    con2 = Contact("LineTest2", 4) #Line
+    con2 = Contact("LineTest2", 4)  #Line
     con2.add_address(Address("Test1", TYPE_LINE, 2))
 
-    con3 = Contact("LineEmailTest3", 5) #Line + Email
+    con3 = Contact("LineEmailTest3", 5)  #Line + Email
     con3.add_address(Address("Test2", TYPE_LINE, 1))
     con3.add_address(Address("test4@test.com", TYPE_EMAIL, 2))
 
@@ -160,7 +173,6 @@ def init():
     Account("account3", TYPE_LINE)
 
 
-
 #Account string, address object
 def generate_row(account, addr):
     global MSG_ID
@@ -172,7 +184,6 @@ def generate_row(account, addr):
         account.metrics[addr.name]["charcount_received"] = 0
         account.metrics[addr.name]["msgcount_received"] = 0
 
-
     msg_date = datetime.now()
     adjustment = timedelta(seconds=rint(59), minutes=rint(59), hours=rint(23), days=rint(6))
     if getrandbits(1):
@@ -183,17 +194,21 @@ def generate_row(account, addr):
     msg_charcount = rint(1000)
 
     sql = 'INSERT INTO "' + account.name + "_" + TYPENAMES[addr.addrType] + "_"
-    if (account.metrics[addr.name]["msgcount_sent"] + account.metrics[addr.name]["charcount_received"]) % 2 == 0:
+    if (account.metrics[addr.name]["msgcount_sent"] + account.metrics[addr.name]["msgcount_received"]) % 2 == 0:
         sql += "sent"
         account.metrics[addr.name]["charcount_sent"] += msg_charcount
         account.metrics[addr.name]["msgcount_sent"] += 1
+        account.metrics["overall"]["charcount_sent"] += msg_charcount
+        account.metrics["overall"]["msgcount_sent"] += 1
     else:
         sql += "received"
         account.metrics[addr.name]["charcount_received"] += msg_charcount
         account.metrics[addr.name]["msgcount_received"] += 1
+        account.metrics["overall"]["charcount_received"] += msg_charcount
+        account.metrics["overall"]["msgcount_received"] += 1
 
     sql += '" VALUES(' + ",".join(
-        str(x) for x in [MSG_ID, '"'+address.name+'"', int(msg_date.timestamp()), msg_charcount, getrandbits(1),
+        str(x) for x in [MSG_ID, '"' + address.name + '"', int(msg_date.timestamp()), msg_charcount, getrandbits(1),
                          '"Test message body"']) + ");"
     MSG_ID += 1
     return sql
@@ -216,12 +231,12 @@ if __name__ == '__main__':
 
     #Write the summation data about messages
     for account in Track.MAPS[Account].values():
-        out.write('//'+account.name + ":" + str(account.metrics)+"\n")
+        out.write('//' + account.name + ":" + str(account.metrics) + "\n")
         for address in account.metrics:
             for metric in account.metrics[address]:
-                definition = format_defstring(account.name)+"_"+format_defstring(address)+"_"+metric
+                definition = format_defstring(account.name) + "_" + format_defstring(address) + "_" + metric
                 definition = definition.upper()
-                out.write("#define "+definition+" "+str(account.metrics[address][metric])+"\n")
+                out.write("#define " + definition + " " + str(account.metrics[address][metric]) + "\n")
 
         out.write("\n")
 
@@ -257,6 +272,5 @@ if __name__ == '__main__':
     for account in Track.MAPS[Account].values():
         out.write(account.defargs())
     out.write("\n\n")
-
 
     out.close()

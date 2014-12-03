@@ -36,10 +36,15 @@ ENDIF()
 
 # Include Line
 OPTION(FAVOR_LINE_MANAGER "Include the MessageManager for Line messaging client" ON)
+IF(FAVOR_LINE_MANAGER)
+  add_definitions(-DFAVOR_LINE_MANAGER)
+  LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/managers/linemanager.cpp)
+ENDIF()
 
 #Include Skype
 OPTION(FAVOR_SKYPE_MANAGER "Include the MessageManager for Skype" ON)
 IF(FAVOR_SKYPE_MANAGER)
+  add_definitions(-DFAVOR_SKYPE_MANAGER)
   LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/managers/skypemanager.cpp)
 ENDIF()
 
