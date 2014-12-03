@@ -32,10 +32,10 @@ class DatabaseTest : public ::testing::Test {
         }
 
         virtual void SetUp() override {
-            //favor::dbPath = ":memory:";
-            //We skip Favor's init because it will fail some assertions that we don't need for testing anyway
-            worker::initialize();
-            reader::initialize();
+            ASSERT_EQ(sqlite3_config(SQLITE_CONFIG_URI,1), SQLITE_OK);
+            favor::dbName = "file::memory:?cache=shared";
+            favor::dbPath = "";
+            favor::initialize();
             worker::buildDatabase();
             populateDb();
         }

@@ -119,5 +119,8 @@ TEST(SQLiteValidate, Validate){
         ASSERT_TRUE(true);
     }
 
+    sqlite3_close(db);
+    sqlite3_shutdown(); //So we don't leave any slough for other tests
+
 
 }

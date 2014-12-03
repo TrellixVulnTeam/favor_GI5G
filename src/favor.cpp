@@ -8,7 +8,8 @@ using namespace std;
 
 namespace favor {
     const char *MessageTypeName[] = {NAME_EMAIL, NAME_ANDROIDTEXT, NAME_LINE, NAME_SKYPE};
-    const char* dbPath = "."; //TODO: This can eventually be something else, but we'll need to ensure the directory exists in that case
+    const char* dbPath = ".";
+    const char* dbName = "/favor.db";
 
     void initialize() {
         assert(sqlite3_config(SQLITE_CONFIG_MULTITHREAD)==SQLITE_OK);
