@@ -66,7 +66,7 @@ class Address(Track):
         cid = -1
         if self.contact:
             cid = self.contact.id
-        return list_to_string(["'"+self.name+"'", cid, self.count, TYPEDEFS[self.addrType]])
+        return list_to_string(['"'+self.name+'"', cid, self.count, TYPEDEFS[self.addrType]])
 
     def defargs(self):
         return "#define ADDR_"+format_defstring(self.name)+"_ARGS ("+self.args()+")\n"
@@ -83,20 +83,21 @@ class Contact(Track):
         account.contact = self
         self.addresses.append(account)
 
-
-    def sql(self):
-        #This is only a little complicated because we have to translate types into keys
+    def flag(self):
         active_types = {}
         for address in self.addresses:
             active_types[address.addrType] = True
-
         flag = 0
         for key in active_types:
             flag += 2**key
-        return "INSERT INTO contacts VALUES("+list_to_string([self.id, '"'+self.name+'"', flag])+");"
+        return flag
+
+
+    def sql(self):
+        return "INSERT INTO contacts VALUES("+list_to_string([self.id, '"'+self.name+'"', self.flag()])+");"
 
     def defargs(self):
-        arglist = [self.id, "'"+self.name+"'"]
+        arglist = [self.id, '"'+self.name+'"', "(MessageTypeFlag)"+str(self.flag())]
         if len(self.addresses) > 0:
             addr_vector = "{"
             a = ["Address("+x.args()+")" for x in self.addresses]
@@ -113,9 +114,15 @@ class Account(Track):
         self.accountType = accountType
         self.metrics = {}
 
+    def json_escaped(self):
+        return '"'+(json.dumps({"password": "no", "url":"imap://imap.no.com"}).replace('"', "\\\""))+'"'
+
+    def json_insert(self):
+        return "'"+(json.dumps({"password": "no", "url":"imap://imap.no.com"}).replace('"', "\""))+"'"
+
     def sql(self):
         return "INSERT INTO accounts VALUES ("+list_to_string(['"'+self.name+'"', self.accountType,
-                                                    json.dumps({"password": "no", "url":"imap://imap.no.com"})])+");"
+                                                    self.json_insert()])+");"
 
     def senttable(self):
         return "\"CREATE TABLE \\\"" + self.name +"_"+TYPENAMES[self.accountType]+"_sent\\\"\" SENT_TABLE_SCHEMA \";\"\\\n"
@@ -124,8 +131,8 @@ class Account(Track):
         return "\"CREATE TABLE \\\"" + self.name +"_"+TYPENAMES[self.accountType]+"_received\\\"\" RECEIVED_TABLE_SCHEMA \";\"\\\n"
 
     def defargs(self):
-        return "#define ACC_"+format_defstring(self.name)+"_ARGS ("+list_to_string(["'"+self.name+"'", TYPEDEFS[self.accountType],
-                                    '"'+(json.dumps({"password": "no", "url":"imap://imap.no.com"}).replace('"', "\\\""))+'"'])+")\n"
+        return "#define ACC_"+format_defstring(self.name)+"_ARGS ("+list_to_string(['"'+self.name+'"', TYPEDEFS[self.accountType],
+                                    self.json_escaped()])+")\n"
 
 
 MSG_ID = 0
