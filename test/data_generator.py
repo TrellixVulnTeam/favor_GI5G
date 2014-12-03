@@ -4,18 +4,27 @@ from time import *
 from datetime import *
 from random import *
 import os
+import json
 
 TYPE_EMAIL = 0
 TYPE_LINE = 2
 
 
 TYPENAMES = {TYPE_EMAIL: "email", TYPE_LINE: "line"}
+TYPEDEFS = {TYPE_EMAIL: "TYPE_EMAIL", TYPE_LINE: "TYPE_LINE"}
 
 
 def list_to_string(list):
     return ",".join(str(x) for x in list)
 
+def format_row(string):
+    return '"'+string.replace('"', '\\"')+'"'+"\\\n"
 
+def format_defstring(string):
+    return string.replace("@", "_at_").replace(".", "_dot_")
+
+def rint(max):
+    return int(random() * max)
 
 class Track:
     IDS = {}
@@ -53,6 +62,14 @@ class Address(Track):
         return "INSERT INTO addresses_"+TYPENAMES[self.addrType]+" VALUES ("+list_to_string(['"'+self.name+'"',
                                                                                             self.count,
                                                                                             contact_id])+");"
+    def args(self):
+        cid = -1
+        if self.contact:
+            cid = self.contact.id
+        return list_to_string(["'"+self.name+"'", cid, self.count, TYPEDEFS[self.addrType]])
+
+    def defargs(self):
+        return "#define ADDR_"+format_defstring(self.name)+"_ARGS ("+self.args()+")\n"
 
 
 class Contact(Track):
@@ -78,6 +95,16 @@ class Contact(Track):
             flag += 2**key
         return "INSERT INTO contacts VALUES("+list_to_string([self.id, '"'+self.name+'"', flag])+");"
 
+    def defargs(self):
+        arglist = [self.id, "'"+self.name+"'"]
+        if len(self.addresses) > 0:
+            addr_vector = "{"
+            a = ["Address("+x.args()+")" for x in self.addresses]
+            addr_vector += ",".join(a)
+            addr_vector += "}"
+            arglist.append(addr_vector)
+        return "#define CONTACT_"+format_defstring(self.name)+"_ARGS ("+list_to_string(arglist)+")\n"
+
 
 class Account(Track):
 
@@ -87,7 +114,19 @@ class Account(Track):
         self.metrics = {}
 
     def sql(self):
-        return "TODO :("
+        return "INSERT INTO accounts VALUES ("+list_to_string(['"'+self.name+'"', self.accountType,
+                                                    json.dumps({"password": "no", "url":"imap://imap.no.com"})])+");"
+
+    def senttable(self):
+        return "\"CREATE TABLE \\\"" + self.name +"_"+TYPENAMES[self.accountType]+"_sent\\\"\" SENT_TABLE_SCHEMA \";\"\\\n"
+
+    def rectable(self):
+        return "\"CREATE TABLE \\\"" + self.name +"_"+TYPENAMES[self.accountType]+"_received\\\"\" RECEIVED_TABLE_SCHEMA \";\"\\\n"
+
+    def defargs(self):
+        return "#define ACC_"+format_defstring(self.name)+"_ARGS ("+list_to_string(["'"+self.name+"'", TYPEDEFS[self.accountType],
+                                    '"'+(json.dumps({"password": "no", "url":"imap://imap.no.com"}).replace('"', "\\\""))+'"'])+")\n"
+
 
 MSG_ID = 0
 
@@ -113,10 +152,6 @@ def init():
     Account("account2@test.com", TYPE_EMAIL)
     Account("account3", TYPE_LINE)
 
-
-
-def rint(max):
-    return int(random() * max)
 
 
 #Account string, address object
@@ -155,13 +190,6 @@ def generate_row(account, addr):
                          '"Test message body"']) + ");"
     MSG_ID += 1
     return sql
-
-
-def format_row(string):
-    return '"'+string.replace('"', '\\"')+'"'+"\\\n"
-
-def format_defstring(string):
-    return string.replace("@", "_at_").replace(".", "_dot_")
 
 
 if __name__ == '__main__':
@@ -208,6 +236,20 @@ if __name__ == '__main__':
     out.write('#define ACCOUNT_TEST_DATA ')
     for account in Track.MAPS[Account].values():
         out.write(format_row(account.sql()))
+        out.write(account.senttable())
+        out.write(account.rectable())
+
+    out.write(block_end)
+
+    for address in Track.MAPS[Address].values():
+        out.write(address.defargs())
+    out.write("\n\n")
+    for contact in Track.MAPS[Contact].values():
+        out.write(contact.defargs())
+    out.write("\n\n")
+    for account in Track.MAPS[Account].values():
+        out.write(account.defargs())
+    out.write("\n\n")
 
 
     out.close()
