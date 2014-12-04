@@ -70,8 +70,6 @@ TEST_F(ReaderDatabase, SQLiteAverage){
     Contact LineEmailTest3 CONTACT_LineEmailTest3_ARGS;
     AccountManager* Account2 = AccountManager::buildManager ACC_account2_at_test_dot_com_ARGS;
     AccountManager* Account3 = AccountManager::buildManager ACC_account3_ARGS; //Line
-    //TODO: it seems like hte second accountmanager is ending up as a... Skype Manager? wut? that needs fixing
-    //TODO: we should also define to_string for accountmanagers, as evidenced by this case here
 
     //Also tests contact-address mapping separation across types
     double result = reader::average(Account2, LineEmailTest3, KEY_CHARCOUNT, -1, -1, true);
@@ -86,5 +84,17 @@ TEST_F(ReaderDatabase, SQLiteAverage){
 
     delete Account2;
     delete Account3;
+}
+
+TEST_F(ReaderDatabase, SQliteCount){
+    Contact LineEmailTest3 CONTACT_LineEmailTest3_ARGS;
+    AccountManager* Account2 = AccountManager::buildManager ACC_account2_at_test_dot_com_ARGS;
+
+    long result = reader::count(Account2, LineEmailTest3, -1, ACCOUNT2_AT_TEST_DOT_COM_MIDDATE, true);
+    //TODO: we can't actually finish this test until I fix the python file to generate values, because:
+    //TODO: the dates need to be split between sent and received, as does the count basically (so we want an odd number*2)
+
+    //Also tests dates on reader selections for the basic SQL queries
+    delete Account2;
 }
 

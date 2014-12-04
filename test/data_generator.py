@@ -10,6 +10,13 @@ TYPE_LINE = 2
 TYPENAMES = {TYPE_EMAIL: "email", TYPE_LINE: "line"}
 TYPEDEFS = {TYPE_EMAIL: "TYPE_EMAIL", TYPE_LINE: "TYPE_LINE"}
 
+MSG_COUNT = 41 #This should be odd, so we can split lists perfectly down the middle
+
+
+unix_week = int(datetime.now().timestamp() - (((datetime.now() - timedelta(weeks=1)).timestamp())))
+
+MSG_MODIFIERS = []
+
 
 def list_to_string(list):
     return ",".join(str(x) for x in list)
@@ -113,6 +120,7 @@ class Account(Track):
     def __init__(self, name, accountType):
         super().__init__(name, self.__class__)
         self.accountType = accountType
+        self.messages = []
         self.metrics = {}
         self.metrics["overall"] = {}
         self.metrics["overall"]["charcount_sent"] = 0
@@ -147,6 +155,16 @@ class Account(Track):
 MSG_ID = 0
 
 
+def setup_msg_modifiers():
+    #Testing is much easier if the message date modifiers are unique so we don't get weird edge cases with date limitations
+    global MSG_MODIFIERS
+    msg_total = 0
+    for account in Track.MAPS[Account].values():
+        for address in Track.MAPS[Address].values():
+            if address.addrType == account.accountType:
+                msg_total += MSG_COUNT
+    MSG_MODIFIERS = sample(range(1, unix_week), msg_total)
+
 def init():
     "WARNING: IF YOU CHANGE THE DEFINITIONS IN THIS METHOD AND REGENERATE THE DATA, TESTS RELYING ON SPECIFIC DATABASE \
     CONFIGURATIONS (THERE ARE MANY) MAY CEASE TO COMPILE AND/OR SUCCEED. PLEASE PROCEED CAREFULLY."
@@ -172,10 +190,16 @@ def init():
     Account("account2@test.com", TYPE_EMAIL)
     Account("account3", TYPE_LINE)
 
+    setup_msg_modifiers()
+
+
+
+
 
 #Account string, address object
 def generate_row(account, addr):
     global MSG_ID
+    global MSG_MODIFIERS
 
     if addr.name not in account.metrics:
         account.metrics[addr.name] = {}
@@ -184,31 +208,37 @@ def generate_row(account, addr):
         account.metrics[addr.name]["charcount_received"] = 0
         account.metrics[addr.name]["msgcount_received"] = 0
 
-    msg_date = datetime.now()
-    adjustment = timedelta(seconds=rint(59), minutes=rint(59), hours=rint(23), days=rint(6))
+    msg_date = int(datetime.now().timestamp())
+    adjustment = MSG_MODIFIERS.pop()
     if getrandbits(1):
         msg_date -= adjustment
     else:
         msg_date += adjustment
 
+    #print(datetime.fromtimestamp(msg_date).strftime('%Y-%m-%d %H:%M:%S'))
     msg_charcount = rint(1000)
 
     sql = 'INSERT INTO "' + account.name + "_" + TYPENAMES[addr.addrType] + "_"
     if (account.metrics[addr.name]["msgcount_sent"] + account.metrics[addr.name]["msgcount_received"]) % 2 == 0:
         sql += "sent"
+        sent = True
         account.metrics[addr.name]["charcount_sent"] += msg_charcount
         account.metrics[addr.name]["msgcount_sent"] += 1
         account.metrics["overall"]["charcount_sent"] += msg_charcount
         account.metrics["overall"]["msgcount_sent"] += 1
     else:
         sql += "received"
+        sent = False
         account.metrics[addr.name]["charcount_received"] += msg_charcount
         account.metrics[addr.name]["msgcount_received"] += 1
         account.metrics["overall"]["charcount_received"] += msg_charcount
         account.metrics["overall"]["msgcount_received"] += 1
 
+    media = getrandbits(1)
+    account.messages.append((MSG_ID, address.name, msg_date, msg_charcount, bool(media), sent))
+
     sql += '" VALUES(' + ",".join(
-        str(x) for x in [MSG_ID, '"' + address.name + '"', int(msg_date.timestamp()), msg_charcount, getrandbits(1),
+        str(x) for x in [MSG_ID, '"' + address.name + '"', msg_date, msg_charcount, media,
                          '"Test message body"']) + ");"
     MSG_ID += 1
     return sql
@@ -224,7 +254,7 @@ if __name__ == '__main__':
     for account in Track.MAPS[Account].values():
         for address in Track.MAPS[Address].values():
             if address.addrType == account.accountType:
-                for i in range(40):
+                for i in range(MSG_COUNT):
                     out.write(format_row(generate_row(account, address)))
 
     out.write(block_end)
@@ -232,6 +262,12 @@ if __name__ == '__main__':
     #Write the summation data about messages
     for account in Track.MAPS[Account].values():
         out.write('//' + account.name + ":" + str(account.metrics) + "\n")
+        mindate = min(x[2] for x in account.messages)
+        maxdate = max(x[2] for x in account.messages)
+        middate = sorted(account.messages, key=lambda x: x[2])[int(len(account.messages)/2)][2]
+        out.write("#define "+format_defstring(account.name).upper()+"_MINDATE "+str(mindate)+"\n")
+        out.write("#define "+format_defstring(account.name).upper()+"_MIDDATE "+str(middate)+"\n")
+        out.write("#define "+format_defstring(account.name).upper()+"_MAXDATE "+str(maxdate)+"\n")
         for address in account.metrics:
             for metric in account.metrics[address]:
                 definition = format_defstring(account.name) + "_" + format_defstring(address) + "_" + metric
@@ -273,4 +309,6 @@ if __name__ == '__main__':
         out.write(account.defargs())
     out.write("\n\n")
 
+
+    out.write("#define MSG_COUNT "+str(MSG_COUNT))
     out.close()

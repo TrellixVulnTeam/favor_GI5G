@@ -2,7 +2,7 @@
 
 namespace favor{
 
-    LineManager::LineManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_SKYPE, detailsJson) {}
+    LineManager::LineManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_LINE, detailsJson) {}
 
 
     void LineManager::updateFetchData(){

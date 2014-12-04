@@ -29,8 +29,8 @@ namespace favor {
         double average(const AccountManager* account, const Contact& c, Key key, time_t fromDate, time_t untilDate, bool sent);
         double averageAll(const AccountManager* account, const Key key, time_t fromDate, time_t untilDate, bool sent);
         long sumAll(const AccountManager* account, const Key key, time_t fromDate, time_t untilDate, bool sent);
-        long count(const AccountManager* account, const Contact& c, Key key, time_t fromDate, time_t untilDate, bool sent);
-        long countAll(const AccountManager* account, const Key key, time_t fromDate, time_t untilDate, bool sent);
+        long count(const AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
+        long countAll(const AccountManager* account, time_t fromDate, time_t untilDate, bool sent);
         //TODO: a possible "queryAddresses" method and corresponding internal "multiQuery" ala the old favor, but I'm not sure we need it yet
 
         //Writers (the specific add/removes should be called exclusively by the worker)

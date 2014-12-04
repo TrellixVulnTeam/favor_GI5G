@@ -291,6 +291,9 @@ namespace favor {
         double average(const AccountManager* account, const Contact& c, Key key, time_t fromDate, time_t untilDate, bool sent){
             return sqlComputeCommand<double>(AVERAGE, &(c.getAddresses()), account->getTableName(sent), key, fromDate, untilDate);
         }
+        long count(const AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
+            return sqlComputeCommand<long>(COUNT, &(c.getAddresses()), account->getTableName(sent), KEY_BODY, fromDate, untilDate);
+        }
 
         long sumAll(const AccountManager* account, Key key, time_t fromDate, time_t untilDate, bool sent){
             return sqlComputeCommand<long>(SUM, NULL, account->getTableName(sent), key, fromDate, untilDate);
@@ -298,6 +301,10 @@ namespace favor {
 
         double averageAll(const AccountManager* account, Key key, time_t fromDate, time_t untilDate, bool sent){
             return sqlComputeCommand<double>(AVERAGE, NULL, account->getTableName(sent), key, fromDate, untilDate);
+        }
+
+        long countAll(const AccountManager* account, time_t fromDate, time_t untilDate, bool sent){
+            return sqlComputeCommand<long>(SUM, NULL, account->getTableName(sent), KEY_BODY, fromDate, untilDate);
         }
 
         /*
