@@ -10,7 +10,7 @@ TYPE_LINE = 2
 TYPENAMES = {TYPE_EMAIL: "email", TYPE_LINE: "line"}
 TYPEDEFS = {TYPE_EMAIL: "TYPE_EMAIL", TYPE_LINE: "TYPE_LINE"}
 
-MSG_COUNT = 41 #This should be odd, so we can split lists perfectly down the middle
+MSG_COUNT = 42 #This should be an an odd number x2: (2k+1)x2 = 4k+2, so each table has an odd number of messages
 
 
 unix_week = int(datetime.now().timestamp() - (((datetime.now() - timedelta(weeks=1)).timestamp())))
@@ -120,7 +120,7 @@ class Account(Track):
     def __init__(self, name, accountType):
         super().__init__(name, self.__class__)
         self.accountType = accountType
-        self.messages = []
+        self.messages = {}
         self.metrics = {}
         self.metrics["overall"] = {}
         self.metrics["overall"]["charcount_sent"] = 0
@@ -207,6 +207,9 @@ def generate_row(account, addr):
         account.metrics[addr.name]["msgcount_sent"] = 0
         account.metrics[addr.name]["charcount_received"] = 0
         account.metrics[addr.name]["msgcount_received"] = 0
+        account.messages[addr.name] = {}
+        account.messages[addr.name][True] = []
+        account.messages[addr.name][False] = []
 
     msg_date = int(datetime.now().timestamp())
     adjustment = MSG_MODIFIERS.pop()
@@ -235,13 +238,23 @@ def generate_row(account, addr):
         account.metrics["overall"]["msgcount_received"] += 1
 
     media = getrandbits(1)
-    account.messages.append((MSG_ID, address.name, msg_date, msg_charcount, bool(media), sent))
+    account.messages[addr.name][sent].append((MSG_ID, address.name, msg_date, msg_charcount, bool(media)))
 
     sql += '" VALUES(' + ",".join(
         str(x) for x in [MSG_ID, '"' + address.name + '"', msg_date, msg_charcount, media,
                          '"Test message body"']) + ");"
     MSG_ID += 1
     return sql
+
+
+def process_msglist(msgs, name, out):
+    mindate = min(x[2] for x in msgs)
+    maxdate = max(x[2] for x in msgs)
+    middate = sorted(msgs, key=lambda x: x[2])[int(len(msgs)/2)][2]
+    #print(str([x[2] for x in sorted(msgs, key=lambda x: x[2])])+str(middate))
+    out.write("#define "+format_defstring(name).upper()+"_MINDATE "+str(mindate)+"\n")
+    out.write("#define "+format_defstring(name).upper()+"_MIDDATE "+str(middate)+"\n")
+    out.write("#define "+format_defstring(name).upper()+"_MAXDATE "+str(maxdate)+"\n")
 
 
 if __name__ == '__main__':
@@ -262,12 +275,9 @@ if __name__ == '__main__':
     #Write the summation data about messages
     for account in Track.MAPS[Account].values():
         out.write('//' + account.name + ":" + str(account.metrics) + "\n")
-        mindate = min(x[2] for x in account.messages)
-        maxdate = max(x[2] for x in account.messages)
-        middate = sorted(account.messages, key=lambda x: x[2])[int(len(account.messages)/2)][2]
-        out.write("#define "+format_defstring(account.name).upper()+"_MINDATE "+str(mindate)+"\n")
-        out.write("#define "+format_defstring(account.name).upper()+"_MIDDATE "+str(middate)+"\n")
-        out.write("#define "+format_defstring(account.name).upper()+"_MAXDATE "+str(maxdate)+"\n")
+        for address in account.messages:
+            process_msglist(account.messages[address][True], account.name+"_"+address+"_SENT", out)
+            process_msglist(account.messages[address][False], account.name+"_"+address+"_RECEIVED", out)
         for address in account.metrics:
             for metric in account.metrics[address]:
                 definition = format_defstring(account.name) + "_" + format_defstring(address) + "_" + metric

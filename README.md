@@ -2,7 +2,7 @@ Just getting things set up right now.
 
 Todo (in order):
  - Many Reader queries are ordering things by date. Can we still do this if we don't select date (I assume not), and if not, how do we handle this? Always select date? Find another
- way to gaurantee order, or just don't gaurantee order?
+ way to gaurantee order, or just don't gaurantee order? This might also be a problem when selecting things with date > or <? Unclear yet.
  - Contacts have changed pretty substantially, and there are likely to be bugs (GJ me for not having tests yet). Keep an eye out for these, __and test things with more than one 
  address type once we have resources for that__.
  - Look at how Google Test works with the NDK, because it does work with the NDK.
@@ -19,6 +19,7 @@ Todo (in order):
  - In the worker address table computing code, we need to figure out what we're doing with suggested names (how to use/store them, whether to save them or give them to the reader, etc.)
  - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts'). Also take this time to verify
  stuff still works with the list -> vector switch (not that that should actually change anything)
+ - The processor is eventually going to need a healthy bit of JNI specific code so that it pushes cached results up into the Java layer.
   - Spend some time with a query analyzer and make sure that SQLlite is getting the best use possible out of our indices, and think about what might be worth changing if not.
   - Run some stress tests and figure out if it's worth caching the results of average/sum queries, because if SQL holds these, we almost certainly won't need to.
   - SQLite extended error codes? See about making use of these.

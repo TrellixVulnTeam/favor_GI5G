@@ -110,9 +110,10 @@ namespace favor {
                     selection += "1=2"; //Always false, returns nothing
                 } else {
                     selection += "(";
-                    bindings[ADDRESSES_START] = currentBinding++;
+                    bindings[ADDRESSES_START] = currentBinding;
                     for (int i = 0; i < addresses->size(); ++i){
                         selection += "address=?";
+                        currentBinding++;
                         if (i != addresses->size() -1 ) selection += " OR ";
                     }
                     selection += ")";
@@ -137,11 +138,18 @@ namespace favor {
         void bindSelection(const vector<Address>* addresses, time_t fromDate, time_t untilDate, sqlite3_stmt* stmt, Indices bindings){
             if (bindings.count(ADDRESSES_START)){
                 for (int i = 0; i < addresses->size(); ++i){
+                    //logger::info("Binding address in slot "+as_string(bindings[ADDRESSES_START]+i)+" as "+(*addresses)[i].addr);
                     sqlv(sqlite3_bind_text(stmt, bindings[ADDRESSES_START]+i, (*addresses)[i].addr.c_str(), (*addresses)[i].addr.length(), SQLITE_STATIC));
                 }
             }
-            if (bindings.count(FROM_DATE)) sqlv(sqlite3_bind_int64(stmt, bindings[FROM_DATE], fromDate));
-            if (bindings.count(UNTIL_DATE)) sqlv(sqlite3_bind_int64(stmt, bindings[UNTIL_DATE], untilDate));
+            if (bindings.count(FROM_DATE)){
+                //logger::info("Binding fromDate in slot "+as_string(bindings[FROM_DATE])+" as "+as_string(fromDate));
+                sqlv(sqlite3_bind_int64(stmt, bindings[FROM_DATE], fromDate));
+            }
+            if (bindings.count(UNTIL_DATE)){
+                //logger::info("Binding untilDate in slot "+as_string(bindings[UNTIL_DATE])+" as "+as_string(untilDate));
+                sqlv(sqlite3_bind_int64(stmt, bindings[UNTIL_DATE], untilDate));
+            }
         }
 
         Message buildMessage(sqlite3_stmt* stmt, Indices keyIndices, bool sent, MessageType type){
@@ -292,7 +300,7 @@ namespace favor {
             return sqlComputeCommand<double>(AVERAGE, &(c.getAddresses()), account->getTableName(sent), key, fromDate, untilDate);
         }
         long count(const AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
-            return sqlComputeCommand<long>(COUNT, &(c.getAddresses()), account->getTableName(sent), KEY_BODY, fromDate, untilDate);
+            return sqlComputeCommand<long>(COUNT, &(c.getAddresses()), account->getTableName(sent), KEY_DATE, fromDate, untilDate);
         }
 
         long sumAll(const AccountManager* account, Key key, time_t fromDate, time_t untilDate, bool sent){
@@ -304,7 +312,7 @@ namespace favor {
         }
 
         long countAll(const AccountManager* account, time_t fromDate, time_t untilDate, bool sent){
-            return sqlComputeCommand<long>(SUM, NULL, account->getTableName(sent), KEY_BODY, fromDate, untilDate);
+            return sqlComputeCommand<long>(SUM, NULL, account->getTableName(sent), KEY_DATE, fromDate, untilDate);
         }
 
         /*
