@@ -82,6 +82,8 @@ namespace favor {
         public:
             ~AccountManager();
 
+            bool operator==(const AccountManager& rhs) const;
+
             //Database
             static AccountManager* addAccount(string name, MessageType type, string detailsJson);
 

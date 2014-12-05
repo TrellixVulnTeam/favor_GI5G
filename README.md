@@ -2,7 +2,8 @@ Just getting things set up right now.
 
 Todo (in order):
  - Many Reader queries are ordering things by date. Can we still do this if we don't select date (I assume not), and if not, how do we handle this? Always select date? Find another
- way to gaurantee order, or just don't gaurantee order? This might also be a problem when selecting things with date > or <? Unclear yet.
+ way to gaurantee order, or just don't gaurantee order? This might also be a problem when selecting things with date > or <? Unclear yet. __We don't have indexes set up for 
+ AccountManagers yet - we should figure that out and then if we know they exist, we also know things should come out sorted by date__.
  - Contacts have changed pretty substantially, and there are likely to be bugs (GJ me for not having tests yet). Keep an eye out for these, __and test things with more than one 
  address type once we have resources for that__.
  - Look at how Google Test works with the NDK, because it does work with the NDK.

@@ -38,6 +38,7 @@ class DatabaseTest : public ::testing::Test {
             favor::initialize();
             worker::buildDatabase();
             populateDb();
+            reader::refreshAll(); //These values are expected to be correct in other methods, so it tests the refresh methods
         }
 
         virtual void TearDown() override {
@@ -111,16 +112,54 @@ TEST_F(ReaderDatabase, SQliteCount){
 }
 
 TEST_F(ReaderDatabase, AccountList){
+    auto result = reader::accountList();
+    std::list<AccountManager*> definedAccounts;
+    definedAccounts.push_back(AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS);
+    definedAccounts.push_back(AccountManager::buildManager ACC_account2_at_test_dot_com_ARGS);
+    definedAccounts.push_back(AccountManager::buildManager ACC_account3_ARGS);
+
+    ASSERT_EQ(definedAccounts.size(), result->size());
+    for (auto it = result->begin(); it != result->end(); ++it){
+        //Remove them from defined contacts if we find a match
+        for (auto inner_it = definedAccounts.begin(); inner_it != definedAccounts.end(); ++inner_it){
+            if (*(*it) == *(*inner_it)){
+                definedAccounts.remove(*inner_it);
+                inner_it = definedAccounts.end();
+            }
+        }
+    }
+    ASSERT_EQ(0, definedAccounts.size()); //There should be nothing left, every one should match
 
 }
 
 
 TEST_F(ReaderDatabase, ContactList){
+    auto result = reader::contactList();
+    std::list<Contact> definedContacts;
+    definedContacts.push_back(Contact CONTACT_EmailTest1_ARGS);
+    definedContacts.push_back(Contact CONTACT_LineTest2_ARGS);
+    definedContacts.push_back(Contact CONTACT_LineEmailTest3_ARGS);
 
+    ASSERT_EQ(definedContacts.size(), result->size());
+    for (auto it = result->begin(); it != result->end(); ++it){
+        for (auto inner_it = definedContacts.begin(); inner_it != definedContacts.end(); ++inner_it){
+            //Remove them from defined contacts if we find a match
+            if (*it == *inner_it){
+                definedContacts.remove(*inner_it);
+                inner_it = definedContacts.end();
+            }
+        }
+    }
+    ASSERT_EQ(0, definedContacts.size()); //There should be nothing left, every one should match
 }
 
 TEST_F(ReaderDatabase, Addresses){
-    //TODO: remember both methods, and contact relevant/not contact relevant
+    auto emailResult = reader::addresses(TYPE_EMAIL, false);
+    auto lineResult = reader::addresses(TYPE_LINE, false);
+    auto emailLineResult = reader::addresses(MessageTypeFlags[TYPE_EMAIL] | MessageTypeFlags[TYPE_LINE], false);
+
+    ASSERT_EQ(emailResult->size()+lineResult->size(), emailLineResult->size());
+    //TODO: finish this method. also, we need some contact irrelevant addresses to exist so that we can test the contact relevant flag
 }
 
 TEST_F(ReaderDatabase, AddressExists){

@@ -42,6 +42,10 @@ namespace favor {
 
         AccountManager::~AccountManager(){}
 
+        bool AccountManager::operator==(const AccountManager& rhs) const{
+            return type == rhs.type && accountName == rhs.accountName;
+        }
+
         void AccountManager::buildTables() {
             //TODO: index if indexing is enabled
             exec("CREATE TABLE IF NOT EXISTS " SENT_TABLE_NAME SENT_TABLE_SCHEMA ";");
