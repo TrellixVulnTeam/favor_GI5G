@@ -179,7 +179,7 @@ def init():
     con3.add_address(Address("Test2", TYPE_LINE, 1))
     con3.add_address(Address("test4@test.com", TYPE_EMAIL, 2))
 
-    #So they live in the class list
+    #There needs to be at least one address not tied to a contact so we can test faculties for that specifically
     Address("test1@test.com", TYPE_EMAIL, 1)
     #Address("test2@test.com", TYPE_EMAIL, 2) #Skipping this right now to slim down the data a bit
 
@@ -255,7 +255,14 @@ def process_msglist(msgs, name, out):
     out.write("#define "+format_defstring(name).upper()+"_MINDATE "+str(mindate)+"\n")
     out.write("#define "+format_defstring(name).upper()+"_MIDDATE "+str(middate)+"\n")
     out.write("#define "+format_defstring(name).upper()+"_MAXDATE "+str(maxdate)+"\n")
-
+    msgs = sorted(msgs, key=lambda x: x[2])
+    date_list = [x[2] for x in msgs]
+    charcount_list = [x[3] for x in msgs]
+    address_list = [x[1] for x in msgs]
+    out.write("#define "+format_defstring(name).upper()+"_DATELIST_ARG "+str(date_list).replace("[", "{").replace("]", "}")+"\n")
+    out.write("#define "+format_defstring(name).upper()+"_ADDRESSLIST_ARG "+
+              str(address_list).replace("[", "{").replace("]", "}").replace("'", '"')+"\n")
+    out.write("#define "+format_defstring(name).upper()+"_CHARCOUNTLIST_ARG "+str(charcount_list).replace("[", "{").replace("]", "}")+"\n")
 
 if __name__ == '__main__':
     init()

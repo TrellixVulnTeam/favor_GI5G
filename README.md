@@ -1,11 +1,8 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - Many Reader queries are ordering things by date. Can we still do this if we don't select date (I assume not), and if not, how do we handle this? Always select date? Find another
- way to gaurantee order, or just don't gaurantee order? This might also be a problem when selecting things with date > or <? Unclear yet. __We don't have indexes set up for 
- AccountManagers yet - we should figure that out and then if we know they exist, we also know things should come out sorted by date__.
- - Contacts have changed pretty substantially, and there are likely to be bugs (GJ me for not having tests yet). Keep an eye out for these, __and test things with more than one 
- address type once we have resources for that__.
+ - Many Reader queries are ordering things by date. This is fine in normal selects, but in a compound select (such as for queryConversation) we can only sort by
+ selected columns so we'll likely have to force date into the selection. Filtering is fine in either case, as even in unions we can filter before we union
  - Look at how Google Test works with the NDK, because it does work with the NDK.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
@@ -26,7 +23,7 @@ Todo (in order):
   - SQLite extended error codes? See about making use of these.
   - See about a const version of the DataLock, or just about making DataLocks return only const references (if the former, watch out for slicing). Only the reader should be updating its 
   cached info anyway...
- - Basic unit tests, and some basic threading tests to make sure datalocks do their job
+ - Basic threading tests to make sure datalocks do their job
  - In a perfect world, our methods to update contacts would properly adjust the state of the contacts and their held addresses instead of just marking the list as needing to be
  refreshed. This will take a little bit of work to do elegantly though - additions must create a new contact with an address _and_ ensure no other contacts have that address, and of
  course updates just to address linkages must do something similar. Deletions should be relatively simple. 

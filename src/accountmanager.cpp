@@ -47,9 +47,9 @@ namespace favor {
         }
 
         void AccountManager::buildTables() {
-            //TODO: index if indexing is enabled
             exec("CREATE TABLE IF NOT EXISTS " SENT_TABLE_NAME SENT_TABLE_SCHEMA ";");
             exec("CREATE TABLE IF NOT EXISTS " RECEIVED_TABLE_NAME RECEIVED_TABLE_SCHEMA ";");
+            if (INDEX_DB) indexTables();
         }
 
         void AccountManager::destroyTables() {
@@ -103,7 +103,7 @@ namespace favor {
 
         bool AccountManager::isWhitespace(uint32_t code) {
             //TODO: consult https://www.cs.tut.fi/~jkorpela/chars/spaces.html and http://www.fileformat.info/info/unicode/category/Zs/list.htm
-            //because I'm suddenly easy about the data wikipedia gave me. Should've seen that coming I guess
+            //because I'm suddenly uneasy about the data wikipedia gave me. Should've seen that coming I guess
             if (code >= 9 && code <= 13) return true;
             else if (code >= 8192 && code <= 8202) return true;
             else
@@ -186,7 +186,6 @@ namespace favor {
             addressNames[address] = name;
         }
 
-        //TODO: test this after changes
         shared_ptr<vector<Address>> AccountManager::contactAddresses() const {
             shared_ptr<vector<Address>> ret = make_shared<vector<Address>>();
             auto contacts = reader::contactList();

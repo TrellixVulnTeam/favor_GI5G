@@ -120,16 +120,15 @@ TEST_F(ReaderDatabase, AccountList){
 
     ASSERT_EQ(definedAccounts.size(), result->size());
     for (auto it = result->begin(); it != result->end(); ++it){
-        //Remove them from defined contacts if we find a match
-        for (auto inner_it = definedAccounts.begin(); inner_it != definedAccounts.end(); ++inner_it){
-            if (*(*it) == *(*inner_it)){
-                definedAccounts.remove(*inner_it);
-                inner_it = definedAccounts.end();
+        //Can't use std::find here because it'll compare pointers, so we remove one when we find a match
+        for (auto iit = definedAccounts.begin(); iit != definedAccounts.end(); ++iit){
+            if (*(*it) == *(*iit)){
+                definedAccounts.remove(*iit);
+                iit = definedAccounts.end();
             }
         }
     }
-    ASSERT_EQ(0, definedAccounts.size()); //There should be nothing left, every one should match
-
+    ASSERT_EQ(0, definedAccounts.size()); //And there should be none left
 }
 
 
@@ -142,15 +141,8 @@ TEST_F(ReaderDatabase, ContactList){
 
     ASSERT_EQ(definedContacts.size(), result->size());
     for (auto it = result->begin(); it != result->end(); ++it){
-        for (auto inner_it = definedContacts.begin(); inner_it != definedContacts.end(); ++inner_it){
-            //Remove them from defined contacts if we find a match
-            if (*it == *inner_it){
-                definedContacts.remove(*inner_it);
-                inner_it = definedContacts.end();
-            }
-        }
+        ASSERT_NE(std::find(definedContacts.begin(), definedContacts.end(), *it), definedContacts.end());
     }
-    ASSERT_EQ(0, definedContacts.size()); //There should be nothing left, every one should match
 }
 
 TEST_F(ReaderDatabase, Addresses){
@@ -159,14 +151,63 @@ TEST_F(ReaderDatabase, Addresses){
     auto emailLineResult = reader::addresses(MessageTypeFlags[TYPE_EMAIL] | MessageTypeFlags[TYPE_LINE], false);
 
     ASSERT_EQ(emailResult->size()+lineResult->size(), emailLineResult->size());
-    //TODO: finish this method. also, we need some contact irrelevant addresses to exist so that we can test the contact relevant flag
+    for (auto it = emailLineResult->begin(); it != emailLineResult->end(); ++it){
+        if (it->type == TYPE_EMAIL){
+            ASSERT_NE(std::find(emailResult->begin(), emailResult->end(), *it), emailResult->end());
+            ASSERT_EQ(std::find(lineResult->begin(), lineResult->end(), *it), lineResult->end());
+        }
+        else if (it->type == TYPE_LINE){
+            ASSERT_NE(std::find(lineResult->begin(), lineResult->end(), *it), lineResult->end());
+            ASSERT_EQ(std::find(emailResult->begin(), emailResult->end(), *it), emailResult->end());
+        }
+    }
+
+    auto emailLineResultSmaller = reader::addresses(MessageTypeFlags[TYPE_EMAIL] | MessageTypeFlags[TYPE_LINE], true);
+    ASSERT_LT(emailLineResultSmaller->size(), emailLineResult->size());
 }
 
 TEST_F(ReaderDatabase, AddressExists){
-
+    Address addr1 ADDR_test1_at_test_dot_com_ARGS;
+    Address addrFake("no@nope.no", 1, -1, TYPE_EMAIL);
+    ASSERT_TRUE(reader::addressExists(addr1.addr, addr1.type));
+    ASSERT_FALSE(reader::addressExists(addrFake.addr, addrFake.type));
 }
 
 TEST_F(ReaderDatabase, QueryContact){
+    Contact EmailTest1 CONTACT_EmailTest1_ARGS;
+    AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
+    auto result = reader::queryContact(Account1, EmailTest1, KEY_DATE | KEY_CHARCOUNT, -1, -1, false);
+    //test3@test.com is the address bound to EmailTest1
+
+    std::vector<long> recDates = ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_RECEIVED_DATELIST_ARG;
+    std::vector<long> recCharCounts = ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_RECEIVED_CHARCOUNTLIST_ARG;
+
+    //We have to go backwards in the vector because it's sorted normally, but database output should be descending
+    int counter = recDates.size()-1;
+    for (auto it = result->begin(); it != result->end(); ++it){
+        ASSERT_EQ(recDates[counter], it->date);
+        ASSERT_EQ(recCharCounts[counter], it->charCount);
+        ASSERT_FALSE(it->isBodyKnown());
+        ASSERT_FALSE(it->isAddressKnown());
+        counter--;
+    }
+
+    auto halfResult = reader::queryContact(Account1, EmailTest1, KEY_ALL,
+            ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_RECEIVED_MIDDATE, -1, false);
+
+    ASSERT_EQ(result->size(), halfResult->size()*2 - 1); //Includes the middle value so we pull one off
+
+    counter = recDates.size()-1;
+    for (auto it = halfResult->begin(); it != halfResult->end(); ++it){
+        ASSERT_EQ(recDates[counter], it->date);
+        ASSERT_EQ(recCharCounts[counter], it->charCount);
+        ASSERT_TRUE(it->isBodyKnown());
+        ASSERT_TRUE(it->isAddressKnown());
+        ASSERT_TRUE(it->isMediaKnown());
+        counter--;
+    }
+
+    delete Account1;
 
 }
 

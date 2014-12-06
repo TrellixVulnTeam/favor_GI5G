@@ -247,6 +247,7 @@ namespace favor {
         }
 
         shared_ptr<vector<Message>> queryConversation(const AccountManager* account, const Contact& c, Key keys, time_t fromDate, time_t untilDate){
+            keys = keys | KEY_DATE; //This has to be in here whether it's requested or not for sorting reasons
             const vector<Address>* addresses = &(c.getAddresses());
             const string sentTableName(account->getTableName(true));
             const string receivedTableName(account->getTableName(false));

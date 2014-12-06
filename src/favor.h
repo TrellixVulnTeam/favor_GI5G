@@ -64,6 +64,8 @@ namespace favor {
 
     string as_string(const Contact& c);
 
+    string as_string(const AccountManager& a);
+
 
     string as_string(const rapidjson::Document &json);
 }
