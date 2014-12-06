@@ -28,6 +28,8 @@ namespace favor {
         Message(MessageType t, bool s, long int i, std::time_t d, string a, short m, long cc, const string& b);
         Message(MessageType t, bool s, long int i, std::time_t d, string a, short m, long cc);
 
+        bool operator==(const Message& other) const;
+
         string prettyDate() const;
 
         bool failure() const;

@@ -11,6 +11,13 @@ namespace favor {
         return Message(t, s, i, FAIL_VALUE, a, 0, FAIL_VALUE);
     }
 
+    bool Message::operator==(const Message& other) const {
+        return id == other.id && type == other.type && date == other.date &&
+                sent == other.sent && charCount == other.charCount &&
+                media() == other.media() && address == other.address &&
+                body() == other.body();
+    }
+
     bool Message::failure() const {
         return (date == FAIL_VALUE && charCount == FAIL_VALUE);
     }

@@ -18,6 +18,8 @@ unix_week = int(datetime.now().timestamp() - (((datetime.now() - timedelta(weeks
 MSG_MODIFIERS = []
 
 
+#TODO: we can generate initializer lists for the "definedX" vectors used in testing too, and that'd make things much easier
+
 def list_to_string(list):
     return ",".join(str(x) for x in list)
 
@@ -76,7 +78,7 @@ class Address(Track):
         cid = -1
         if self.contact:
             cid = self.contact.id
-        return list_to_string(['"' + self.name + '"', cid, self.count, TYPEDEFS[self.addrType]])
+        return list_to_string(['"' + self.name + '"', self.count, cid, TYPEDEFS[self.addrType]])
 
     def defargs(self):
         return "#define ADDR_" + format_defstring(self.name) + "_ARGS (" + self.args() + ")\n"
@@ -84,6 +86,7 @@ class Address(Track):
 
 class Contact(Track):
     def __init__(self, name, count):
+        #TODO: count looks an awful lot like an unused/irrelevant parameter
         super().__init__(name, self.__class__)
         self.addresses = []
 
@@ -178,6 +181,10 @@ def init():
     con3 = Contact("LineEmailTest3", 5)  #Line + Email
     con3.add_address(Address("Test2", TYPE_LINE, 1))
     con3.add_address(Address("test4@test.com", TYPE_EMAIL, 2))
+
+    con4 = Contact("TwoEmailTest4", 1)
+    con4.add_address(Address("dubtest1@test.com", TYPE_EMAIL, 5))
+    con4.add_address(Address("dubtest2@test.com", TYPE_EMAIL, 6))
 
     #There needs to be at least one address not tied to a contact so we can test faculties for that specifically
     Address("test1@test.com", TYPE_EMAIL, 1)

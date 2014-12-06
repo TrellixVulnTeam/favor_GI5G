@@ -3,6 +3,7 @@
 
 #include "favor.h"
 #include "reader.h"
+#include "logger.h"
 
 namespace favor {
     class Address {
@@ -19,6 +20,7 @@ namespace favor {
         }
 
         bool operator==(const Address& other) const{
+            //logger::info(as_string(*this)+" compared to "+as_string(other));
             return (type == other.type && contactId == other.contactId &&
                 count == other.count && addr == other.addr);
         }

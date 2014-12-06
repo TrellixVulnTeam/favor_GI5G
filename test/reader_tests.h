@@ -138,6 +138,7 @@ TEST_F(ReaderDatabase, ContactList){
     definedContacts.push_back(Contact CONTACT_EmailTest1_ARGS);
     definedContacts.push_back(Contact CONTACT_LineTest2_ARGS);
     definedContacts.push_back(Contact CONTACT_LineEmailTest3_ARGS);
+    definedContacts.push_back(Contact CONTACT_TwoEmailTest4_ARGS);
 
     ASSERT_EQ(definedContacts.size(), result->size());
     for (auto it = result->begin(); it != result->end(); ++it){
@@ -146,11 +147,24 @@ TEST_F(ReaderDatabase, ContactList){
 }
 
 TEST_F(ReaderDatabase, Addresses){
+    std::vector<Address> definedAddresses;
+    definedAddresses.push_back(Address ADDR_Test1_ARGS);
+    definedAddresses.push_back(Address ADDR_Test2_ARGS);
+    definedAddresses.push_back(Address ADDR_test3_at_test_dot_com_ARGS);
+    definedAddresses.push_back(Address ADDR_test1_at_test_dot_com_ARGS);
+    definedAddresses.push_back(Address ADDR_test4_at_test_dot_com_ARGS);
+    definedAddresses.push_back(Address ADDR_dubtest1_at_test_dot_com_ARGS);
+    definedAddresses.push_back(Address ADDR_dubtest2_at_test_dot_com_ARGS);
+
+
+
     auto emailResult = reader::addresses(TYPE_EMAIL, false);
     auto lineResult = reader::addresses(TYPE_LINE, false);
     auto emailLineResult = reader::addresses(MessageTypeFlags[TYPE_EMAIL] | MessageTypeFlags[TYPE_LINE], false);
 
+
     ASSERT_EQ(emailResult->size()+lineResult->size(), emailLineResult->size());
+    ASSERT_EQ(definedAddresses.size(), emailLineResult->size());
     for (auto it = emailLineResult->begin(); it != emailLineResult->end(); ++it){
         if (it->type == TYPE_EMAIL){
             ASSERT_NE(std::find(emailResult->begin(), emailResult->end(), *it), emailResult->end());
@@ -163,6 +177,14 @@ TEST_F(ReaderDatabase, Addresses){
     }
 
     auto emailLineResultSmaller = reader::addresses(MessageTypeFlags[TYPE_EMAIL] | MessageTypeFlags[TYPE_LINE], true);
+
+    for (auto it = definedAddresses.begin(); it != definedAddresses.end(); ++it){
+        if (it->type == TYPE_EMAIL){
+            ASSERT_NE(std::find(emailResult->begin(), emailResult->end(), *it), emailResult->end());
+        } else if (it->type == TYPE_LINE){
+            ASSERT_NE(std::find(lineResult->begin(), lineResult->end(), *it), lineResult->end());
+        }
+    }
     ASSERT_LT(emailLineResultSmaller->size(), emailLineResult->size());
 }
 
@@ -175,6 +197,7 @@ TEST_F(ReaderDatabase, AddressExists){
 
 TEST_F(ReaderDatabase, QueryContact){
     Contact EmailTest1 CONTACT_EmailTest1_ARGS;
+    Contact DoubleEmailTest4 CONTACT_TwoEmailTest4_ARGS;
     AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
     auto result = reader::queryContact(Account1, EmailTest1, KEY_DATE | KEY_CHARCOUNT, -1, -1, false);
     //test3@test.com is the address bound to EmailTest1
@@ -184,11 +207,14 @@ TEST_F(ReaderDatabase, QueryContact){
 
     //We have to go backwards in the vector because it's sorted normally, but database output should be descending
     int counter = recDates.size()-1;
+    auto bit = result->begin();
     for (auto it = result->begin(); it != result->end(); ++it){
         ASSERT_EQ(recDates[counter], it->date);
         ASSERT_EQ(recCharCounts[counter], it->charCount);
         ASSERT_FALSE(it->isBodyKnown());
         ASSERT_FALSE(it->isAddressKnown());
+        ASSERT_GE(bit->date, it->date); //Verify sort order
+        bit = it;
         counter--;
     }
 
@@ -198,23 +224,74 @@ TEST_F(ReaderDatabase, QueryContact){
     ASSERT_EQ(result->size(), halfResult->size()*2 - 1); //Includes the middle value so we pull one off
 
     counter = recDates.size()-1;
+    bit = halfResult->begin();
     for (auto it = halfResult->begin(); it != halfResult->end(); ++it){
         ASSERT_EQ(recDates[counter], it->date);
         ASSERT_EQ(recCharCounts[counter], it->charCount);
         ASSERT_TRUE(it->isBodyKnown());
         ASSERT_TRUE(it->isAddressKnown());
         ASSERT_TRUE(it->isMediaKnown());
+        ASSERT_GE(bit->date, it->date); //Verify sort order
+        bit = it;
         counter--;
     }
 
+    auto doubleResult = reader::queryContact(Account1, DoubleEmailTest4, KEY_CHARCOUNT, -1, -1, true);
+    ASSERT_EQ(ACCOUNT1_AT_TEST_DOT_COM_DUBTEST1_AT_TEST_DOT_COM_MSGCOUNT_SENT+ACCOUNT1_AT_TEST_DOT_COM_DUBTEST2_AT_TEST_DOT_COM_MSGCOUNT_SENT,
+            doubleResult->size());
+
+    bit = halfResult->begin();
+    for (auto it = doubleResult->begin(); it != doubleResult->end(); ++it){
+        ASSERT_GE(bit->date, it->date); //Verify sort order
+        bit = it;
+    }
+
     delete Account1;
-
-}
-
-TEST_F(ReaderDatabase, QueryConversation){
-
 }
 
 TEST_F(ReaderDatabase, QueryAll){
+    AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
+    AccountManager* Account3 = AccountManager::buildManager ACC_account3_ARGS;
+
+    auto smallerResult = reader::queryAll(Account1, KEY_ALL, ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_RECEIVED_MIDDATE, -1, false);
+    auto result = reader::queryAll(Account1, KEY_CHARCOUNT, -1, -1, false);
+
+    ASSERT_LT(smallerResult->size(), result->size()); //Using a somewhat arbitrary date for the smaller result, so establishing relative size is enough
+
+    auto bit = smallerResult->begin();
+    for (auto it = smallerResult->begin(); it!=smallerResult->end(); ++it){
+        ASSERT_GE(bit->date, it->date);
+        bit = it;
+    }
+
+    long long sum = 0;
+    for (auto it = result->begin(); it!=result->end(); ++it){
+        sum += it->charCount;
+        ASSERT_FALSE(it->isBodyKnown());
+        ASSERT_FALSE(it->isAddressKnown());
+        ASSERT_FALSE(it->isDateKnown());
+    }
+    ASSERT_EQ(ACCOUNT1_AT_TEST_DOT_COM_OVERALL_CHARCOUNT_RECEIVED, sum);
+    ASSERT_EQ(ACCOUNT1_AT_TEST_DOT_COM_OVERALL_MSGCOUNT_RECEIVED, result->size());
+
+
+    auto result2 = reader::queryAll(Account3, KEY_CHARCOUNT, -1, -1, true);
+    ASSERT_NE(*result, *result2); //Though this should be a given, really
+
+    sum = 0;
+    bit = result2->begin();
+    for (auto it = result2->begin(); it!=result2->end(); ++it){
+        sum += it->charCount;
+        ASSERT_GE(bit->date, it->date);
+        bit = it;
+    }
+    ASSERT_EQ(ACCOUNT3_OVERALL_CHARCOUNT_SENT, sum);
+    ASSERT_EQ(ACCOUNT3_OVERALL_MSGCOUNT_SENT, result2->size());
+
+    delete Account1;
+    delete Account3;
+}
+
+TEST_F(ReaderDatabase, QueryConversation){
 
 }
