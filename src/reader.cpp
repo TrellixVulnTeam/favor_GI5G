@@ -265,14 +265,21 @@ namespace favor {
 
             sql += " ORDER BY date " DB_SORT_ORDER ";";
 
+
             Indices selectionIndices = selectionResult.second;
 
             Indices keyIndices = keyResult.second;
 
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             bindSelection(addresses, fromDate, untilDate, stmt, selectionIndices); //Bind the first set
+
+            //The offset adjustment for ADDRESSES_START will be 0 when it's just one address (which is fine)
+            //The important thing is that in cases of more than one address we adjust properly to account for the
+            //fact that multiple addresses take up multiple bindings.
+            int selectionOffset = selectionIndices.size();
+            if (selectionIndices.count(ADDRESSES_START)) selectionOffset += (addresses->size() -1 );
             for (auto it = selectionIndices.begin(); it != selectionIndices.end(); ++it){
-                it->second += selectionIndices.size(); //Slide every index over by the number of indices so we can bind the second set
+                it->second += selectionOffset; //Slide every index over by the number of indices so we can bind the second set
             }
             bindSelection(addresses, fromDate, untilDate, stmt, selectionIndices);
 
@@ -280,7 +287,8 @@ namespace favor {
             int result;
 
             while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-                ret->push_back(buildMessage(stmt, keyIndices, (bool) sqlite3_column_int(stmt, keyIndices.size()+1), account->type));
+                //keyIndices.size() is the number of keys already used, but they start at 0, so that value will be our unused (sent) index
+                ret->push_back(buildMessage(stmt, keyIndices, (bool) sqlite3_column_int(stmt, keyIndices.size()), account->type));
             }
             sqlv(result); //Make sure we broke out of the loop with good results
             sqlv(sqlite3_finalize(stmt));

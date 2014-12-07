@@ -198,6 +198,7 @@ TEST_F(ReaderDatabase, AddressExists){
 TEST_F(ReaderDatabase, QueryContact){
     Contact EmailTest1 CONTACT_EmailTest1_ARGS;
     Contact DoubleEmailTest4 CONTACT_TwoEmailTest4_ARGS;
+    Contact LineTest2 CONTACT_LineTest2_ARGS;
     AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
     auto result = reader::queryContact(Account1, EmailTest1, KEY_DATE | KEY_CHARCOUNT, -1, -1, false);
     //test3@test.com is the address bound to EmailTest1
@@ -246,6 +247,9 @@ TEST_F(ReaderDatabase, QueryContact){
         bit = it;
     }
 
+    auto emptyResult = reader::queryContact(Account1, LineTest2, KEY_ID, -1, -1, true);
+    ASSERT_EQ(0, emptyResult->size());
+
     delete Account1;
 }
 
@@ -257,6 +261,7 @@ TEST_F(ReaderDatabase, QueryAll){
     auto result = reader::queryAll(Account1, KEY_CHARCOUNT, -1, -1, false);
 
     ASSERT_LT(smallerResult->size(), result->size()); //Using a somewhat arbitrary date for the smaller result, so establishing relative size is enough
+    ASSERT_NE(0, smallerResult->size());
 
     auto bit = smallerResult->begin();
     for (auto it = smallerResult->begin(); it!=smallerResult->end(); ++it){
@@ -293,5 +298,65 @@ TEST_F(ReaderDatabase, QueryAll){
 }
 
 TEST_F(ReaderDatabase, QueryConversation){
+    AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
+    AccountManager* Account3 = AccountManager::buildManager ACC_account3_ARGS;
+
+    Contact EmailTest1 CONTACT_EmailTest1_ARGS;
+    Contact DoubleEmailTest4 CONTACT_TwoEmailTest4_ARGS;
+    Contact LineTest2 CONTACT_LineTest2_ARGS;
+
+    auto emptyResult = reader::queryConversation(Account1, LineTest2, KEY_ID, -1, -1);
+    ASSERT_EQ(0, emptyResult->size());
+
+    auto smallerResult = reader::queryConversation(Account3, LineTest2, KEY_DATE, ACCOUNT3_TEST1_RECEIVED_MIDDATE, -1);
+    auto result1 = reader::queryConversation(Account1, EmailTest1, KEY_DATE | KEY_CHARCOUNT, -1, -1);
+    ASSERT_LT(smallerResult->size(), result1->size());
+    ASSERT_NE(0, smallerResult->size());
+
+    auto bit = smallerResult->begin();
+    for (auto it = smallerResult->begin(); it!= smallerResult->end(); ++it){
+        ASSERT_GE(bit->date, it->date);
+        bit = it;
+        ASSERT_FALSE(it->isCharCountKnown());
+        ASSERT_FALSE(it->isBodyKnown());
+        ASSERT_FALSE(it->isAddressKnown());
+        ASSERT_FALSE(it->isMediaKnown());
+    }
+
+    //Using dates because they're unique when generated with our test script
+    std::vector<long> result1DatesReceived = ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_RECEIVED_DATELIST_ARG;
+    std::vector<long> result1DatesSent = ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_SENT_DATELIST_ARG;
+
+    long long sum = 0;
+    bit = result1->begin();
+    for (auto it = result1->begin(); it != result1->end(); ++it){
+        ASSERT_GE(bit->date, it->date);
+        ASSERT_FALSE(it->isBodyKnown());
+        ASSERT_FALSE(it->isAddressKnown());
+        ASSERT_FALSE(it->isMediaKnown());
+        if (it->sent) ASSERT_NE(std::find(result1DatesSent.begin(), result1DatesSent.end(), it->date), result1DatesSent.end());
+        else ASSERT_NE(std::find(result1DatesReceived.begin(), result1DatesReceived.end(), it->date), result1DatesReceived.end());
+        bit = it;
+        sum += it->charCount;
+    }
+    ASSERT_EQ(ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_CHARCOUNT_RECEIVED+ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_CHARCOUNT_SENT, sum);
+
+
+    long maxDate = std::max(ACCOUNT1_AT_TEST_DOT_COM_DUBTEST1_AT_TEST_DOT_COM_RECEIVED_MAXDATE, ACCOUNT1_AT_TEST_DOT_COM_DUBTEST1_AT_TEST_DOT_COM_SENT_MAXDATE);
+    maxDate = std::max(maxDate, (long) ACCOUNT1_AT_TEST_DOT_COM_DUBTEST2_AT_TEST_DOT_COM_RECEIVED_MAXDATE);
+    maxDate = std::max(maxDate, (long) ACCOUNT1_AT_TEST_DOT_COM_DUBTEST2_AT_TEST_DOT_COM_SENT_MAXDATE);
+    //The chosen date should be >= to all relevant dates here so it shouldn't effect the outcome, we just want to make sure selection setup works properly
+    auto doubleResult = reader::queryConversation(Account1, DoubleEmailTest4, KEY_ALL, -1, maxDate);
+    bit = doubleResult->begin();
+    for (auto it = doubleResult->begin(); it != doubleResult->end(); ++it){
+        ASSERT_GE(bit->date, it->date);
+        bit = it;
+    }
+    ASSERT_EQ(ACCOUNT1_AT_TEST_DOT_COM_DUBTEST1_AT_TEST_DOT_COM_MSGCOUNT_RECEIVED+ACCOUNT1_AT_TEST_DOT_COM_DUBTEST1_AT_TEST_DOT_COM_MSGCOUNT_SENT+
+            ACCOUNT1_AT_TEST_DOT_COM_DUBTEST2_AT_TEST_DOT_COM_MSGCOUNT_RECEIVED+ACCOUNT1_AT_TEST_DOT_COM_DUBTEST2_AT_TEST_DOT_COM_MSGCOUNT_SENT,
+            doubleResult->size());
+
+    delete Account1;
+    delete Account3;
 
 }
