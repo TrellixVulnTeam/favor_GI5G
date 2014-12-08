@@ -18,6 +18,10 @@ namespace favor {
                 body() == other.body();
     }
 
+    bool Message::operator!=(const Message &other) const {
+        return !(*this==other);
+    }
+
     bool Message::failure() const {
         return (date == FAIL_VALUE && charCount == FAIL_VALUE);
     }
@@ -39,15 +43,15 @@ namespace favor {
     }
 
     bool Message::isDateKnown() const{
-        return date != UNKNOWN_NUMERIC_VALUE;
+        return date != UNKNOWN_NUMERIC_VALUE && !failure();
     }
 
     bool Message::isMediaKnown() const{
-        return mediaVal != UNKNOWN_NUMERIC_VALUE;
+        return mediaVal != UNKNOWN_NUMERIC_VALUE && !failure();
     }
 
     bool Message::isCharCountKnown() const{
-        return charCount != UNKNOWN_NUMERIC_VALUE;
+        return charCount != UNKNOWN_NUMERIC_VALUE && !failure();
     }
 
     bool Message::isAddressKnown() const{
@@ -55,7 +59,7 @@ namespace favor {
     }
 
     bool Message::isBodyKnown() const {
-        return bodyPtr != NULL;
+        return bodyPtr != NULL; //&& !failure(); would be redundant because failures use the empty body constructor
     }
 
 

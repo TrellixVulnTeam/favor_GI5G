@@ -25,6 +25,10 @@ namespace favor {
                 count == other.count && addr == other.addr);
         }
 
+        bool operator!=(const Address& other) const{
+            return !(*this==other);
+        }
+
 //        //TODO: This won't compile for reasons unclear, but makes sense as a method here
 //        bool inDatabase(){
 //            return reader::addressExists(addr, type);
