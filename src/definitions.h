@@ -42,7 +42,7 @@ namespace favor {
         FLAG_EMAIL = 1 << TYPE_EMAIL, //1
         FLAG_ANDROIDTEXT = 1 << TYPE_ANDROIDTEXT, //2
         FLAG_LINE = 1 << TYPE_LINE, //4
-        FLAG_SKYPE = 1 < TYPE_SKYPE //8
+        FLAG_SKYPE = 1 << TYPE_SKYPE //8
     };
     inline MessageTypeFlag operator|(MessageTypeFlag lhs, MessageTypeFlag rhs){
         return static_cast<MessageTypeFlag>(static_cast<int>(lhs) | static_cast<int>(rhs));

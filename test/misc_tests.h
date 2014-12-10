@@ -92,8 +92,6 @@ TEST(Message, IsKnown){
 Contact
  */
 
-//TODO: something is wrong with contacts because email definitely shouldn't have skype...
-
 TEST(Contact, HasType){
     Contact EmailTest CONTACT_EmailTest1_ARGS;
     Contact LineTest CONTACT_LineTest2_ARGS;
