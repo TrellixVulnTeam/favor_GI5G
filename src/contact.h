@@ -14,14 +14,13 @@ namespace favor {
         Contact(long ident, string name, MessageTypeFlag ts, const Address& addr);
         Contact(long ident, string name, MessageTypeFlag ts, const vector <Address> &addrs);
 
-        bool operator==(const Contact& rhs) const{
-            return id == rhs.id && displayName == rhs.displayName && types == rhs.types;
-        }
+        bool operator==(const Contact& rhs) const;
 
         void addAddress(const Address& addr);
         const vector<Address>& getAddresses() const;
 
-        bool hasType(MessageType type);
+        bool hasType(MessageType type) const ;
+        MessageTypeFlag typeFlags() const; //Largely exists just for testing purposes
 
 
 

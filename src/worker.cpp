@@ -103,6 +103,8 @@ namespace favor {
         void createContactFromAddress(const Address& addr, const string& displayName){
             long contactId = createContact(displayName, addr.type);
             string sql = "UPDATE " ADDRESS_TABLE(addr.type) " SET contact_id=? WHERE address=?";
+            //TODO: we might want to verify something was updated here; I believe SQLIte will return affected rows to us and we could abort if that was 0
+            //we could also move this before we create the contact so we could avoid it in that case. might not be a bad precaution to implement
             sqlite3_stmt* stmt;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             sqlv(sqlite3_bind_int64(stmt, 1, contactId));

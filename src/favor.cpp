@@ -131,10 +131,12 @@ namespace favor {
 
     string as_string(const Contact& c){
         string result = "[Contact Display Name: " +c.displayName + " | ID: "+as_string(c.id)+"| Addresses: (";
-        for (int i = 0; i < c.getAddresses().size(); ++i){
-            if (i == c.getAddresses().size() - 1) result += as_string(c.getAddresses()[i]) + ")";
+        if (c.getAddresses().size() == 0) result += ")]";
+        else for (int i = 0; i < c.getAddresses().size(); ++i){
+            if (i == c.getAddresses().size() - 1) result += as_string(c.getAddresses()[i]) + ")]";
             else result += as_string(c.getAddresses()[i]) + ", ";
         }
+        return result;
     }
 
     string as_string(const AccountManager& a){

@@ -4,51 +4,34 @@
 #include "accountmanager.h"
 #include "gtest/gtest.h"
 #include "testdata.h"
+#include "testing.h"
 
 using namespace std;
 using namespace favor;
 
-class DatabaseTest : public ::testing::Test {
-    protected:
+class Reader : public DatabaseTest {
+    void populateDb(){
+        string sql = "BEGIN IMMEDIATE TRANSACTION;";
+        sql += contactSeed;
+        sql += addressSeed;
+        sql += accountSeed;
+        sql += messagesSeed;
+        sql += "COMMIT TRANSACTION;";
 
-        //TODO: we should also define some constants for types of bad data, like improperly associated addresses and stuff
+        worker::exec(sql);
+    }
 
-        const string contactSeed = CONTACT_TEST_DATA;
-        const string addressSeed = ADDRESS_TEST_DATA;
+    virtual void SetUp() override {
+        DatabaseTest::SetUp();
+        populateDb();
+        reader::refreshAll(); //These values are expected to be correct in other methods, so it tests the refresh methods
+    }
 
-        const string accountSeed = ACCOUNT_TEST_DATA;
 
-        const string messagesSeed = MESSAGE_TEST_DATA;
 
-        void populateDb(){
-            string sql = "BEGIN IMMEDIATE TRANSACTION;";
-            sql += contactSeed;
-            sql += addressSeed;
-            sql += accountSeed;
-            sql += messagesSeed;
-            sql += "COMMIT TRANSACTION;";
-
-            worker::exec(sql);
-        }
-
-        virtual void SetUp() override {
-            ASSERT_EQ(sqlite3_config(SQLITE_CONFIG_URI,1), SQLITE_OK);
-            favor::dbName = "file::memory:?cache=shared";
-            favor::dbPath = "";
-            favor::initialize();
-            worker::buildDatabase();
-            populateDb();
-            reader::refreshAll(); //These values are expected to be correct in other methods, so it tests the refresh methods
-        }
-
-        virtual void TearDown() override {
-            favor::cleanup();
-        }
 };
 
-class ReaderDatabase : public DatabaseTest {};
-
-TEST_F(ReaderDatabase, SQLiteSum){
+TEST_F(Reader, SQLiteSum){
     Contact EmailTest1 CONTACT_EmailTest1_ARGS;
     AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
 
@@ -63,7 +46,7 @@ TEST_F(ReaderDatabase, SQLiteSum){
 }
 
 
-TEST_F(ReaderDatabase, SQLiteAverage){
+TEST_F(Reader, SQLiteAverage){
     Contact LineEmailTest3 CONTACT_LineEmailTest3_ARGS;
     AccountManager* Account2 = AccountManager::buildManager ACC_account2_at_test_dot_com_ARGS;
     AccountManager* Account3 = AccountManager::buildManager ACC_account3_ARGS; //Line
@@ -83,7 +66,7 @@ TEST_F(ReaderDatabase, SQLiteAverage){
     delete Account3;
 }
 
-TEST_F(ReaderDatabase, SQliteCount){
+TEST_F(Reader, SQliteCount){
     Contact LineEmailTest3 CONTACT_LineEmailTest3_ARGS;
     AccountManager* Account2 = AccountManager::buildManager ACC_account2_at_test_dot_com_ARGS;
 
@@ -111,7 +94,7 @@ TEST_F(ReaderDatabase, SQliteCount){
     delete Account2;
 }
 
-TEST_F(ReaderDatabase, AccountList){
+TEST_F(Reader, AccountList){
     auto result = reader::accountList();
     std::list<AccountManager*> definedAccounts;
     definedAccounts.push_back(AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS);
@@ -132,7 +115,7 @@ TEST_F(ReaderDatabase, AccountList){
 }
 
 
-TEST_F(ReaderDatabase, ContactList){
+TEST_F(Reader, ContactList){
     auto result = reader::contactList();
     std::list<Contact> definedContacts;
     definedContacts.push_back(Contact CONTACT_EmailTest1_ARGS);
@@ -146,7 +129,7 @@ TEST_F(ReaderDatabase, ContactList){
     }
 }
 
-TEST_F(ReaderDatabase, Addresses){
+TEST_F(Reader, Addresses){
     std::vector<Address> definedAddresses;
     definedAddresses.push_back(Address ADDR_Test1_ARGS);
     definedAddresses.push_back(Address ADDR_Test2_ARGS);
@@ -188,14 +171,14 @@ TEST_F(ReaderDatabase, Addresses){
     ASSERT_LT(emailLineResultSmaller->size(), emailLineResult->size());
 }
 
-TEST_F(ReaderDatabase, AddressExists){
+TEST_F(Reader, AddressExists){
     Address addr1 ADDR_test1_at_test_dot_com_ARGS;
     Address addrFake("no@nope.no", 1, -1, TYPE_EMAIL);
     ASSERT_TRUE(reader::addressExists(addr1.addr, addr1.type));
     ASSERT_FALSE(reader::addressExists(addrFake.addr, addrFake.type));
 }
 
-TEST_F(ReaderDatabase, QueryContact){
+TEST_F(Reader, QueryContact){
     Contact EmailTest1 CONTACT_EmailTest1_ARGS;
     Contact DoubleEmailTest4 CONTACT_TwoEmailTest4_ARGS;
     Contact LineTest2 CONTACT_LineTest2_ARGS;
@@ -253,7 +236,7 @@ TEST_F(ReaderDatabase, QueryContact){
     delete Account1;
 }
 
-TEST_F(ReaderDatabase, QueryAll){
+TEST_F(Reader, QueryAll){
     AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
     AccountManager* Account3 = AccountManager::buildManager ACC_account3_ARGS;
 
@@ -297,7 +280,7 @@ TEST_F(ReaderDatabase, QueryAll){
     delete Account3;
 }
 
-TEST_F(ReaderDatabase, QueryConversation){
+TEST_F(Reader, QueryConversation){
     AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
     AccountManager* Account3 = AccountManager::buildManager ACC_account3_ARGS;
 

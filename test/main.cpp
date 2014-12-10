@@ -4,6 +4,7 @@
 #include "worker.h"
 #include "reader_tests.h"
 #include "misc_tests.h"
+#include "worker_tests.h"
 #include "logger.h"
 
 #include <chrono>

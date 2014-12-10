@@ -110,3 +110,7 @@ TEST(Contact, HasType){
     ASSERT_TRUE(LineEmailTest.hasType(TYPE_LINE));
     ASSERT_TRUE(LineEmailTest.hasType(TYPE_EMAIL));
 }
+
+TEST(Contact, AddAddress){
+    //TODO: this needs a test mostly because it should update the types of addresses the contacts has, I.E. change what the contact considers relevant types
+}
