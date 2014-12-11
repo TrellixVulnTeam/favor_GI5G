@@ -1,8 +1,6 @@
 Just getting things set up right now. 
 
 Todo (in order):
- - Many Reader queries are ordering things by date. This is fine in normal selects, but in a compound select (such as for queryConversation) we can only sort by
- selected columns so we'll likely have to force date into the selection. Filtering is fine in either case, as even in unions we can filter before we union
  - Look at how Google Test works with the NDK, because it does work with the NDK.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
@@ -18,11 +16,11 @@ Todo (in order):
  - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts'). Also take this time to verify
  stuff still works with the list -> vector switch (not that that should actually change anything)
  - The processor is eventually going to need a healthy bit of JNI specific code so that it pushes cached results up into the Java layer.
-  - Spend some time with a query analyzer and make sure that SQLlite is getting the best use possible out of our indices, and think about what might be worth changing if not.
-  - Run some stress tests and figure out if it's worth caching the results of average/sum queries, because if SQL holds these, we almost certainly won't need to.
-  - SQLite extended error codes? See about making use of these.
-  - See about a const version of the DataLock, or just about making DataLocks return only const references (if the former, watch out for slicing). Only the reader should be updating its 
-  cached info anyway...
+ - Spend some time with a query analyzer and make sure that SQLlite is getting the best use possible out of our indices, and think about what might be worth changing if not.
+ - Run some stress tests and figure out if it's worth caching the results of average/sum queries, because if SQL holds these, we almost certainly won't need to.
+ - SQLite extended error codes? See about making use of these.
+ - See about a const version of the DataLock, or just about making DataLocks return only const references (if the former, watch out for slicing). Only the reader should be updating its 
+ cached info anyway...
  - Basic threading tests to make sure datalocks do their job
  - In a perfect world, our methods to update contacts would properly adjust the state of the contacts and their held addresses instead of just marking the list as needing to be
  refreshed. This will take a little bit of work to do elegantly though - additions must create a new contact with an address _and_ ensure no other contacts have that address, and of

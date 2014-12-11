@@ -1,14 +1,7 @@
-#include <iostream>
-#include <processor.h>
 #include "favor_tests.h"
-#include "worker.h"
 #include "reader_tests.h"
 #include "misc_tests.h"
 #include "worker_tests.h"
-#include "logger.h"
-
-#include <chrono>
-//TODO: this should be replaced by a real testing framework ASAP
 
 
 #include "gtest/gtest.h"

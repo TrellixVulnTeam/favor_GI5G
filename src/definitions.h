@@ -42,7 +42,8 @@ namespace favor {
         FLAG_EMAIL = 1 << TYPE_EMAIL, //1
         FLAG_ANDROIDTEXT = 1 << TYPE_ANDROIDTEXT, //2
         FLAG_LINE = 1 << TYPE_LINE, //4
-        FLAG_SKYPE = 1 << TYPE_SKYPE //8
+        FLAG_SKYPE = 1 << TYPE_SKYPE, //8
+        FLAG_ALL = 15 //15 (1111)
     };
     inline MessageTypeFlag operator|(MessageTypeFlag lhs, MessageTypeFlag rhs){
         return static_cast<MessageTypeFlag>(static_cast<int>(lhs) | static_cast<int>(rhs));
@@ -73,7 +74,7 @@ namespace favor {
 
 //Contacts table
 #define CONTACT_TABLE "contacts"
-#define CONTACT_TABLE_SCHEMA "(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, type_flags INTEGER NOT NULL)"
+#define CONTACT_TABLE_SCHEMA "(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL)"
 
 //Addresses table
 /*Note:
@@ -83,7 +84,7 @@ The foreign key here can be null, and this is intentional. In cases where it is 
 #define ADDRESS_TABLE_SCHEMA "(address TEXT NOT NULL UNIQUE, count INTEGER NOT NULL, contact_id INTEGER REFERENCES " CONTACT_TABLE "(id))"
 
 #define ADDRESS_INDEX "i_" ADDRESS_TABLE
-#define ADDRESS_INDEX_SCHEMA "(contact_name)"
+#define ADDRESS_INDEX_SCHEMA "(contact_id" DB_SORT_ORDER ")"
 
 
 /*Note:

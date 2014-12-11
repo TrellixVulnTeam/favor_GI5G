@@ -106,10 +106,12 @@ class Contact(Track):
 
 
     def sql(self):
-        return "INSERT INTO contacts VALUES(" + list_to_string([self.id, '"' + self.name + '"', self.flag()]) + ");"
+        return "INSERT INTO contacts VALUES(" + list_to_string([self.id, '"' + self.name + '"']) + ");"
+        #return "INSERT INTO contacts VALUES(" + list_to_string([self.id, '"' + self.name + '"', self.flag()]) + ");"
 
     def defargs(self):
-        arglist = [self.id, '"' + self.name + '"', "(MessageTypeFlag)" + str(self.flag())]
+       # arglist = [self.id, '"' + self.name + '"', "(MessageTypeFlag)" + str(self.flag())]
+        arglist = [self.id, '"' + self.name + '"']
         if len(self.addresses) > 0:
             addr_vector = "{"
             a = ["Address(" + x.args() + ")" for x in self.addresses]
@@ -334,5 +336,8 @@ if __name__ == '__main__':
     out.write("\n\n")
 
 
-    out.write("#define MSG_COUNT "+str(MSG_COUNT))
+    out.write("#define MSG_COUNT "+str(MSG_COUNT)+"\n")
+    out.write("#define CONTACT_COUNT "+str(len(Track.MAPS[Contact]))+"\n")
+    out.write("#define ADDR_COUNT "+str(len(Track.MAPS[Address]))+"\n")
+    out.write("#define ACCOUNT_COUNT "+str(len(Track.MAPS[Account]))+"\n")
     out.close()

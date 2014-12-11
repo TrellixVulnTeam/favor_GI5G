@@ -1,12 +1,16 @@
 #include "contact.h"
 
 namespace favor{
-    Contact::Contact(long ident, string name, MessageTypeFlag ts) : id(ident), displayName(name), types(ts){}
-    Contact::Contact(long ident, string name, MessageTypeFlag ts,  const Address &addr) : id(ident), displayName(name), types(ts) {
+    Contact::Contact(long ident, string name) : id(ident), displayName(name), types(FLAG_EMPTY){}
+    Contact::Contact(long ident, string name, const Address &addr) : id(ident), displayName(name), types(MessageTypeFlags[addr.type]) {
         addresses.push_back(addr);
     }
-    Contact::Contact(long ident, string name, MessageTypeFlag ts, const vector <Address> &addrs) : id(ident), displayName(name),
-                                                                                             types(ts), addresses(addrs) {}
+    Contact::Contact(long ident, string name, const vector <Address> &addrs) : id(ident), displayName(name),
+                                                                                             types(FLAG_EMPTY), addresses(addrs) {
+        for (auto it = addrs.begin(); it != addrs.end(); ++it){
+            types = types | MessageTypeFlags[it->type];
+        }
+    }
 
     bool Contact::operator==(const Contact& rhs) const{
         //logger::info("Comparing "+as_string(*this)+" to "+as_string(rhs));
@@ -17,11 +21,6 @@ namespace favor{
 
     const vector<Address>& Contact::getAddresses() const {
         return addresses;
-    }
-
-    void Contact::addAddress(const Address &addr) {
-        types = types | MessageTypeFlags[addr.type];
-        addresses.push_back(addr);
     }
 
     bool Contact::hasType(MessageType type) const {

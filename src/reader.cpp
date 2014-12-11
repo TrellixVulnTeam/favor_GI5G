@@ -349,21 +349,17 @@ namespace favor {
         }
 
         void refreshContactList(){
-            //TODO: much fixing on this method, seems okay but am still suspicious
             sqlite3_stmt* stmt;
             string sql = "SELECT * FROM " CONTACT_TABLE ";";
             int result;
-            std::unordered_map<int, Contact> contactHolder;
+            std::unordered_map<int, string> contactHolder;
+            std::unordered_map<int, vector<Address>> contactAddresses;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-
-            MessageTypeFlag flags = FLAG_EMPTY;
 
             while ((result = sqlite3_step(stmt)) == SQLITE_ROW){
                 int id = sqlite3_column_int(stmt, 0);
-                //contactHolder[id] = Contact(id, reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)), t); is no good
-                contactHolder.emplace(id, Contact(id, reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)), (MessageTypeFlag) sqlite3_column_int(stmt, 2)));
-                flags = flags | ((MessageTypeFlag) sqlite3_column_int(stmt, 2));
-                //Canonical contacts added to hash table, and record any new flags
+                //using the [] operator is no good
+                contactHolder.emplace(id, reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)));
             }
             sqlv(result);
             sqlv(sqlite3_finalize(stmt));
@@ -371,16 +367,16 @@ namespace favor {
             DataLock<list<Contact>> contacts = DataLock<list<Contact>>(&contactsMutex, &contactsHolderCount, _contacts);
             contacts->clear();
 
-            shared_ptr<list<Address>> addrs = addresses(flags); //TODO: make this a union of the types we find in contacts
+            shared_ptr<list<Address>> addrs = addresses(FLAG_ALL, true);
             for (auto it = addrs->begin(); it != addrs->end(); it++){
-                //TODO: this could conceivably, possible, throw an exception for being out of bounds, though it shouldn't
-                //given the check we're making. we can catch it and rethrow it as bad data if it ever happens somehow though
-                if (it->belongsToContact()) contactHolder.at(it->contactId).addAddress(*it);
+                contactAddresses[it->contactId].push_back(*it);
             }
 
             //Add canonical contacts in hash table to list
             for (auto it = contactHolder.begin(); it != contactHolder.end(); it++){
-                contacts->push_back(it->second);
+                //Using [] here will give us an empty vector if there isn't a record in contactAddresses, but this is intentional
+                //because there will be no records for contacts without any addresses currently assigned in contactAddresses
+                contacts->push_back(Contact(it->first, it->second, contactAddresses[it->first]));
             }
             contactsValid = true;
         }

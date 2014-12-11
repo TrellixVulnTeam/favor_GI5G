@@ -75,11 +75,10 @@ namespace favor {
         }
 
         long createContact(const string& displayName, MessageType type){
-            string sql = "INSERT INTO " CONTACT_TABLE "(display_name,type_flags) VALUES(?,?)";
+            string sql = "INSERT INTO " CONTACT_TABLE "(display_name) VALUES(?)";
             sqlite3_stmt* stmt;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             sqlv(sqlite3_bind_text(stmt, 1, displayName.c_str(), displayName.length(), SQLITE_STATIC));
-            sqlv(sqlite3_bind_int(stmt, 2, MessageTypeFlags[type]));
             sqlv(sqlite3_step(stmt));
             long contactId = sqlite3_last_insert_rowid(db);
             sqlv(sqlite3_finalize(stmt));
@@ -103,14 +102,13 @@ namespace favor {
         void createContactFromAddress(const Address& addr, const string& displayName){
             long contactId = createContact(displayName, addr.type);
             string sql = "UPDATE " ADDRESS_TABLE(addr.type) " SET contact_id=? WHERE address=?";
-            //TODO: we might want to verify something was updated here; I believe SQLIte will return affected rows to us and we could abort if that was 0
-            //we could also move this before we create the contact so we could avoid it in that case. might not be a bad precaution to implement
             sqlite3_stmt* stmt;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             sqlv(sqlite3_bind_int64(stmt, 1, contactId));
             sqlv(sqlite3_bind_text(stmt, 2, addr.addr.c_str(), addr.addr.length(), SQLITE_STATIC));
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_finalize(stmt));
+            if (sqlite3_changes(db) == 0) logger::warning("Contact "+displayName+" created from address "+as_string(addr)+" which SQLite does not report finding.");
         }
 
         void saveAddress(const Address &a, sqlite3_stmt* stmt) {
