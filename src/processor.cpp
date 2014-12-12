@@ -98,6 +98,33 @@ namespace favor {
             std::unordered_map<ResultKey, Result, ResultKeyHasher> cache;
             std::mutex cacheLock; //The possibility of rehashes means we have to lock around the whole datastructure
 
+
+            /*-------------
+            Response time stuff
+             ---------------*/
+            const long DENSITY_DISTANCE = 900; //15 minutes in unix time
+            const long STRIP_RESET_DISTANCE = DENSITY_DISTANCE; //For now these can be the same thing
+
+        }
+
+        //TODO: this does not appear to be working even close to as intended
+        shared_ptr<vector<time_t>> strippedDates(shared_ptr<vector<Message>> messages){
+            shared_ptr<vector<time_t>> result = std::make_shared<vector<time_t>>();
+            auto back = messages->end(); //Iteration goes backwards because messages are sorted descending
+            for (auto it = back; it != messages->begin(); --it){
+                if (back != it && back->sent == it->sent){
+                    //We know a strip needs to happen. The question is whether the new message is far enough ahead to strip the back one
+                    if (it->date - back->date >= STRIP_RESET_DISTANCE){
+                        //This is too far, drop the old messages
+                        back = it;
+                    } //Else we keep going and have simply ignored the message with the same date
+                } else {
+                    //Sent and received differ, so we add a response time and move the back pointer up
+                    result->push_back(it->date - back->date);
+                    back = it;
+                }
+            }
+            return result;
         }
 
         template<typename T>
@@ -127,38 +154,42 @@ namespace favor {
 
 
 
-        double averageCharcount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
-            if (countResult(AVG_CHARS, account, &c, fromDate, untilDate, sent)){
-                return getResult<double>(AVG_CHARS, account, &c, fromDate, untilDate, sent);
-            }
-            else {
-                double value = account == NULL ? reader::averageAll(account, KEY_CHARCOUNT, fromDate, untilDate, sent) : reader::average(account, c, KEY_CHARCOUNT, fromDate, untilDate, sent);
-                cacheResult<double>(AVG_CHARS, account, &c, fromDate, untilDate, value, sent);
-                return value;
-            }
-        }
-
-        double averageResponsetime(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
+        double averageResponsetime(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
             //TODO: dat response time computation tho...
         }
 
-        long totalCharcount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
-            if (countResult(TOTAL_CHARS, account, &c, fromDate, untilDate, sent)) return getResult<long>(TOTAL_CHARS, account, &c, fromDate, untilDate, sent);
+        double averageCharcount(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
+            if (countResult(AVG_CHARS, account, c, fromDate, untilDate, sent)){
+                return getResult<double>(AVG_CHARS, account, c, fromDate, untilDate, sent);
+            }
             else {
-                long value = account == NULL ? reader::sumAll(account, KEY_CHARCOUNT, fromDate, untilDate, sent): reader::sum(account, c , KEY_CHARCOUNT, fromDate, untilDate, sent);
-                cacheResult<long>(TOTAL_CHARS, account, &c, fromDate, untilDate, value, sent);
+                double value = c == NULL ? reader::averageAll(account, KEY_CHARCOUNT, fromDate, untilDate, sent) : reader::average(account, *c, KEY_CHARCOUNT, fromDate, untilDate, sent);
+                cacheResult<double>(AVG_CHARS, account, c, fromDate, untilDate, sent, value);
+                return value;
+            }
+        }
+
+        long totalCharcount(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
+            if (countResult(TOTAL_CHARS, account, c, fromDate, untilDate, sent)) return getResult<long>(TOTAL_CHARS, account, c, fromDate, untilDate, sent);
+            else {
+                long value = c == NULL ? reader::sumAll(account, KEY_CHARCOUNT, fromDate, untilDate, sent): reader::sum(account, *c , KEY_CHARCOUNT, fromDate, untilDate, sent);
+                cacheResult<long>(TOTAL_CHARS, account, c, fromDate, untilDate, sent, value);
                 return value;
             }
         }
 
 
-        long totalResponsetime(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
+        long totalResponsetime(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
 
         }
 
-        long totalMessagecount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
-//            if (countResult(TOTAL_CHARS, account, &c, fromDate, untilDate))
-              //TODO: counting not implemented in reader yet
+        long totalMessagecount(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
+            if (countResult(TOTAL_MESSAGES, account, c, fromDate, untilDate, sent)) return getResult<long>(TOTAL_MESSAGES, account, c, fromDate, untilDate, sent);
+            else {
+                long value = c == NULL ? reader::countAll(account, fromDate, untilDate, sent) : reader::count(account, *c, fromDate, untilDate, sent);
+                cacheResult<long>(TOTAL_MESSAGES, account, c, fromDate, untilDate, sent, value);
+            }
+
         }
 
 

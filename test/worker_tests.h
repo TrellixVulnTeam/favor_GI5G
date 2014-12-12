@@ -122,14 +122,52 @@ TEST_F(Worker, CreateContactFromAddress){
 
 }
 
-TEST_F(Worker, SaveAddress){
-
-}
-
 TEST_F(Worker, RecomputeAddressTable){
+        worker::exec(contactSeed); //Have to seed contacts first so the foreign key constraint works on addresses
+        worker::exec(addressSeed);
 
-}
+        //TODO: this should eventually test name functionalities once they exist in the method, but they don't yet, so for now we
+        //don't have to pay too much attention to names and can just throw some random data in
 
-TEST_F(Worker, RewriteAddressTable){
+        std::vector<Address> definedAddresses;
+        std::unordered_map<std::string, int> countedAddressesLine;
+        std::unordered_map<std::string, std::string> addressNamesLine;
+        std::unordered_map<std::string, int> countedAddressesEmail;
+        std::unordered_map<std::string, std::string> addressNamesEmail;
 
+        Address OldTest1 ADDR_test1_at_test_dot_com_ARGS;
+        Address OldTest2 ADDR_Test2_ARGS;
+
+        int newTest1Count = 27;
+        int newTest2Count = 9;
+
+        countedAddressesEmail[OldTest1.addr] = newTest1Count;
+        countedAddressesLine[OldTest2.addr] = newTest2Count;
+        addressNamesEmail[OldTest1.addr] = "Test 1 Email Address";
+
+        definedAddresses.push_back(Address(OldTest1.addr, newTest1Count, OldTest1.contactId, OldTest1.type));
+        definedAddresses.push_back(Address(OldTest2.addr, newTest2Count, OldTest2.contactId, OldTest2.type));
+
+        //Now add some new addresses
+        int new1Count = 3;
+        int new2Count = 1;
+        Address New1("worker1@work.com", new1Count, -1, TYPE_EMAIL);
+        Address New2("Worky", new2Count, -1, TYPE_LINE);
+
+        countedAddressesEmail[New1.addr] = new1Count;
+        countedAddressesLine[New2.addr]= new2Count;
+        addressNamesLine[New2.addr] = "New 2 Line Address";
+
+        definedAddresses.push_back(New1);
+        definedAddresses.push_back(New2);
+
+        worker::recomputeAddressTable(countedAddressesEmail, addressNamesEmail, TYPE_EMAIL);
+        worker::recomputeAddressTable(countedAddressesLine, addressNamesLine, TYPE_LINE);
+
+        auto resultAddrs = reader::addresses(FLAG_ALL);
+
+
+        for (auto it = definedAddresses.begin(); it != definedAddresses.end(); ++it){
+                ASSERT_NE(std::find(resultAddrs->begin(), resultAddrs->end(), *it),resultAddrs->end());
+        }
 }

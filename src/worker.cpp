@@ -118,9 +118,22 @@ namespace favor {
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_reset(stmt));
             sqlv(sqlite3_clear_bindings(stmt));
-            //I think we can just rebind without clearing bindings, but in this case we need at least #3 (id) to be NULL
+            //I think in general we can just rebind without clearing bindings, but in this case we need at least #3 (id) to be NULL
             //so that we can leave it unbound when it's -1
 
+        }
+
+        void rewriteAddressTable(const list<Address>& newAddresses, const MessageType& type){
+            beginTransaction();
+            exec("DELETE FROM " ADDRESS_TABLE(type) ";");
+            string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES(?,?,?);";
+            sqlite3_stmt* stmt;
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            for (auto it = newAddresses.begin(); it != newAddresses.end(); ++it){
+                saveAddress(*it, stmt);
+            }
+            sqlv(sqlite3_finalize(stmt)); //Finalizing it here is just cleanup
+            commitTransaction();
         }
 
         //Not that this should ever matter, but this will remove any addresses that exist in the database from countedAddresses
@@ -154,19 +167,6 @@ namespace favor {
             //TODO: eventually we can do some guessing about current contacts here with levenshtein distance on names
 
             rewriteAddressTable(addrOutList, type);
-        }
-
-        void rewriteAddressTable(const list<Address>& newAddresses, const MessageType& type){
-            beginTransaction();
-            exec("DELETE FROM " ADDRESS_TABLE(type) ";");
-            string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES(?,?,?);";
-            sqlite3_stmt* stmt;
-            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-            for (auto it = newAddresses.begin(); it != newAddresses.end(); ++it){
-                saveAddress(*it, stmt);
-            }
-            sqlv(sqlite3_finalize(stmt)); //Finalizing it here is just cleanup
-            commitTransaction();
         }
 
         void indexDatabase() {
