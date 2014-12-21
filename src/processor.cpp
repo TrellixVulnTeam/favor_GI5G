@@ -107,7 +107,13 @@ namespace favor {
 
         }
 
-        //This is working correctly. Be wary of trying to mess with it
+        //Be very wary of messing with response time helper methods
+
+
+        long nintiethPercentile(const vector<long>& input){
+            size_t index = input
+        }
+
         /*
             First holds response times for us, second for the other party.
          */
@@ -130,6 +136,32 @@ namespace favor {
                 }
             }
             return result;
+        }
+
+        /*
+            This does mutate the input vector, despite returning another. It was that or copying it though
+            Compared to making a lap through the entire input vector for every element, this actually has a
+            slightly worse worst case because we include a sort. That said, the average case is dramatically
+            better.
+         */
+        vector<long> denseTimes(vector<time_t>& input){
+            std::sort(input.begin(), input.end());
+            std::unordered_map<long, long> densities;
+            vector<long> result;
+            auto back = input.begin();
+            for (auto it = back; it != input.end(); ++it){
+                while (*it - *back > DENSITY_DISTANCE) ++back; //Move the back pointer up to exclude any irrelevant points
+                for (auto iit = back; iit != it; ++iit){
+                    densities[*iit] += 1;
+                    densities[*it] += 1;
+                }
+            }
+
+            vector<long> densityOutput;
+            for (auto it = densities.begin(); it!= densities.end(); ++it){
+                densityOutput.push_back(it->second);
+            }
+
         }
 
         template<typename T>
