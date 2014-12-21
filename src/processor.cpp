@@ -102,17 +102,21 @@ namespace favor {
             /*-------------
             Response time stuff
              ---------------*/
-            const long DENSITY_DISTANCE = 900; //15 minutes in unix time
+            const long DENSITY_DISTANCE = 15 * 60; //15 minutes in seconds
             const long STRIP_RESET_DISTANCE = DENSITY_DISTANCE; //For now these can be the same thing
 
         }
 
-        //TODO: this does not appear to be working even close to as intended
-        shared_ptr<vector<time_t>> strippedDates(shared_ptr<vector<Message>> messages){
-            shared_ptr<vector<time_t>> result = std::make_shared<vector<time_t>>();
-            auto back = messages->end(); //Iteration goes backwards because messages are sorted descending
-            for (auto it = back; it != messages->begin(); --it){
-                if (back != it && back->sent == it->sent){
+        //This is working correctly. Be wary of trying to mess with it
+        /*
+            First holds response times for us, second for the other party.
+         */
+        shared_ptr<std::pair<vector<time_t>,vector<time_t>>> strippedDates(shared_ptr<vector<Message>> messages){
+            shared_ptr<std::pair<vector<time_t>,vector<time_t>>> result = std::make_shared<std::pair<vector<time_t>,vector<time_t>>>();
+            auto back = messages->rbegin(); //Iteration goes backwards because messages are sorted descending
+            for (auto it = back; it != messages->rend(); ++it){
+                if (it == back) continue; //Important so we don't try and do anything with the end iterator on the first pass
+                if (back->sent == it->sent){
                     //We know a strip needs to happen. The question is whether the new message is far enough ahead to strip the back one
                     if (it->date - back->date >= STRIP_RESET_DISTANCE){
                         //This is too far, drop the old messages
@@ -120,7 +124,8 @@ namespace favor {
                     } //Else we keep going and have simply ignored the message with the same date
                 } else {
                     //Sent and received differ, so we add a response time and move the back pointer up
-                    result->push_back(it->date - back->date);
+                    if (it->sent) result->first.push_back(it->date - back->date);
+                    else result->second.push_back(it->date - back->date);
                     back = it;
                 }
             }
