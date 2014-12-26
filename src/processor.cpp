@@ -110,8 +110,26 @@ namespace favor {
         //Be very wary of messing with response time helper methods
 
 
-        long nintiethPercentile(const vector<long>& input){
-            size_t index = input
+        /*
+            Input must be sorted
+         */
+        long percentile(float percent, const vector<long>& input){
+            if (input.size() == 0) logger::error("Cannot get percentile of empty vector");
+            size_t index = (size_t) ((input.size() - 1) * percent);
+            return input[index];
+        }
+
+        long standardDeviationFloor(int deviations, const vector<long>& input){
+            long mean = 0;
+            for (auto it = input.begin(); it != input.end(); ++it) mean += *it;
+            mean /= input.size();
+
+            long stddev = 0;
+            for (auto it = input.begin(); it != input.end(); ++it) stddev += (*it - mean) * (*it - mean);
+
+            stddev = std::sqrt(stddev / input.size());
+
+            return mean - (stddev * deviations);
         }
 
         /*
@@ -139,29 +157,42 @@ namespace favor {
         }
 
         /*
-            This does mutate the input vector, despite returning another. It was that or copying it though
+            Tnput must be sorted. It was that or copying it though
             Compared to making a lap through the entire input vector for every element, this actually has a
             slightly worse worst case because we include a sort. That said, the average case is dramatically
             better.
          */
-        vector<long> denseTimes(vector<time_t>& input){
-            std::sort(input.begin(), input.end());
+        vector<long> denseTimes(const vector<time_t>& input){
             std::unordered_map<long, long> densities;
-            vector<long> result;
             auto back = input.begin();
             for (auto it = back; it != input.end(); ++it){
+                if (densities[*it] != 0) continue; //Skip duplicates
                 while (*it - *back > DENSITY_DISTANCE) ++back; //Move the back pointer up to exclude any irrelevant points
+                //Our use of "prev" here prevents us from double counting when we have duplicates (sorted, so they'll be sequential)
+                long prev = -1;
                 for (auto iit = back; iit != it; ++iit){
-                    densities[*iit] += 1;
-                    densities[*it] += 1;
+                    if (*it != prev){
+                        densities[*iit] += 1;
+                        densities[*it] += 1;
+                    }
+                    prev = *it;
                 }
             }
-
-            vector<long> densityOutput;
-            for (auto it = densities.begin(); it!= densities.end(); ++it){
-                densityOutput.push_back(it->second);
+            //TODO: TESTCODE
+            for (auto it = densities.begin(); it != densities.end(); ++it){
+                logger::info(as_string(it->first/60 - 5)+":"+as_string(it->second));
             }
 
+            vector<long> out;
+            for (auto it = input.begin(); it != input.end(); ++it) out.push_back(densities[*it]);
+            long minDensity = standardDeviationFloor(1, out);
+
+            out.clear();
+            for (auto it = input.begin(); it != input.end(); ++it){
+                if (densities[*it] >= minDensity ) out.push_back(*it);
+            }
+
+            return out;
         }
 
         template<typename T>

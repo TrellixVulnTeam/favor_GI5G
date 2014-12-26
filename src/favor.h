@@ -8,6 +8,7 @@
 #include <cstring>
 #include <cstdio>
 #include <cassert>
+#include <cmath>
 #include <memory>
 #include <iostream>
 #include <utility>
