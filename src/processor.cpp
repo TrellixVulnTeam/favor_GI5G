@@ -119,13 +119,13 @@ namespace favor {
             return input[index];
         }
 
-        long standardDeviationFloor(int deviations, const vector<long>& input){
+        long standardDeviationFloor(int deviations, const std::vector<std::pair<long,long>>& input){
             long mean = 0;
-            for (auto it = input.begin(); it != input.end(); ++it) mean += *it;
+            for (auto it = input.begin(); it != input.end(); ++it) mean += it->second;
             mean /= input.size();
 
             long stddev = 0;
-            for (auto it = input.begin(); it != input.end(); ++it) stddev += (*it - mean) * (*it - mean);
+            for (auto it = input.begin(); it != input.end(); ++it) stddev += (it->second - mean) * (it->second - mean);
 
             stddev = std::sqrt(stddev / input.size());
 
@@ -163,33 +163,29 @@ namespace favor {
             better.
          */
         vector<long> denseTimes(const vector<time_t>& input){
-            std::unordered_map<long, long> densities;
-            auto back = input.begin();
-            for (auto it = back; it != input.end(); ++it){
-                if (densities[*it] != 0) continue; //Skip duplicates
-                while (*it - *back > DENSITY_DISTANCE) ++back; //Move the back pointer up to exclude any irrelevant points
-                //Our use of "prev" here prevents us from double counting when we have duplicates (sorted, so they'll be sequential)
-                long prev = -1;
-                for (auto iit = back; iit != it; ++iit){
-                    if (*it != prev){
-                        densities[*iit] += 1;
-                        densities[*it] += 1;
-                    }
-                    prev = *it;
+            std::vector<std::pair<long,long>> densities;
+            size_t back = 0;
+
+            for (auto it = input.begin(); it != input.end(); ++it) densities.push_back(std::pair<long, long>(*it, 0));
+
+            for (size_t i = back; i != input.size(); ++i){
+                while (input[i] - input[back] > DENSITY_DISTANCE) ++back; //Move the back index up to exclude any irrelevant points
+                for (size_t ii = back; ii != i; ++ii){
+                    densities[i].second += 1;
+                    densities[ii].second +=1;
                 }
             }
-            //TODO: TESTCODE
-            for (auto it = densities.begin(); it != densities.end(); ++it){
-                logger::info(as_string(it->first/60 - 5)+":"+as_string(it->second));
-            }
+
+//            for (auto it = densities.begin(); it != densities.end(); ++it){
+//                logger::info(as_string(it->first/60 - 5)+":"+as_string(it->second));
+//            }
+
+            long minDensity = standardDeviationFloor(1, densities);
+            //logger::info("min:"+ as_string(minDensity));
 
             vector<long> out;
-            for (auto it = input.begin(); it != input.end(); ++it) out.push_back(densities[*it]);
-            long minDensity = standardDeviationFloor(1, out);
-
-            out.clear();
-            for (auto it = input.begin(); it != input.end(); ++it){
-                if (densities[*it] >= minDensity ) out.push_back(*it);
+            for (auto it = densities.begin(); it != densities.end(); ++it){
+                if (it->second > minDensity) out.push_back(it->first);
             }
 
             return out;

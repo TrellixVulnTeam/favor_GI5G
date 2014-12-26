@@ -13,7 +13,7 @@ namespace favor{
         //in the normal header
         shared_ptr<std::pair<vector<time_t>,vector<time_t>>> strippedDates(shared_ptr<vector<Message>> messages);
         long percentile(float percent, const vector<long>& input);
-        long standardDeviationFloor(int deviations, const vector<long>& input);
+        long standardDeviationFloor(int deviations, const std::vector<std::pair<long,long>>& input);
         vector<long> denseTimes(const vector<time_t>& input);
     }
 }
@@ -25,6 +25,12 @@ using namespace favor;
 //base+minutes
 #define BASE 5*60 //Everything starts from 5 minutes
 #define BM(mins) mins*60 + BASE
+
+/*
+    Note: A lot of these tests are checking the results against hand-computed algorithm results because there isn't really
+    a better way to do it
+ */
+
 
 TEST(Processor, StrippedDates){
     //Messages are sorted descending
@@ -79,12 +85,25 @@ TEST(Processor, Percentile){
 }
 
 TEST(Processor, StandardDeviationFloor){
-    std::vector<long> nums = {2,4,4,4,5,5,7,9};
+    std::vector<std::pair<long,long>> nums = {{0,2},{0,4},{0,4},{0,4},{0,5},{0,5},{0,7},{0,9}};
     ASSERT_EQ(processor::standardDeviationFloor(1, nums), 3);
     ASSERT_EQ(processor::standardDeviationFloor(2, nums), 1);
 }
 
 TEST(Processor, DenseTimes){
     std::vector<time_t> times = {BM(3),BM(7),BM(7),BM(10),BM(13),BM(17),BM(20),BM(21),BM(34),BM(55),BM(70)};
-    processor::denseTimes(times);
+    std::vector<time_t> badTimes = {BM(34),BM(55),BM(70)};
+    std::vector<time_t> goodTimes = {BM(3),BM(7),BM(7),BM(10),BM(13),BM(17),BM(20),BM(21)};
+    ASSERT_EQ(badTimes.size()+goodTimes.size(), times.size());
+
+
+    std::vector<long> result = processor::denseTimes(times);
+    ASSERT_EQ(goodTimes.size(), result.size());
+    for (auto it = goodTimes.begin(); it != goodTimes.end(); ++it){
+        ASSERT_NE(std::find(result.begin(), result.end(), *it), result.end());
+    }
+    for (auto it = badTimes.begin(); it != badTimes.end(); ++it){
+        ASSERT_EQ(std::find(result.begin(), result.end(), *it), result.end());
+    }
+
 }
