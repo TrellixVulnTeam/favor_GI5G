@@ -217,9 +217,48 @@ namespace favor {
         }
 
 
+        //For response times we compute both sent and rec, cache them separately, return the one requested
 
-        double averageResponsetime(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
-            //TODO: dat response time computation tho...
+        //TODO: test these two methods (or just write tests for these two methods)
+
+        double averageConversationalResponsetime(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
+            if (countResult(AVG_CONV_RESPONSE, account, &c, fromDate, untilDate, sent)){
+                return getResult<double>(AVG_CONV_RESPONSE, account, &c, fromDate, untilDate, sent);
+            } else {
+                auto query = reader::queryConversation(account, c, KEY_DATE, fromDate, untilDate);
+                auto oursTheirs = strippedDates(query);
+
+                vector<long> recResponseTimes = denseTimes(oursTheirs->second);
+                vector<long> sentResponseTimes = denseTimes(oursTheirs->first);
+
+                double averageReceived = 0;
+                double averageSent = 0;
+                for (auto it = recResponseTimes.begin(); it != recResponseTimes.end(); ++it) averageReceived += *it;
+                for (auto it = sentResponseTimes.begin(); it != sentResponseTimes.end(); ++it) averageSent += *it;
+                averageReceived /= (double)recResponseTimes.size();
+                averageSent /= (double)sentResponseTimes.size();
+
+                cacheResult<double>(AVG_CONV_RESPONSE, account, &c, fromDate, untilDate, true, averageSent);
+                cacheResult<double>(AVG_CONV_RESPONSE, account, &c, fromDate, untilDate, false, averageReceived);
+
+                return sent ? averageSent : averageReceived;
+            }
+        }
+
+        long responseTimeNintiethPercentile(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
+            if (countResult(RESPONSE_NINTIETH, account, &c, fromDate, untilDate, sent)){
+                return getResult<long>(RESPONSE_NINTIETH, account, &c, fromDate, untilDate, sent);
+            } else {
+                auto query = reader::queryConversation(account, c, KEY_DATE, fromDate, untilDate);
+                auto oursTheirs = strippedDates(query);
+                long receivedNintieth = percentile(0.90, oursTheirs->second);
+                long sentNintieth = percentile(0.90, oursTheirs->first);
+
+                cacheResult<long>(RESPONSE_NINTIETH, account, &c, fromDate, untilDate, true, sentNintieth);
+                cacheResult<long>(RESPONSE_NINTIETH, account, &c, fromDate, untilDate, false, receivedNintieth);
+
+                return sent ? sentNintieth : receivedNintieth;
+            }
         }
 
         double averageCharcount(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
@@ -240,11 +279,6 @@ namespace favor {
                 cacheResult<long>(TOTAL_CHARS, account, c, fromDate, untilDate, sent, value);
                 return value;
             }
-        }
-
-
-        long totalResponsetime(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
-
         }
 
         long totalMessagecount(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){

@@ -13,10 +13,10 @@ namespace favor {
         //AccountManager determines relevant account (limited to one.. for now). NULL means a query on everything.
 
         double averageCharcount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
-        double averageResponsetime(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
+        double averageConversationalResponsetime(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
+        long responseTimeNintiethPercentile(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
 
         long totalCharcount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
-        long totalResponsetime(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
         long totalMessagecount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
 
 
