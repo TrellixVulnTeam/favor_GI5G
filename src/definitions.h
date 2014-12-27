@@ -94,9 +94,9 @@ not even compile.
  */
 #define SENT_TABLE_NAME "\""+accountName+"_"+MessageTypeName[type]+"_sent\""
 #define RECEIVED_TABLE_NAME "\""+accountName+"_"+MessageTypeName[type]+"_received\""
-
-#define SENT_INDEX_NAME "i_" SENT_TABLE_NAME
-#define RECEIVED_INDEX_NAME "i_" RECEIVED_TABLE_NAME
+//The indexes can't reuse table names because the table name macros have quotes around them
+#define SENT_INDEX_NAME "\"i_"+accountName+"_"+MessageTypeName[type]+"_sent\""
+#define RECEIVED_INDEX_NAME "\"i_"+accountName+"_"+MessageTypeName[type]+"_received\""
 
 /*Note:
  * http://www.sqlite.org/lang_createtable.html

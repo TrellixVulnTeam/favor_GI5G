@@ -138,7 +138,7 @@ namespace favor{
         JNIEXPORT void JNICALL _create(JNIEnv* env, jobject callingObj, jstring name, jint type, jstring detailsJson) {
             JNIString nameString(env, name);
             JNIString detailsJsonString(env, detailsJson);
-            logger::info("Create account "+nameString.getString()+" of type "+MessageTypeName[(int)type]);
+            logger::info("Create new account "+nameString.getString()+" of type "+MessageTypeName[(int)type]);
             jniExcept(
                     AccountManager::addAccount(nameString, (favor::MessageType)((int)type), detailsJsonString);
             )
