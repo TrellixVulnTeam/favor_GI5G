@@ -44,7 +44,7 @@ namespace favor{
                     jobject obj = env->NewObject(android_text_manager, android_text_manager_constructor, env->NewStringUTF((*it)->accountName.c_str()));
                     env->SetObjectArrayElement(arr, i, obj);
                     if (obj == NULL || env->ExceptionOccurred()){
-                        logger::error("Error inserting account "+(*it)->accountName+" into array");
+                        logger::error("Error inserting account "+as_string(*(*it))+" into array");
                         env->ExceptionClear();
                     }
                 }
@@ -53,7 +53,7 @@ namespace favor{
                     jobject obj = env->NewObject(account_manager, account_manager_constructor, env->NewStringUTF((*it)->accountName.c_str()), (*it)->type);
                     env->SetObjectArrayElement(arr, i, obj);
                     if (obj == NULL || env->ExceptionOccurred()){
-                        logger::error("Error inserting account "+(*it)->accountName+" into array");
+                        logger::error("Error inserting account "+as_string(*(*it))+" into array");
                         env->ExceptionClear();
                     }
                 }
@@ -62,8 +62,61 @@ namespace favor{
             return arr;
         }
 
+        //TODO:  contacts and allAddresses entirely unrelated
+        JNIEXPORT jobjectArray JNICALL contacts(JNIEnv* env, jclass clss){
+            auto contactList = reader::contactList();
+            jobjectArray arr = (jobjectArray) env->NewObjectArray(contactList->size(), contact, 0);
+
+            if(env->ExceptionOccurred() || arr == NULL){
+                //Something went wrong, we failed to make our array
+                env->DeleteLocalRef(arr);
+                logger::error("Unable to requisition array for contacts");
+                env->ExceptionClear();
+                return NULL;
+            }
+
+            int i = 0;
+            for (auto it = contactList->begin(); it != contactList->end(); ++it){
+                jobject obj = env->NewObject(contact, contact_constructor, (jlong)it->id, env->NewStringUTF(it->displayName.c_str()));
+                env->SetObjectArrayElement(arr, i, obj);
+                if (obj == NULL || env->ExceptionOccurred()){
+                    logger::error("Error inserting contact "+as_string(*it)+" into array");
+                    env->ExceptionClear();
+                }
+                ++i;
+            }
+            return arr;
+        }
+
+        JNIEXPORT jobjectArray JNICALL allAddresses(JNIEnv* env, jclass clss, jboolean contactRelevantOnly){
+            auto addresses = reader::addresses(FLAG_ALL, (bool) contactRelevantOnly);
+            jobjectArray arr = (jobjectArray) env->NewObjectArray(addresses->size(), address, 0);
+
+            if(env->ExceptionOccurred() || arr == NULL){
+                //Something went wrong, we failed to make our array
+                env->DeleteLocalRef(arr);
+                logger::error("Unable to requisition array for allAddresses");
+                env->ExceptionClear();
+                return NULL;
+            }
+
+            int i = 0;
+            for (auto it = addresses->begin(); it != addresses->end(); ++it){
+                jobject obj = env->NewObject(address, address_constructor, env->NewStringUTF(it->addr.c_str()), (jlong) it->count, (jlong)it->contactId, (jint)it->type);
+                env->SetObjectArrayElement(arr, i, obj);
+                if (obj == NULL || env->ExceptionOccurred()){
+                    logger::error("Error inserting address "+as_string(*it)+" into array");
+                    env->ExceptionClear();
+                }
+                ++i;
+            }
+            return arr;
+        }
+
         static JNINativeMethod readerMethodTable[] = {
-                {"accountManagers", "()[L" CLASS_PATH "AccountManager;", (void*) accountManagers}
+                {"accountManagers", "()[L" CLASS_PATH "AccountManager;", (void*) accountManagers},
+                {"_contacts", "()[L" CLASS_PATH "Contact;", (void*) contacts},
+                {"allAddresses", "(Z)[L" CLASS_PATH "Address;", (void*) allAddresses}
         };
 
     }
