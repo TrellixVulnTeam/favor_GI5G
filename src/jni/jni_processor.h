@@ -24,24 +24,73 @@ namespace favor{
         long totalMessagecount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
          */
 
-        JNIEXPORT jlong JNICALL longQuery(JNIEnv* env, jobject callingObj, jint query, jstring account, jint type, jlong contact, jlong fromDate, jlong untilDate, jboolean sent){
+        JNIEXPORT jlong JNICALL longQuery(JNIEnv* env, jobject callingObj, jint query, jstring account, jint type, jlong contactId, jlong fromDate, jlong untilDate, jboolean sent){
             JNIString accountName(env, account);
             AccountManager* accountManager = findAccountManager(accountName, (MessageType) type);
+            Contact contact = findContact((long) contactId);
+            long result = longQueries[(int)query](accountManager, &contact, (time_t)fromDate, (time_t)untilDate, (bool)sent);
+            return (jlong)result;
+
         }
 
-        JNIEXPORT jdouble JNICALL doubleQuery(JNIEnv* env, jobject callingObj, jint query, jstring account, jint type, jlong contact, jlong fromDate, jlong untilDate, jboolean sent){
+        JNIEXPORT jdouble JNICALL doubleQuery(JNIEnv* env, jobject callingObj, jint query, jstring account, jint type, jlong contactId, jlong fromDate, jlong untilDate, jboolean sent){
             JNIString accountName(env, account);
             AccountManager* accountManager = findAccountManager(accountName, (MessageType) type);
+            Contact contact = findContact((long) contactId);
+            double result = doubleQueries[(int)query](accountManager, &contact, (time_t)fromDate, (time_t)untilDate, (bool)sent);
+            return (jdouble)result;
         }
 
-        JNIEXPORT jlongArray JNICALL longMultiQuery(JNIEnv* env, jobject callingObj, jint query, jstring account, jint type, jlongArray contacts, jlong fromDate, jlong untilDate, jboolean sent){
+
+        //TODO: the multiQuery methods are not passing values up properly
+        JNIEXPORT jlongArray JNICALL longMultiQuery(JNIEnv* env, jobject callingObj, jint query, jstring account, jint type, jlongArray contactIds, jlong fromDate, jlong untilDate, jboolean sent){
             JNIString accountName(env, account);
             AccountManager* accountManager = findAccountManager(accountName, (MessageType) type);
+            jlong* contactIdArray = env->GetLongArrayElements(contactIds, NULL);
+            size_t length = (size_t) env->GetArrayLength(contactIds);
+
+            jlongArray result = env->NewLongArray(length);
+            if (env->ExceptionOccurred() || result == NULL){
+                //Something went wrong, we failed to make our array
+                env->DeleteLocalRef(result);
+                logger::error("Unable to requisition array for longMultiQuery");
+                env->ExceptionClear();
+                return NULL;
+            }
+
+            std::vector<jlong> buffer(length); //We use a vector instead of an array here only because we can determine vector size at runtime
+            for (size_t i = 0; i < length; ++i){
+                Contact contact = findContact((long) contactIdArray[i]);
+                buffer[i] = longQueries[(int)query](accountManager, &contact, (time_t)fromDate, (time_t)untilDate, (bool)sent);
+            }
+            env->SetLongArrayRegion(result, 0, length, &buffer[0]);
+            env->ReleaseLongArrayElements(contactIds, contactIdArray, JNI_ABORT);
+            return result;
         }
 
-        JNIEXPORT jdoubleArray JNICALL doubleMultiQuery(JNIEnv* env, jobject callingObj, jint query, jstring account, jint type, jlongArray contacts, jlong fromDate, jlong untilDate, jboolean sent){
+        JNIEXPORT jdoubleArray JNICALL doubleMultiQuery(JNIEnv* env, jobject callingObj, jint query, jstring account, jint type, jlongArray contactIds, jlong fromDate, jlong untilDate, jboolean sent){
             JNIString accountName(env, account);
             AccountManager* accountManager = findAccountManager(accountName, (MessageType) type);
+            jlong* contactIdArray = env->GetLongArrayElements(contactIds, NULL);
+            size_t length = (size_t) env->GetArrayLength(contactIds);
+
+            jdoubleArray result = env->NewDoubleArray(length);
+            if (env->ExceptionOccurred() || result == NULL){
+                //Something went wrong, we failed to make our array
+                env->DeleteLocalRef(result);
+                logger::error("Unable to requisition array for longMultiQuery");
+                env->ExceptionClear();
+                return NULL;
+            }
+
+            std::vector<jdouble> buffer(length); //We use a vector instead of an array here only because we can determine vector size at runtime
+            for (size_t i = 0; i < length; ++i){
+                Contact contact = findContact((long) contactIdArray[i]);
+                buffer[i] = doubleQueries[(int)query](accountManager, &contact, (time_t)fromDate, (time_t)untilDate, (bool)sent);
+            }
+            env->SetDoubleArrayRegion(result, 0, length, &buffer[0]);
+            env->ReleaseLongArrayElements(contactIds, contactIdArray, JNI_ABORT);
+            return result;
         }
 
 

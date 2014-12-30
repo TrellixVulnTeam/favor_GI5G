@@ -1,6 +1,7 @@
 Just getting things set up right now. 
 
 TODO (in no particular order):
+ - JNI multiQuery methods aren't sending values up properly
  - Look at how Google Test works with the NDK, because it does work with the NDK.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
