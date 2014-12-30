@@ -1,13 +1,10 @@
 Just getting things set up right now. 
 
-Todo (in order):
+TODO (in no particular order):
  - Look at how Google Test works with the NDK, because it does work with the NDK.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
  further down the road.
- - Decide whether we want to let people choose whether or not to save bodies, and if we do, change code in the reader to reflect that. We can't be using KEY_BODY basically anywhere
- if we know it's going to be null. (See: reader's count methods, for example)
- - Make sure our method for exporting/saving failures works properly.
  - Japanese support is going to require we handle the "shiftJIS" ("big5" won't hurt either while we're at it, though it's Chinese) encoding, because VMIME is having none of it. 
  Look into detecting this (and any other encodings that tidyhtml handles but vmime doesn't) and using TIDY to convert the text, trying to avoid any extra HTML work. It'd also be better if we knew tidy worked on Android so we could count on it for doing this in other
  situations, but that just takes some testing. __Part of doing this is teaching the email manager to better recognize encodings, and if it hits one it doesn't know, it needs to treat that
@@ -15,10 +12,9 @@ Todo (in order):
  - In the worker address table computing code, we need to figure out what we're doing with suggested names (how to use/store them, whether to save them or give them to the reader, etc.)
  - Serious email testing with more logging, using all the addresses we have now (I.E. make the fetch method use all of them instead of just contacts'). Also take this time to verify
  stuff still works with the list -> vector switch (not that that should actually change anything)
- - The processor is eventually going to need a healthy bit of JNI specific code so that it pushes cached results up into the Java layer.
+ - Some Android specific optimizations at the C++ layer wouldn't hurt: the reader keeping contacts in a hash by id for faster lookup, and the processor potentially pushing
+ cache information up to a separate java layer cache proactively. 
  - Spend some time with a query analyzer and make sure that SQLlite is getting the best use possible out of our indices, and think about what might be worth changing if not.
- - Run some stress tests and figure out if it's worth caching the results of average/sum queries, because if SQL holds these, we almost certainly won't need to.
- - SQLite extended error codes? See about making use of these.
  - See about a const version of the DataLock, or just about making DataLocks return only const references (if the former, watch out for slicing). Only the reader should be updating its 
  cached info anyway...
  - Basic threading tests to make sure datalocks do their job

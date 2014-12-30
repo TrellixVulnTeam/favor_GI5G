@@ -221,11 +221,12 @@ namespace favor {
 
         //TODO: test these two methods (or just write tests for these two methods)
 
-        double averageConversationalResponsetime(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
-            if (countResult(AVG_CONV_RESPONSE, account, &c, fromDate, untilDate, sent)){
-                return getResult<double>(AVG_CONV_RESPONSE, account, &c, fromDate, untilDate, sent);
+        double averageConversationalResponsetime(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
+            if (c == NULL) throw queryException("Cannot run response time queries with a null contact");
+            if (countResult(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, sent)){
+                return getResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, sent);
             } else {
-                auto query = reader::queryConversation(account, c, KEY_DATE, fromDate, untilDate);
+                auto query = reader::queryConversation(account, *c, KEY_DATE, fromDate, untilDate);
                 auto oursTheirs = strippedDates(query);
 
                 vector<long> recResponseTimes = denseTimes(oursTheirs->second);
@@ -238,24 +239,25 @@ namespace favor {
                 averageReceived /= (double)recResponseTimes.size();
                 averageSent /= (double)sentResponseTimes.size();
 
-                cacheResult<double>(AVG_CONV_RESPONSE, account, &c, fromDate, untilDate, true, averageSent);
-                cacheResult<double>(AVG_CONV_RESPONSE, account, &c, fromDate, untilDate, false, averageReceived);
+                cacheResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, true, averageSent);
+                cacheResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, false, averageReceived);
 
                 return sent ? averageSent : averageReceived;
             }
         }
 
-        long responseTimeNintiethPercentile(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
-            if (countResult(RESPONSE_NINTIETH, account, &c, fromDate, untilDate, sent)){
-                return getResult<long>(RESPONSE_NINTIETH, account, &c, fromDate, untilDate, sent);
+        long responseTimeNintiethPercentile(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
+            if (c == NULL) throw queryException("Cannot run response time queries with a null contact");
+            if (countResult(RESPONSE_NINTIETH, account, c, fromDate, untilDate, sent)){
+                return getResult<long>(RESPONSE_NINTIETH, account, c, fromDate, untilDate, sent);
             } else {
-                auto query = reader::queryConversation(account, c, KEY_DATE, fromDate, untilDate);
+                auto query = reader::queryConversation(account, *c, KEY_DATE, fromDate, untilDate);
                 auto oursTheirs = strippedDates(query);
                 long receivedNintieth = percentile(0.90, oursTheirs->second);
                 long sentNintieth = percentile(0.90, oursTheirs->first);
 
-                cacheResult<long>(RESPONSE_NINTIETH, account, &c, fromDate, untilDate, true, sentNintieth);
-                cacheResult<long>(RESPONSE_NINTIETH, account, &c, fromDate, untilDate, false, receivedNintieth);
+                cacheResult<long>(RESPONSE_NINTIETH, account, c, fromDate, untilDate, true, sentNintieth);
+                cacheResult<long>(RESPONSE_NINTIETH, account, c, fromDate, untilDate, false, receivedNintieth);
 
                 return sent ? sentNintieth : receivedNintieth;
             }

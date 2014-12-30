@@ -23,6 +23,17 @@ namespace favor{
             return NULL;
         }
 
+        Contact findContact(long id){
+            auto contacts = reader::contactList();
+            for (auto it = contacts->begin(); it != contacts->end(); ++it){
+                if (it->id == id){
+                    return *it;
+                }
+            }
+            logger::error("Requested contact with nonexistant id "+as_string(id));
+            throw badUserDataException("Requested contact with nonexistant id");
+        }
+
         JNIEXPORT jobjectArray JNICALL accountManagers(JNIEnv* env, jclass clss){
 
             //This could conceivably produce more than 16 refs, but it seems highly unlikely. Also I don't know if the possible slowdown is even enough

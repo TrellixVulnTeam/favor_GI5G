@@ -68,9 +68,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
     env->RegisterNatives(reader, favor::jni::readerMethodTable, sizeof(favor::jni::readerMethodTable) / sizeof (favor::jni::readerMethodTable[0]));
     env->RegisterNatives(favor::jni::account_manager, favor::jni::accountManagerMethodTable, sizeof(favor::jni::accountManagerMethodTable) / sizeof(favor::jni::accountManagerMethodTable[0]));
     env->RegisterNatives(worker, favor::jni::workerMethodTable, sizeof(favor::jni::workerMethodTable) / sizeof (favor::jni::workerMethodTable[0]));
-
-    //Processor method table currently empty
-    //env->RegisterNatives(processor, favor::jni::processorMethodTable, sizeof(favor::jni::processorMethodTable) / sizeof (favor::jni::processorMethodTable[0]));
+    env->RegisterNatives(processor, favor::jni::processorMethodTable, sizeof(favor::jni::processorMethodTable) / sizeof (favor::jni::processorMethodTable[0]));
 
     return JNI_VERSION_1_6;
 }
