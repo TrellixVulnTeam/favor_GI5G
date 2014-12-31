@@ -288,6 +288,7 @@ namespace favor {
             else {
                 long value = c == NULL ? reader::countAll(account, fromDate, untilDate, sent) : reader::count(account, *c, fromDate, untilDate, sent);
                 cacheResult<long>(TOTAL_MESSAGES, account, c, fromDate, untilDate, sent, value);
+                return value;
             }
 
         }
