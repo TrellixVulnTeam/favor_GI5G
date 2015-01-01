@@ -1,4 +1,7 @@
-Just getting things set up right now. 
+Favor
+==
+
+Copyright (c) 2015  Joshua Tanner (mindful.jt@gmail.com)
 
 TODO (in no particular order):
  - Look at how Google Test works with the NDK, because it does work with the NDK.
@@ -20,7 +23,6 @@ TODO (in no particular order):
  - When account managers fail to save their held messages, they can end up with state that's potentially inconsistent - it might be wise to look at this and consider situations in which
  it makes the most sense to reload an account manager from its database JSON after a save failure. Of course this would have to come hand in hand with higher tolerance for possible
  insertion failures due to duplicates, otherwise we can end up with an account manager that reloads itself forever trying to save a message with a given ID.
- - Sort out our license, based on what we want and limitations from what we're already using (GPL...)
  
 Presentation Principles
 ==
