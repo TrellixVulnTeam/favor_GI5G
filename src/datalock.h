@@ -7,7 +7,7 @@
 namespace favor {
     template <typename T>
     class DataLock {
-    private:
+    protected:
         std::mutex* mutex;
         int* holderCount;
         T* data;
@@ -29,16 +29,16 @@ namespace favor {
             data = NULL;
         }
 
-        bool valid() {
+        bool valid() const {
             return mutex != NULL && data != NULL;
         }
 
-        T* operator->(){
+        const T* operator->() const {
             if (!valid()) throw threadingException("Cannot reference invalid data lock");
             return data;
         }
 
-        T operator*(){
+        const T& operator*() const {
             if (!valid()) throw threadingException("Cannot reference invalid data lock");
             return *data;
         }

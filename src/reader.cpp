@@ -16,6 +16,39 @@ namespace favor {
 
             enum QueryBindables {ADDRESSES_START, FROM_DATE, UNTIL_DATE};
             typedef std::unordered_map<int, int> Indices;
+
+
+            /*
+                This is so we can write to these inside the reader, but nowhere else
+             */
+            template <typename T>
+            class WriteableDataLock : public DataLock<T> {
+            public:
+                T* operator->() const {
+                    if (!this->valid()) throw threadingException("Cannot reference invalid data lock");
+                    return this->data;
+                }
+
+                T& operator*() const {
+                    if (!this->valid()) throw threadingException("Cannot reference invalid data lock");
+                    return *(this->data);
+                }
+
+                WriteableDataLock(std::mutex* mut, int* hcount, T* protected_data) : DataLock<T>(mut, hcount, protected_data){}
+                WriteableDataLock(const favor::DataLock<T> &other) : DataLock<T>(other) {}
+
+            };
+
+            WriteableDataLock<list<AccountManager*>> writeableAccountList() {
+                //The DataLock constructor will block if we can't get a lock.
+                return WriteableDataLock<list<AccountManager*>>(&accountMutex, &accountsHolderCount, _accounts);
+            }
+
+
+            WriteableDataLock<list<Contact>> writeableContactList(){
+                if (!contactsValid) refreshContactList();
+                return WriteableDataLock<list<Contact>>(&contactsMutex, &contactsHolderCount, _contacts);
+            }
         }
 
         void initialize() {
@@ -40,12 +73,12 @@ namespace favor {
         }
 
         void removeAccount(AccountManager* account){
-            accountList()->remove(account);
+            writeableAccountList()->remove(account);
             delete account; //If the reader doesn't have it, no one should
         }
 
         void addAccount(AccountManager* account){
-            accountList()->push_back(account);
+            writeableAccountList()->push_back(account);
         }
 
         //Something has changed, and the contacts list needs refreshing
@@ -334,7 +367,7 @@ namespace favor {
             const char sql[] = "SELECT * FROM " ACCOUNT_TABLE ";"; //Important this is an array and not a const char* so that sizeof() works properly
             sqlv(sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL));
             int result;
-            auto accounts = accountList();
+            auto accounts = writeableAccountList();
             for (auto it = accounts->begin(); it != accounts->end(); it++) delete *it;
             accounts->clear();
 
@@ -364,7 +397,7 @@ namespace favor {
             sqlv(result);
             sqlv(sqlite3_finalize(stmt));
             //Get this manually because the method to get it from outside the worker could trigger infinite recursion if it's invalid
-            DataLock<list<Contact>> contacts = DataLock<list<Contact>>(&contactsMutex, &contactsHolderCount, _contacts);
+            WriteableDataLock<list<Contact>> contacts = WriteableDataLock<list<Contact>>(&contactsMutex, &contactsHolderCount, _contacts);
             contacts->clear();
 
             shared_ptr<list<Address>> addrs = addresses(FLAG_ALL, true);

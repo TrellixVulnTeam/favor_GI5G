@@ -41,7 +41,7 @@ namespace favor{
             return (jdouble)result;
         }
 
-        
+
         JNIEXPORT jlongArray JNICALL longMultiQuery(JNIEnv* env, jobject callingObj, jint query, jstring account, jint type, jlongArray contactIds, jlong fromDate, jlong untilDate, jboolean sent){
             JNIString accountName(env, account);
             AccountManager* accountManager = findAccountManager(accountName, (MessageType) type);
