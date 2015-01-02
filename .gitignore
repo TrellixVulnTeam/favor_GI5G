@@ -13,3 +13,4 @@ test/lib/*
 .idea
 test/gtest
 test/testdata.h
+src/jni/jbuild.sh
