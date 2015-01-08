@@ -4,6 +4,12 @@ Favor
 Copyright (c) 2015  Joshua Tanner (mindful.jt@gmail.com)
 
 TODO (in no particular order):
+ - Finish changes on saveMessage, and consider where/how we might use the data about duplicates.
+ - Split the AccountManager's updateFetchData and saveFetchData methods into getUpdatedJson and saveJson methods, the former returning a copy of the AccountManager's JSON 
+ updated to reflect its current variables, and the latter taking that json as a function argument to set the AccountManager's class variable and save it to the database. 
+ In addition, add a reconsultJson method that resets the AccountManager's variables to the state of its current json (no database hits here). When we updateMessages, in cases
+ of exceptions or excessive failures (greater than some %) we should call reconsultJson instead of saving the newly generated json with saveJson. This will almost always 
+ gaurantee us some duplicate insertions, so the application should become more tolerant of those as well. __Remember that we also need an equivalent solution for Android Texts__
  - Look at how Google Test works with the NDK, because it does work with the NDK.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
@@ -20,9 +26,6 @@ TODO (in no particular order):
  - In a perfect world, our methods to update contacts would properly adjust the state of the contacts and their held addresses instead of just marking the list as needing to be
  refreshed. This will take a little bit of work to do elegantly though - additions must create a new contact with an address _and_ ensure no other contacts have that address, and of
  course updates just to address linkages must do something similar. Deletions should be relatively simple. 
- - When account managers fail to save their held messages, they can end up with state that's potentially inconsistent - it might be wise to look at this and consider situations in which
- it makes the most sense to reload an account manager from its database JSON after a save failure. Of course this would have to come hand in hand with higher tolerance for possible
- insertion failures due to duplicates, otherwise we can end up with an account manager that reloads itself forever trying to save a message with a given ID.
  
 Presentation Principles
 ==

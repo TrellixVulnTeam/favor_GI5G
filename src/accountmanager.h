@@ -66,7 +66,7 @@ namespace favor {
 
             void saveHeldAddresses();
 
-            void saveMessage(const Message& m, sqlite3_stmt* stmt);
+            bool saveMessage(const Message& m, sqlite3_stmt* stmt);
 
             static bool isWhitespace(uint32_t code);
 

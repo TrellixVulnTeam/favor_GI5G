@@ -537,8 +537,6 @@ namespace favor {
 
         //Many of these inserts will be redundant, but it's just our way of updating the fetch data
         for (auto it = addresses->begin(); it != addresses->end(); ++it) managedAddresses.insert(it->addr);
-        updateFetchData();
-
     }
 
     //TODO: untested since minor changes, but should still work perfectly fine.

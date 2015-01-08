@@ -6,6 +6,24 @@
 using namespace std;
 using namespace favor;
 
+namespace favor{
+    //Specially for testing purposes
+    void sqlite3_validate(int result, sqlite3 *db, bool constraintFailureOK) {
+        if (result == SQLITE_CONSTRAINT){
+            if (!constraintFailureOK){
+                logger::error("SQLite error #" + as_string(result) + ", db says \"" + sqlite3_errmsg(db) + "\"");
+                throw constraintViolationException();
+            }
+            else {
+                logger::warning("SQLite constraint failed, db says \"" + string(sqlite3_errmsg(db)) + "\"");
+            }
+        }
+        else {
+            sqlv(result);
+        }
+    }
+}
+
 TEST(LowercaseMethod, Lowercases) {
     string test1("CATS");
     string test2("cAtS");

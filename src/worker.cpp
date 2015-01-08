@@ -236,7 +236,7 @@ namespace favor {
             heldMessages.clear();
         }
 
-        void AccountManager::saveMessage(const Message& m, sqlite3_stmt* stmt) {
+        bool AccountManager::saveMessage(const Message& m, sqlite3_stmt* stmt) {
             sqlv(sqlite3_bind_int64(stmt, 1, m.id));
             sqlv(sqlite3_bind_text(stmt, 2, m.address.c_str(), m.address.length(), SQLITE_STATIC));
             if (!m.failure()){
@@ -245,8 +245,18 @@ namespace favor {
                 sqlv(sqlite3_bind_int(stmt, 5, m.media()));
                 if (SAVE_BODY) sqlv(sqlite3_bind_text(stmt, 6, m.body().c_str(), m.body().length(), SQLITE_STATIC));
             }
-            sqlv(sqlite3_step(stmt));
+            bool inserted = true;
+
+            int result = sqlite3_step(stmt);
+            if (result != SQLITE_OK && result != SQLITE_ROW && result != SQLITE_DONE){
+                int extErrCode = sqlite3_extended_errcode(db);
+                //TODO: I think this is what the error's going to be on duplicate inserts but to be honest, we'll need to check and see
+                if (extErrCode == SQLITE_CONSTRAINT_PRIMARYKEY){
+                    inserted = false;
+                } else sqlv(result);
+            }
             sqlv(sqlite3_reset(stmt));
+            return inserted;
         }
 
 

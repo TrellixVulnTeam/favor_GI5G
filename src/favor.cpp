@@ -47,7 +47,7 @@ namespace favor {
     }
 
 
-    void sqlite3_validate(int result, sqlite3 *db, bool constraintFailureOK) {
+    void sqlite3_validate(int result, sqlite3 *db) {
         switch (result) {
             case SQLITE_OK:
                 break;
@@ -55,15 +55,6 @@ namespace favor {
                 break;
             case SQLITE_DONE:
                 break;
-            case SQLITE_CONSTRAINT:
-                if (!constraintFailureOK){
-                    logger::error("SQLite error #" + as_string(result) + ", db says \"" + sqlite3_errmsg(db) + "\"");
-                    throw constraintViolationException();
-                }
-                else {
-                    logger::warning("SQLite constraint failed, db says \"" + string(sqlite3_errmsg(db)) + "\"");
-                    break;
-                }
             default:
                 logger::error("SQLite error #" + as_string(result) + ", db says \"" + sqlite3_errmsg(db) + "\"");
                 throw sqliteException();
