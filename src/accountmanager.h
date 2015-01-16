@@ -20,10 +20,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef favor_accountmanager_include
 #define favor_accountmanager_include
 
+#ifdef DEBUG
+#include "gtest/gtest_prod.h"
+#endif
+
 #include "favor.h"
 #include "message.h"
 #include "address.h"
 #include "contact.h"
+
 
 #ifdef ANDROID
 #include <jni.h>
@@ -50,6 +55,7 @@ namespace favor {
     namespace worker {
 
         class AccountManager {
+
         public:
             const MessageType type;
             const string accountName;
@@ -137,6 +143,11 @@ namespace favor {
             //Friend methods
             #ifdef ANDROID
             friend void ::favor::jni::_saveMessages(JNIEnv* env, jobject callingObj, jint type, jstring name, jbooleanArray sent, jlongArray ids, jlongArray dates, jobjectArray addresses, jbooleanArray media, jobjectArray bodies);
+            #endif
+
+            //TESTS
+            #ifdef DEBUG
+                FRIEND_TEST(AccountManagerCore, SaveMessage);
             #endif
         };
 

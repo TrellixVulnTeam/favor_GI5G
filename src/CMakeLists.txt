@@ -7,15 +7,29 @@ LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/lib/sqlite/sqlite3.c) #Sql
 add_definitions(-DSQLITE_THREADSAFE=2)
 LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/lib/pugixml/pugixml.cpp)
 
+
+
+
 SET(CMAKE_CXX_FLAGS "-std=c++11")
 set(compilation_libraries ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 #${CMAKE_DL_LIBS} is our "-ldl"
 #${CMAKE_THREAD_LIBS_INIT} is our "-pthread"
 
-#Note that options don't seem to play well with KDevelop, in that they're on even if they're off... or something
-#In any case, it's a non-issue because we should be compiling everything when developing anyway.
 
-# Include Emailn
+OPTION(FAVOR_DEBUG "Favor's debug and test settings" ON)
+IF(FAVOR_DEBUG)
+  ################################
+  # GTest
+  ################################
+  add_definitions(-DDEBUG)
+  ADD_SUBDIRECTORY (lib/gtest)
+  include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+
+  # Link test executable against gtest & gtest_main
+  LIST(APPEND compilation_libraries gtest gtest_main)
+ENDIF()
+
+# Include Email
 OPTION(FAVOR_EMAIL_MANAGER "Include the MessageManager for Email" ON)
 IF(FAVOR_EMAIL_MANAGER)
   LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/managers/emailmanager.cpp)
@@ -51,6 +65,7 @@ ENDIF()
 
 add_library(favor SHARED ${compilation_files})
 
+target_include_directories(favor PUBLIC lib/gtest/include)
 target_include_directories(favor PUBLIC managers)
 target_include_directories(favor PUBLIC .) #So managers can get at core files
 target_include_directories(favor PUBLIC lib)

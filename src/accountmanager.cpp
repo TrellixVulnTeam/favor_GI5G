@@ -16,7 +16,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-
 #include "accountmanager.h"
 #include "worker.h"
 #include "logger.h"

@@ -127,14 +127,6 @@ if __name__ == "__main__":
     ['cmake -G "Unix Makefiles" -DVMIME_HAVE_MESSAGING_PROTO_POP3=OFF -DVMIME_HAVE_MESSAGING_PROTO_SENDMAIL=OFF -DVMIME_HAVE_MESSAGING_PROTO_MAILDIR=OFF -DVMIME_HAVE_MESSAGING_PROTO_SMTP=OFF -DVMIME_SHARED_PTR_USE_CXX=ON -DVMIME_SHARED_PTR_USE_BOOST=OFF -DVMIME_BUILD_SHARED_LIBRARY=ON -DCMAKE_BUILD_TYPE="Release" -DVMIME_BUILD_SAMPLES=OFF -DVMIME_BUILD_STATIC_LIBRARY=OFF -DCMAKE_INSTALL_PREFIX=install'
      , 'make install'])
 
-
-    #Round #2 for test dependencies
-    os.chdir(root_directory)
-    os.chdir("./test")
-    if not os.path.exists(DIRNAME):
-        os.makedirs(DIRNAME)
-    os.chdir(DIRNAME)
-
     download_dependency('https://googletest.googlecode.com/files/gtest-1.7.0.zip', 'gtest', ['gtest-1.7.0'], '1.7', ['cd gtest-1.7.0/ && cmake -G "Unix Makefiles" && make'])
 
 
