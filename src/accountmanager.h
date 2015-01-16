@@ -68,7 +68,7 @@ namespace favor {
             std::unordered_map<std::string, int> countedAddresses; //Address : count
             std::unordered_map<std::string, std::string> addressNames; //Address : suggestedName
 
-            void saveHeldMessages();
+            long saveHeldMessages();
 
             void saveHeldAddresses();
 

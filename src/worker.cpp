@@ -215,8 +215,9 @@ namespace favor {
         or can be run more efficientl with, direct db access
          --------------------------------------------------------------------------------*/
 
-        void AccountManager::saveHeldMessages() {
+        long AccountManager::saveHeldMessages() {
             //id INTEGER, address TEXT NOT NULL, date INTEGER NOT NULL, charcount INTEGER NOT NULL, media INTEGER NOT NULL, body TEXT
+            long successes = 0;
             string sentSql = "INSERT INTO " SENT_TABLE_NAME " VALUES(?,?,?,?,?,?);";
             string receivedSql = "INSERT INTO " RECEIVED_TABLE_NAME " VALUES(?,?,?,?,?,?);";
             sqlite3_stmt* sentStmt;
@@ -226,14 +227,19 @@ namespace favor {
 
             beginTransaction();
             for (int i = 0; i < heldMessages.size(); ++i) {
-                if (heldMessages[i].sent) saveMessage(heldMessages[i], sentStmt);
-                else saveMessage(heldMessages[i], receivedStmt);
+                if (heldMessages[i].sent){
+                 if (saveMessage(heldMessages[i], sentStmt)) ++successes;
+                }
+                else{
+                   if (saveMessage(heldMessages[i], receivedStmt)) ++successes;
+                }
             }
 
             sqlv(sqlite3_finalize(sentStmt));
             sqlv(sqlite3_finalize(receivedStmt));
             commitTransaction();
             heldMessages.clear();
+            return successes;
         }
 
         bool AccountManager::saveMessage(const Message& m, sqlite3_stmt* stmt) {
@@ -250,12 +256,13 @@ namespace favor {
             int result = sqlite3_step(stmt);
             if (result != SQLITE_OK && result != SQLITE_ROW && result != SQLITE_DONE){
                 int extErrCode = sqlite3_extended_errcode(db);
-                //TODO: I think this is what the error's going to be on duplicate inserts but to be honest, we'll need to check and see
                 if (extErrCode == SQLITE_CONSTRAINT_PRIMARYKEY){
                     inserted = false;
-                } else sqlv(result);
+                    sqlite3_reset(stmt); //This is something we can handle, so we don't want to validate the reset because it'll return the same error as above
+                } else sqlv(sqlite3_reset(stmt)); //This reset should return the same code as the previous result anyway
+            } else {
+                sqlv(sqlite3_reset(stmt));
             }
-            sqlv(sqlite3_reset(stmt));
             return inserted;
         }
 

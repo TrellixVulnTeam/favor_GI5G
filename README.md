@@ -4,7 +4,6 @@ Favor
 Copyright (c) 2015  Joshua Tanner (mindful.jt@gmail.com)
 
 TODO (in no particular order):
- - Finish changes on saveMessage, and consider where/how we might use the data about duplicates.
  - Split the AccountManager's updateFetchData and saveFetchData methods into getUpdatedJson and saveJson methods, the former returning a copy of the AccountManager's JSON 
  updated to reflect its current variables, and the latter taking that json as a function argument to set the AccountManager's class variable and save it to the database. 
  In addition, add a reconsultJson method that resets the AccountManager's variables to the state of its current json (no database hits here). When we updateMessages, in cases
