@@ -79,6 +79,7 @@ namespace favor {
 //Constants --------------------------------------------------------------------------------
 #define ADDRESS_CHECK_MESSAGE_COUNT 500 //The number of recent sent messages we look at when determining what addresses to pull
 #define MAX_ADDRESSES 100 //Max addresses that we want to hold per type
+#define MESSAGE_FAILURE_RATIO 0.75
 #define SAVE_BODY true //TODO: this will eventually be a variable we get from settings or something and not a constant
 #define INDEX_DB true //TODO: this will also eventually be a variable we get from settings
 

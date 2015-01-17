@@ -24,7 +24,11 @@ namespace favor{
     SkypeManager::SkypeManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_SKYPE, detailsJson) {}
 
 
-    void SkypeManager::updateFetchData(){
+    void SkypeManager::updateJson() {
+        //TODO:
+    }
+
+    void SkypeManager::consultJson(bool initial) {
         //TODO:
     }
 

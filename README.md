@@ -4,11 +4,7 @@ Favor
 Copyright (c) 2015  Joshua Tanner (mindful.jt@gmail.com)
 
 TODO (in no particular order):
- - Split the AccountManager's updateFetchData and saveFetchData methods into getUpdatedJson and saveJson methods, the former returning a copy of the AccountManager's JSON 
- updated to reflect its current variables, and the latter taking that json as a function argument to set the AccountManager's class variable and save it to the database. 
- In addition, add a reconsultJson method that resets the AccountManager's variables to the state of its current json (no database hits here). When we updateMessages, in cases
- of exceptions or excessive failures (greater than some %) we should call reconsultJson instead of saving the newly generated json with saveJson. This will almost always 
- gaurantee us some duplicate insertions, so the application should become more tolerant of those as well. __Remember that we also need an equivalent solution for Android Texts__
+ - Figure out how we want to handle failures of the AndroidTextManager the same way we do with the C++ based AccountManagers.
  - Look at how Google Test works with the NDK, because it does work with the NDK.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much

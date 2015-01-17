@@ -78,6 +78,9 @@ namespace favor {
 
             static void cleanWhitespace(string &s);
 
+            void recordFailure(bool value);
+            int previousFailures();
+
         protected:
             AccountManager(string accNm, MessageType typ, string detailsJson);
 
@@ -100,9 +103,9 @@ namespace favor {
 
             virtual void fetchAddresses() = 0;
 
-            virtual void updateFetchData() = 0;
-
-            void saveFetchData();
+            void saveJson(); //Save the JSON we have
+            virtual void updateJson() = 0; //Update the JSON to reflect new variables in the AccountManager
+            virtual void consultJson(bool initial = false) = 0; //Update the variables in the AccountManager to reflect the JSON
 
         public:
             ~AccountManager();

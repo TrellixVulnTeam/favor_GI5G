@@ -267,7 +267,7 @@ namespace favor {
         }
 
 
-        void AccountManager::saveFetchData() {
+        void AccountManager::saveJson() {
             string detailsJson = as_string(json);
             sqlite3_stmt *stmt;
             const char sql[] = "UPDATE " ACCOUNT_TABLE " SET details_json=? WHERE name=? AND type=?;";

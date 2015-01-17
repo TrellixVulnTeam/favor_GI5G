@@ -141,37 +141,43 @@ namespace favor {
     //TODO: test this with bad URLS, and an unrecognized email+custom URL
     EmailManager::EmailManager(string accNm, string detailsJson)
             : AccountManager(accNm, TYPE_EMAIL, detailsJson), serverURL("imap://bad.url:0") {
-        if (json.HasMember("password")) password = json["password"].GetString();
-        else throw badUserDataException("EmailManager missing password");
+        consultJson(true);
+    }
 
-        //http://www.regular-expressions.info/email.html
+    void EmailManager::consultJson(bool initial) {
         std::regex emailRegex(email::emailRegex, std::regex::ECMAScript | std::regex::icase);
-        if (!regex_match(accountName, emailRegex)) logger::warning("Account name " + accountName + " for email manager does not match email regex");
+        if (initial){
+            if (json.HasMember("password")) password = json["password"].GetString();
+            else throw badUserDataException("EmailManager missing password");
 
-        size_t atSign = accountName.find_first_of("@");
-        if (atSign == string::npos) {
-            logger::error("Could not find \"@\" in \"" + accountName + "\"");
-            throw badUserDataException("EmailManager initialized with bad email address");
-        }
+            //http://www.regular-expressions.info/email.html
+            if (!regex_match(accountName, emailRegex)) logger::warning("Account name " + accountName + " for email manager does not match email regex");
 
-        string domain = accountName.substr(atSign + 1);
-        unordered_map<string, string>::const_iterator it = email::imapServers.find(domain);
-        if (it != email::imapServers.end()) {
-            serverURL = vmime::utility::url(it->second);
-        }
-        else {
-            if (json.HasMember("url")) {
-                try {
-                    serverURL = vmime::utility::url(json["url"].GetString());
-                }
-                catch (vmime::exceptions::malformed_url &e) {
-                    logger::error("Attempted to use provided url \"" + string(json["url"].GetString()) + "\" but it was malformed");
-                    throw badUserDataException("Provided url was malformed");
-                }
+            size_t atSign = accountName.find_first_of("@");
+            if (atSign == string::npos) {
+                logger::error("Could not find \"@\" in \"" + accountName + "\"");
+                throw badUserDataException("EmailManager initialized with bad email address");
+            }
+
+            string domain = accountName.substr(atSign + 1);
+            unordered_map<string, string>::const_iterator it = email::imapServers.find(domain);
+            if (it != email::imapServers.end()) {
+                serverURL = vmime::utility::url(it->second);
             }
             else {
-                logger::error("Could not determine url for email " + accountName + " and no alternative URL was provided");
-                throw badUserDataException("Unable to determine URL for " + accountName);
+                if (json.HasMember("url")) {
+                    try {
+                        serverURL = vmime::utility::url(json["url"].GetString());
+                    }
+                    catch (vmime::exceptions::malformed_url &e) {
+                        logger::error("Attempted to use provided url \"" + string(json["url"].GetString()) + "\" but it was malformed");
+                        throw badUserDataException("Provided url was malformed");
+                    }
+                }
+                else {
+                    logger::error("Could not determine url for email " + accountName + " and no alternative URL was provided");
+                    throw badUserDataException("Unable to determine URL for " + accountName);
+                }
             }
         }
 
@@ -482,7 +488,7 @@ namespace favor {
         folder->close(false);
     }
 
-    void EmailManager::updateFetchData() {
+    void EmailManager::updateJson() {
         setJsonLong(lastReceivedUid);
         setJsonLong(lastSentUid);
         setJsonLong(lastReceivedUidValidity);

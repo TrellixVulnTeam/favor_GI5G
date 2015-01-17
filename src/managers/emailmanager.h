@@ -37,7 +37,8 @@ namespace favor {
 
         void fetchAddresses() override;
 
-        void updateFetchData() override;
+        void updateJson() override;
+        void consultJson(bool initial = false) override;
 
     private:
         long lastSentUid;

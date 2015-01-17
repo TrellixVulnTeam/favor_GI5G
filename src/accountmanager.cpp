@@ -45,6 +45,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "androidtextmanager.h"
 
 #endif
+/*
+The Json is mostly just used by the subordinate classes, but we do use the "prevFailure" value
+ */
+
 
 using namespace std;
 namespace favor {
@@ -103,11 +107,53 @@ namespace favor {
             saveHeldAddresses();
         }
 
+        void AccountManager::recordFailure(bool failure) {
+            int count = 0;
+            if (json.HasMember("prevFailure")){
+                if (failure) count = json["prevFailure"].GetInt()+1;
+                json["prevFailure"].SetInt(count);
+            } else {
+                rapidjson::Value fval;
+                if (failure) count = 1;
+                fval.SetInt(count);
+                json.AddMember("prevFailure", fval, json.GetAllocator());
+            }
+        }
+
+        int AccountManager::previousFailures(){
+            if (json.HasMember("prevFailure")){
+                return json["prevFailure"].GetInt();
+            } else return 0;
+        }
+
+
+
         void AccountManager::updateMessages() {
             fetchMessages();
-            updateFetchData();
-            saveHeldMessages();
-            saveFetchData();
+            bool saveSuccess = true;
+            try {
+                long totalCount = heldMessages.size();
+                long saveCount = saveHeldMessages();
+                if (saveCount / (double)totalCount < MESSAGE_FAILURE_RATIO){
+                    logger::warning(accountName+" fetch saved only "+as_string(saveCount)+" of "+as_string(totalCount)+" messages");
+                } else logger::info(accountName+"fetch saved "+as_string(saveCount)+" of "+as_string(totalCount)+" messages");
+            } catch (exception& e){
+                logger::warning(accountName+" fetch failed due to exception of nature: "+e.what());
+                saveSuccess = false;
+            } catch (...){
+                logger::error(accountName+" fetch failed due to exception of unknown nature");
+                saveSuccess = false;
+            }
+
+            if (saveSuccess){
+                updateJson();
+                recordFailure(false);
+            } else {
+                heldMessages.clear();
+                consultJson();
+                recordFailure(true);
+            }
+            saveJson();
         }
 
         string AccountManager::getJson() const {
