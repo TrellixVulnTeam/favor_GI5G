@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "message.h"
+#include "logger.h"
 
 namespace favor {
     Message::Message(MessageType t, bool s, long int i, std::time_t d, string a, short m, long cc, const string& b) :
@@ -31,6 +32,7 @@ namespace favor {
     }
 
     bool Message::operator==(const Message& other) const {
+        //logger::info("Compare message: "+as_string(*this)+" to "+as_string(other));
         return id == other.id && type == other.type && date == other.date &&
                 sent == other.sent && charCount == other.charCount &&
                 media() == other.media() && address == other.address &&

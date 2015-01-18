@@ -243,6 +243,7 @@ namespace favor {
         }
 
         bool AccountManager::saveMessage(const Message& m, sqlite3_stmt* stmt) {
+            //logger::info("Save messages "+as_string(m));
             sqlv(sqlite3_bind_int64(stmt, 1, m.id));
             sqlv(sqlite3_bind_text(stmt, 2, m.address.c_str(), m.address.length(), SQLITE_STATIC));
             if (!m.failure()){

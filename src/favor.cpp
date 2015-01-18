@@ -128,12 +128,13 @@ namespace favor {
     }
 
     string as_string(const Message &m) {
+        //The seemingly redundant parenthesis around the inline conditions are actually very necessary
         string result = "[Message ID: " + (m.isIdKnown() ? as_string(m.id) : "<unknown>");
         result += " | Sent? " + (m.isSentKonwn()? as_string(m.sent): "<unknown>");
         result += " | Date: " + (m.isDateKnown()? m.prettyDate() : "<unknown>");
         result += " | Address: " + (m.isAddressKnown()? m.address : "<unknown>");
         result += " | Media? " + (m.isMediaKnown()? as_string(m.media()) : "<unknown>");
-        result += " | Body Length: "+ m.isCharCountKnown()? as_string((long)m.charCount) : "<unknown>";
+        result += " | Body Length: "+ (m.isCharCountKnown()? as_string((long)m.charCount) : "<unknown>");
         result += ("| Body: <<" + (m.isBodyKnown() ? m.body() : " <unknown> ")) + ">>]";
         return result;
     }

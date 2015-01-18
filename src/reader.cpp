@@ -140,11 +140,11 @@ namespace favor {
             }
             if (keys & KEY_BODY){
                 keystring += "body,";
-                keyIndices[KEY_BODY] = currentKeyIndex;
+                keyIndices[KEY_BODY] = currentKeyIndex++;
             }
             if (keys & KEY_ID){
                 keystring += "id,";
-                keyIndices[KEY_ID] = currentKeyIndex;
+                keyIndices[KEY_ID] = currentKeyIndex; //This doesn't increment, but only because it's the very last. MUST increment indices except the last one checked
             }
             keystring = keystring.substr(0, keystring.length()-1); //Strip last comma
             return std::pair<string, Indices>(keystring, keyIndices);
