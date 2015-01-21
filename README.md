@@ -1,9 +1,14 @@
 Favor
 ==
-
 Copyright (c) 2015  Joshua Tanner (mindful.jt@gmail.com)
 
-TODO (in no particular order):
+What is Favor
+==
+This is more accurately a paragraph about what favor _will be_, as I'm very much still in the middle of development. The idea is to produce an application that can store information about, and perform analytics on, any type of communication that can be represented as sent and received messages. This repository is a C++ backend which is intended to run as the code behind both an Android application (hence the JNI bindings) and an eventual desktop application. I hope that Favor will distinguish itself for interesting analytics, but the truly unique thing about it will be its breadth of applicable communications platforms: the data is stored in a generic format in Favor's own SQLite database, and as long as we have an adapter (called Managers right now) to pull information from a given communications platform, we can perform analytics on that platform. Right now there's an email adapter that runs on the desktop and a text message adapter (primarily written in Java, as part of the Android application) that runs on Android phones, but my hope is to eventually cover Line, Skype (on desktop), and potentially many more. 
+
+TODO list, in no particular order:
+==
+This is currently very messy because I'm mostly using it for myself. Also changes frequently.
  - Figure out how we want to handle failures of the AndroidTextManager the same way we do with the C++ based AccountManagers.
  - Look at how Google Test works with the NDK, because it does work with the NDK.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
