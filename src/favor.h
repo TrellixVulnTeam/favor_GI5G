@@ -55,6 +55,27 @@ namespace favor {
     class Address;
     class Contact;
 
+    //A custom pair class, purely for clarity, because this comes up a lot
+    template <typename T>
+    class SentRec {
+    public:
+        T sent;
+        T received;
+
+        SentRec(T s, T r){
+            sent = s;
+            received = r;
+        }
+
+        SentRec(const SentRec &other){
+            sent = other.sent;
+            received = other.received;
+        }
+
+        SentRec(){}
+
+    };
+
     extern const char* dbPath;
     extern const char* dbName;
 

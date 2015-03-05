@@ -33,10 +33,9 @@ namespace favor {
 
     protected:
         void fetchMessages() override;
-
         void fetchAddresses() override;
-
-        void updateFetchData() override;
+        void updateJson() override;
+        void consultJson(bool initial = false) override;
 
     private:
         static JavaVM* vm;

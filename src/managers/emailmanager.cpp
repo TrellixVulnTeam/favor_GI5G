@@ -399,7 +399,7 @@ namespace favor {
     }
 
 
-    pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> EmailManager::findSentRecFolder(shared_ptr<vmime::net::store> st) {
+    SentRec<shared_ptr<vmime::net::folder>> EmailManager::findSentRecFolder(shared_ptr<vmime::net::store> st) {
         vector<shared_ptr<vmime::net::folder>> folders = st->getRootFolder()->getFolders(true);
         std::regex sentRegex("sent", std::regex::ECMAScript | std::regex::icase);
         shared_ptr<vmime::net::folder> sent = null;
@@ -433,7 +433,7 @@ namespace favor {
             throw emailException("Could not find INBOX");
         }
 
-        return pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>>(sent, inbox);
+        return SentRec<shared_ptr<vmime::net::folder>>(sent, inbox);
 
     }
 
@@ -515,7 +515,7 @@ namespace favor {
         try {
             vmime::shared_ptr<vmime::net::store> st = login();
 
-            pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
+            SentRec<shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
             for (auto it = addresses->begin(); it != addresses->end(); ++it){
                 if (!managedAddresses.count(it->addr)){
                     logger::info("New address "+it->addr+" detected");
@@ -523,11 +523,11 @@ namespace favor {
                 }
             }
             if (newAddresses->size()){
-                fetchFromFolder(sentRecFolders.first, newAddresses, true);
-                fetchFromFolder(sentRecFolders.second, newAddresses, true);
+                fetchFromFolder(sentRecFolders.sent, newAddresses, true);
+                fetchFromFolder(sentRecFolders.received, newAddresses, true);
             }
-            fetchFromFolder(sentRecFolders.first, addresses); //Sent folder
-            fetchFromFolder(sentRecFolders.second, addresses); //Receied folder
+            fetchFromFolder(sentRecFolders.sent, addresses); //Sent folder
+            fetchFromFolder(sentRecFolders.received, addresses); //Receied folder
             //st->disconnect(); //It seems like we'd want to call this, but the disconnect command is issued fine without it, and VMIME actually starts spitting out threading
             //errors if we use it, so it's exempted from this and fetchAddresses(). I suspect the reason is that something along these lines happens automatically when it falls
             //out of scope
@@ -549,8 +549,8 @@ namespace favor {
     void EmailManager::fetchAddresses() {
         try {
             vmime::shared_ptr<vmime::net::store> st = login();
-            pair<shared_ptr<vmime::net::folder>, shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
-            shared_ptr<vmime::net::folder> sent = sentRecFolders.first;
+            SentRec<shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
+            shared_ptr<vmime::net::folder> sent = sentRecFolders.sent;
             sent->open(vmime::net::folder::MODE_READ_ONLY);
 
             long nextUid = dynamic_pointer_cast<vmime::net::imap::IMAPFolderStatus>(sent->getStatus())->getUIDNext();

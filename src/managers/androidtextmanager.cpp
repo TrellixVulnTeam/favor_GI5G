@@ -28,7 +28,11 @@ namespace favor{
         vm = inputVm;
     }
 
-    void AndroidTextManager::updateFetchData(){
+    void AndroidTextManager::updateJson(){
+        //TODO:
+    }
+
+    void AndroidTextManager::consultJson(bool initial) {
         //TODO:
     }
 

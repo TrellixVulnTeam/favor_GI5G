@@ -47,6 +47,18 @@ namespace favor {
     }
 
 
+    //TODO: entirely untested and very likely broken
+    void rebuildDatabase() {
+        worker::cleanup();
+        reader::cleanup();
+        if (remove(DB_PATH_FULL) != 0){
+            logger::error("Unable to delete database");
+        }
+        worker::initialize();
+        reader::initialize();
+    }
+
+
     void sqlite3_validate(int result, sqlite3 *db) {
         switch (result) {
             case SQLITE_OK:

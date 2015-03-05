@@ -132,9 +132,13 @@ namespace favor {
         /*
             Input must be sorted
          */
-        long percentile(float percent, const vector<long>& input){
-            if (input.size() == 0) logger::error("Cannot get percentile of empty vector");
-            size_t index = (size_t) ((input.size() - 1) * percent);
+        long percentile(float percent, vector<long>& input){
+            if (input.size() == 0) {
+                logger::warning("Cannot get percentile of empty vector, returning 0");
+                return 0;
+            }
+            else std::sort(input.begin(), input.end()); //These have to be sorted for percentile to work properly and db sort order has them coming in in reverse
+            size_t index = (size_t) std::round(((input.size() - 1) * percent)); //If we don't use round we drop the decimal
             return input[index];
         }
 
@@ -154,9 +158,10 @@ namespace favor {
         /*
             First holds response times for us, second for the other party.
          */
-        shared_ptr<std::pair<vector<time_t>,vector<time_t>>> strippedDates(shared_ptr<vector<Message>> messages){
-            shared_ptr<std::pair<vector<time_t>,vector<time_t>>> result = std::make_shared<std::pair<vector<time_t>,vector<time_t>>>();
+        shared_ptr<SentRec<vector<time_t>>> strippedDates(shared_ptr<vector<Message>> messages){
+            shared_ptr<SentRec<vector<time_t>>> result = std::make_shared<SentRec<vector<time_t>>>();
             auto back = messages->rbegin(); //Iteration goes backwards because messages are sorted descending
+            //Order is very important here, because we get meaningless results if we're not moving the same direction time is
             for (auto it = back; it != messages->rend(); ++it){
                 if (it == back) continue; //Important so we don't try and do anything with the end iterator on the first pass
                 if (back->sent == it->sent){
@@ -167,8 +172,8 @@ namespace favor {
                     } //Else we keep going and have simply ignored the message with the same date
                 } else {
                     //Sent and received differ, so we add a response time and move the back pointer up
-                    if (it->sent) result->first.push_back(it->date - back->date);
-                    else result->second.push_back(it->date - back->date);
+                    if (it->sent) result->sent.push_back(it->date - back->date);
+                    else result->received.push_back(it->date - back->date);
                     back = it;
                 }
             }
@@ -182,6 +187,8 @@ namespace favor {
             better.
          */
         vector<long> denseTimes(const vector<time_t>& input){
+
+            //First is the value itself, second is its density
             std::vector<std::pair<long,long>> densities;
             size_t back = 0;
 
@@ -189,9 +196,9 @@ namespace favor {
 
             for (size_t i = back; i != input.size(); ++i){
                 while (input[i] - input[back] > DENSITY_DISTANCE) ++back; //Move the back index up to exclude any irrelevant points
-                for (size_t ii = back; ii != i; ++ii){
+                for (size_t j = back; j != i; ++j){
                     densities[i].second += 1;
-                    densities[ii].second +=1;
+                    densities[j].second +=1;
                 }
             }
 
@@ -204,7 +211,7 @@ namespace favor {
 
             vector<long> out;
             for (auto it = densities.begin(); it != densities.end(); ++it){
-                if (it->second > minDensity) out.push_back(it->first);
+                if (it->second >= minDensity) out.push_back(it->first); //>= instead of > is important for small cases with uniform density
             }
 
             return out;
@@ -238,31 +245,52 @@ namespace favor {
 
         //For response times we compute both sent and rec, cache them separately, return the one requested
 
-        //TODO: test these two methods (or just write tests for these two methods)
+        SentRec<double> conversationalResponseTimeCompute(shared_ptr<vector<Message>> query){
+            auto sentRecDates = strippedDates(query);
 
-        double averageConversationalResponsetime(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
+            double averageReceived = 0;
+            double averageSent = 0;
+
+            if (sentRecDates->received.size() > 0){
+                vector<long> recResponseTimes = denseTimes(sentRecDates->received);
+                if (recResponseTimes.size() > 0){
+                    for (auto it = recResponseTimes.begin(); it != recResponseTimes.end(); ++it) averageReceived += *it;
+                    averageReceived /= (double)recResponseTimes.size();
+                }
+            } else logger::warning("Received dates empty, returning 0");
+
+            if (sentRecDates->sent.size() > 0){
+                vector<long> sentResponseTimes = denseTimes(sentRecDates->sent);
+                if (sentResponseTimes.size() > 0){
+                    for (auto it = sentResponseTimes.begin(); it != sentResponseTimes.end(); ++it) averageSent += *it;
+                    averageSent /= (double)sentResponseTimes.size();
+                }
+            } else logger::warning("Sent dates empty, returning 0");
+
+            return SentRec<double>(averageSent, averageReceived);
+        }
+
+        double conversationalResponsetime(AccountManager *account, const Contact *c, time_t fromDate, time_t untilDate, bool sent){
             if (c == NULL) throw queryException("Cannot run response time queries with a null contact");
             if (countResult(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, sent)){
                 return getResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, sent);
             } else {
                 auto query = reader::queryConversation(account, *c, KEY_DATE, fromDate, untilDate);
-                auto oursTheirs = strippedDates(query);
+                SentRec<double> sentRecAvgs = conversationalResponseTimeCompute(query);
 
-                vector<long> recResponseTimes = denseTimes(oursTheirs->second);
-                vector<long> sentResponseTimes = denseTimes(oursTheirs->first);
+                cacheResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, true, sentRecAvgs.sent);
+                cacheResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, false, sentRecAvgs.received);
 
-                double averageReceived = 0;
-                double averageSent = 0;
-                for (auto it = recResponseTimes.begin(); it != recResponseTimes.end(); ++it) averageReceived += *it;
-                for (auto it = sentResponseTimes.begin(); it != sentResponseTimes.end(); ++it) averageSent += *it;
-                averageReceived /= (double)recResponseTimes.size();
-                averageSent /= (double)sentResponseTimes.size();
-
-                cacheResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, true, averageSent);
-                cacheResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, false, averageReceived);
-
-                return sent ? averageSent : averageReceived;
+                return sent ? sentRecAvgs.sent : sentRecAvgs.received;
             }
+        }
+
+        SentRec<long> responseTimeNintiethCompute(shared_ptr<vector<Message>> query){
+            auto oursTheirs = strippedDates(query);
+            long receivedNintieth = percentile(0.90, oursTheirs->received);
+            long sentNintieth = percentile(0.90, oursTheirs->sent);
+
+            return SentRec<long>(sentNintieth, receivedNintieth);
         }
 
         long responseTimeNintiethPercentile(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
@@ -271,16 +299,15 @@ namespace favor {
                 return getResult<long>(RESPONSE_NINTIETH, account, c, fromDate, untilDate, sent);
             } else {
                 auto query = reader::queryConversation(account, *c, KEY_DATE, fromDate, untilDate);
-                auto oursTheirs = strippedDates(query);
-                long receivedNintieth = percentile(0.90, oursTheirs->second);
-                long sentNintieth = percentile(0.90, oursTheirs->first);
+                SentRec<long> result = responseTimeNintiethCompute(query);
 
-                cacheResult<long>(RESPONSE_NINTIETH, account, c, fromDate, untilDate, true, sentNintieth);
-                cacheResult<long>(RESPONSE_NINTIETH, account, c, fromDate, untilDate, false, receivedNintieth);
+                cacheResult<long>(RESPONSE_NINTIETH, account, c, fromDate, untilDate, true, result.sent);
+                cacheResult<long>(RESPONSE_NINTIETH, account, c, fromDate, untilDate, false, result.received);
 
-                return sent ? sentNintieth : receivedNintieth;
+                return sent ? result.sent : result.received;
             }
         }
+
 
         double averageCharcount(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
             if (countResult(AVG_CHARS, account, c, fromDate, untilDate, sent)){

@@ -32,11 +32,11 @@ namespace favor{
         typedef double(*DoubleQuery)(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent);
         //NintiethPercentile, totalCharcount, totalMessageCount
         LongQuery longQueries[] = {&::favor::processor::responseTimeNintiethPercentile, &::favor::processor::totalCharcount, &::favor::processor::totalMessagecount};
-        //averageCharcount, averageConversationalResponsetime
-        DoubleQuery doubleQueries[] = {&::favor::processor::averageCharcount, &::favor::processor::averageConversationalResponsetime};
+        //averageCharcount, conversationalResponsetime
+        DoubleQuery doubleQueries[] = {&::favor::processor::averageCharcount, &::favor::processor::conversationalResponsetime};
         /*
                 double averageCharcount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
-        double averageConversationalResponsetime(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
+        double conversationalResponsetime(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
         long responseTimeNintiethPercentile(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);
 
         long totalCharcount(AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent);

@@ -33,7 +33,7 @@ namespace favor {
         //The response time methods take pointers for consistency but a null contact there doesn't actually mean anything
 
         double averageCharcount(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent);
-        double averageConversationalResponsetime(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent);
+        double conversationalResponsetime(AccountManager *account, const Contact *c, time_t fromDate, time_t untilDate, bool sent);
         long responseTimeNintiethPercentile(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent);
 
         long totalCharcount(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent);
