@@ -47,7 +47,7 @@ namespace favor {
     }
 
 
-    //TODO: entirely untested and very likely broken
+    //TODO: since this actually generates a DB file, it either needs its own very comprehensive test or to be tested by hand
     void rebuildDatabase() {
         worker::cleanup();
         reader::cleanup();
@@ -55,6 +55,7 @@ namespace favor {
             logger::error("Unable to delete database");
         }
         worker::initialize();
+        worker::buildDatabase();
         reader::initialize();
     }
 

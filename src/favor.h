@@ -84,6 +84,8 @@ namespace favor {
 
     void cleanup();
 
+    void rebuildDatabase();
+
     //Utility
     void sqlite3_validate(int result, sqlite3 *db);
 

@@ -55,6 +55,7 @@ namespace favor{
     void PrintTo(const AccountManager& a, ::std::ostream* os){
         *os << as_string(a);
     }
+
 }
 
 #endif
