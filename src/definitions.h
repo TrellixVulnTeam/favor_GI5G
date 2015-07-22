@@ -28,9 +28,9 @@ DEBUG - Also pretty obvious, it's true when we're building for debug
 
 //Macros --------------------------------------------------------------------------------
 #ifdef DEBUG
-#define D(x) x
+#define DLOG(x) favor::logger::debug(x);
 #else
-#define D(x)
+#define DLOG(x)
 #endif
 
 #ifdef ANDROID

@@ -88,6 +88,15 @@ namespace favor {
         }
     }
 
+    double round(double d)
+    {
+        #ifdef ANDROID
+        return floor(d + 0.5);
+        #else
+        return std::floor(d);
+        #endif
+    }
+
     //On Android, these methods will not behave well with numbers whose digit count exceeds the DIGIT_MAX
     string as_string(long int l) {
     #ifdef ANDROID

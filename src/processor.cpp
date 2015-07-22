@@ -138,8 +138,17 @@ namespace favor {
                 return 0;
             }
             else std::sort(input.begin(), input.end()); //These have to be sorted for percentile to work properly and db sort order has them coming in in reverse
-            size_t index = (size_t) std::round(((input.size() - 1) * percent)); //If we don't use round we drop the decimal
-            return input[index];
+            float index = (percent * input.size());
+            if (floor(index) == index){
+                return (input[((int)index)-1] + input[(int)index]) / 2;
+            }
+            else {
+                return input[floor(index)];
+            }
+            DLOG("Index "+as_string((int)index));
+            for (int i = 0; i < input.size(); ++i){
+                DLOG("Num in Percentile Array: "+as_string(input[i]));
+            }
         }
 
         long standardDeviationFloor(int deviations, const std::vector<std::pair<long,long>>& input){
@@ -163,15 +172,20 @@ namespace favor {
             auto back = messages->rbegin(); //Iteration goes backwards because messages are sorted descending
             //Order is very important here, because we get meaningless results if we're not moving the same direction time is
             for (auto it = back; it != messages->rend(); ++it){
+                DLOG("strippedDates Processing: "+as_string(*it))
                 if (it == back) continue; //Important so we don't try and do anything with the end iterator on the first pass
                 if (back->sent == it->sent){
+                    DLOG("Sent/Rec boolean equal to previous message")
                     //We know a strip needs to happen. The question is whether the new message is far enough ahead to strip the back one
                     if (it->date - back->date >= STRIP_RESET_DISTANCE){
+                        DLOG("Temporal distance to previous message in excess of STRIP_RESET_DISTANCE, stripping. Set back to "+as_string(*it));
                         //This is too far, drop the old messages
                         back = it;
                     } //Else we keep going and have simply ignored the message with the same date
                 } else {
                     //Sent and received differ, so we add a response time and move the back pointer up
+                    DLOG(string("Sent/Rec boolean different from previous message, add ") + (it->sent ? "sent" : "received") +" response time"
+                            " of "+as_string(it->date - back->date))
                     if (it->sent) result->sent.push_back(it->date - back->date);
                     else result->received.push_back(it->date - back->date);
                     back = it;
@@ -240,6 +254,12 @@ namespace favor {
             bool count = cache.count(key);
             cacheLock.unlock();
             return count;
+        }
+
+        void clearCache(){
+            cacheLock.lock();
+            cache.clear();
+            cacheLock.unlock();
         }
 
 

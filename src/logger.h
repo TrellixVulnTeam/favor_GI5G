@@ -29,6 +29,8 @@ namespace favor {
         void warning(string s);
 
         void info(string s);
+
+        void debug(string s);
     }
 }
 

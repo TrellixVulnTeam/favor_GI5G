@@ -112,13 +112,18 @@ namespace favor{
             return result;
         }
 
+        JNIEXPORT void JNICALL clearCache(JNIEnv* env, jobject callingObj){
+            processor::clearCache();
+        }
+
 
 
         static JNINativeMethod processorMethodTable[] = {
                 {"longQuery", "(ILjava/lang/String;IJJJZ)J", (void*) longQuery},
                 {"doubleQuery", "(ILjava/lang/String;IJJJZ)D", (void*) doubleQuery},
                 {"longMultiQuery", "(ILjava/lang/String;I[JJJZ)[J", (void*) longMultiQuery},
-                {"doubleMultiQuery", "(ILjava/lang/String;I[JJJZ)[D", (void*) doubleMultiQuery}
+                {"doubleMultiQuery", "(ILjava/lang/String;I[JJJZ)[D", (void*) doubleMultiQuery},
+                {"clearCache", "()V", (void*) clearCache}
         };
     }
 }

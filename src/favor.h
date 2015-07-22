@@ -91,6 +91,8 @@ namespace favor {
 
     bool compareAddress(const Address& lhs, const Address& rhs);
 
+    double round(double d);
+
     string lowercase(const string& s);
 
     string as_string(int i);

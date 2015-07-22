@@ -45,6 +45,7 @@ namespace favor {
         template<typename T>
         T getResult(ResultType t, AccountManager* account, const Contact* const contact, long fromD, long untilD, bool sent);
         bool countResult(ResultType t, AccountManager* account, const Contact* const contact, long fromD, long untilD, bool sent);
+        void clearCache();
 
 
     }

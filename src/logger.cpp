@@ -25,10 +25,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LOGE(s) __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, s.c_str())
 #define LOGW(s) __android_log_write(ANDROID_LOG_WARN, LOG_TAG, s.c_str())
 #define LOGI(s) __android_log_write(ANDROID_LOG_INFO, LOG_TAG, s.c_str())
+#define LOGD(s) __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, s.c_str())
 #else
 #define LOGE(s) log("[error] "+s, LOG_ERROR)
 #define LOGW(s) log("[warning] "+s, LOG_WARN)
 #define LOGI(s) log("[info] "+s, LOG_INFO)
+#define LOGD(s) log("[debug] "+s, LOG_DEBUG)
 #endif
 
 using namespace std;
@@ -36,7 +38,7 @@ namespace favor {
     namespace logger {
         namespace {
             enum LogPriority {
-                LOG_INFO, LOG_WARN, LOG_ERROR
+                LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR
             };
 
             inline void log(string s, LogPriority l) {
@@ -60,6 +62,10 @@ namespace favor {
 
         void info(string s) {
             LOGI(s);
+        }
+
+        void debug(string s){
+            LOGD(s);
         }
 
 

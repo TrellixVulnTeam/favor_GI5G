@@ -83,6 +83,8 @@ TEST(Processor, Percentile){
     ASSERT_EQ(processor::percentile(0.60, nums), 10);
     nums = {-4,-3,-2,-1,0, 1, 2, 3, 4, 5};
     ASSERT_EQ(processor::percentile(0.90, nums), 4);
+    nums = {2,5};
+    ASSERT_EQ(processor::percentile(0.70, nums), 5);
 
 }
 

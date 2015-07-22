@@ -523,6 +523,7 @@ namespace favor {
                 }
             }
             if (newAddresses->size()){
+                //If there are new addresses, we run catchup fetches before the new normal fetch
                 fetchFromFolder(sentRecFolders.sent, newAddresses, true);
                 fetchFromFolder(sentRecFolders.received, newAddresses, true);
             }
