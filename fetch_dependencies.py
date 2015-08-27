@@ -129,4 +129,6 @@ if __name__ == "__main__":
 
     download_dependency('https://googletest.googlecode.com/files/gtest-1.7.0.zip', 'gtest', ['gtest-1.7.0'], '1.7', ['cd gtest-1.7.0/ && cmake -G "Unix Makefiles" && make'])
 
+    github_dependency('https://github.com/unnonouno/iconvpp', 'iconvpp', ['.'])
+
 

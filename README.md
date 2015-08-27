@@ -9,6 +9,7 @@ This is more accurately a paragraph about what favor _will be_, as I'm very much
 TODO list, in no particular order:
 ==
 This is currently very messy because I'm mostly using it for myself. Also changes frequently.
+ - Update our used libraries
  - Figure out how we want to handle failures of the AndroidTextManager the same way we do with the C++ based AccountManagers.
  - Look at how Google Test works with the NDK, because it does work with the NDK.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
@@ -16,14 +17,12 @@ This is currently very messy because I'm mostly using it for myself. Also change
  further down the road.
  - The reader tests need at least one test that looks for an exact message with all its attributes so we can't miss attribute-loading problems (like our previous no-id issue)
  - Japanese support is going to require we handle the "shiftJIS" ("big5" won't hurt either while we're at it, though it's Chinese) encoding, because VMIME is having none of it. 
- Look into detecting this (and any other encodings that tidyhtml handles but vmime doesn't) and using TIDY to convert the text, trying to avoid any extra HTML work. It'd also be better if we knew tidy worked on Android so we could count on it for doing this in other
- situations, but that just takes some testing. __Part of doing this is teaching the email manager to better recognize encodings, and if it hits one it doesn't know, it needs to treat that
+ Look into detecting this (and any other encodings that tidyhtml handles but vmime doesn't) ~~and using TIDY to convert the text, trying to avoid any extra HTML work.~~ **The HTML work can be avoided using the tidyBodyOnly option, but Tidy will not convert asian character encodings. Look into a library to do this (probably iconv)**  __Then teach the email manager to better recognize encodings, and if it hits one it doesn't know, it to treat that
  as a failure - right now it just merrily exports it knowing we won't be able to save it properly.__ This'll also be our chance to write EmailManager tests. Yay.
  - In the worker address table computing code, we need to figure out what we're doing with suggested names (how to use/store them, whether to save them or give them to the reader, etc.)
  - Some Android specific optimizations at the C++ layer wouldn't hurt: the reader keeping contacts in a hash by id for faster lookup, and the processor potentially pushing
  cache information up to a separate java layer cache proactively. 
  - Spend some time with a query analyzer and make sure that SQLlite is getting the best use possible out of our indices, and think about what might be worth changing if not.
- - Basic threading tests to make sure datalocks do their job
  - In a perfect world, our methods to update contacts would properly adjust the state of the contacts and their held addresses instead of just marking the list as needing to be
  refreshed. This will take a little bit of work to do elegantly though - additions must create a new contact with an address _and_ ensure no other contacts have that address, and of
  course updates just to address linkages must do something similar. Deletions should be relatively simple. 
@@ -78,6 +77,7 @@ Dependencies are fetched via a python script in lib. How exactly some of these w
  - [rapidjson](https://github.com/miloyip/rapidjson)
  - [pugixml](https://github.com/zeux/pugixml)
  - A [very slightly modified tidy-html5](https://github.com/Mindful/tidy-html5). The changes here are just to get it to compile on Android.
+ - [iconvpp](https://github.com/unnonouno/iconvpp)
  - The desktop implementation of the Email MessageManager (EmailManager) uses a [very slightly modified VMIME](https://github.com/Mindful/vmime/)  built using the command in 
  favor/src/lib/vmime/build_cmd. We'll move to using the official library as soon as it has support for IMAP search. Until then, the only changes in the homebrew version are to expose some 
  internals so we can run our own IMAP searches.

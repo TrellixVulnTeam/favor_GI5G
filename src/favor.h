@@ -44,6 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "rapidjson/stringbuffer.h"
 #include "pugixml/pugixml.hpp"
 #include "utf8cpp/utf8.h"
+#include "iconvpp/iconv.hpp"
 
 //Favor core headers
 #include "definitions.h"
@@ -94,6 +95,8 @@ namespace favor {
     double round(double d);
 
     string lowercase(const string& s);
+
+    string to_utf8(const string& s, const string& inputEncoding);
 
     string as_string(int i);
 

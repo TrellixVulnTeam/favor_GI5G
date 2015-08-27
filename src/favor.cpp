@@ -149,6 +149,18 @@ namespace favor {
         return buff.GetString();
     }
 
+    string to_utf8(const string& s, const string& inputEncoding){
+        //TODO: catch exceptions here; if size problem redo with larger buffer, else deal with some other way
+        iconvpp::converter conv("UTF-8",   // output encoding
+                                inputEncoding,  // input encoding
+                                false,      // ignore errors (optional, default: fasle)
+                                (s.size() * 1.5)+5);     // buffer size   (optional, default: 1024) //TODO: magic number, and not good
+        string out;
+        conv.convert(s, out);
+        return out;
+    }
+
+
     string as_string(const Message &m) {
         //The seemingly redundant parenthesis around the inline conditions are actually very necessary
         string result = "[Message ID: " + (m.isIdKnown() ? as_string(m.id) : "<unknown>");

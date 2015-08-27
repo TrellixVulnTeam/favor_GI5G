@@ -234,11 +234,21 @@ namespace favor {
         return false;
     }
 
+    //Worth noting that out is hooked into SS here, so when we extract into it it ends up writing to SS
     void EmailManager::handleHTML(vmime::utility::outputStream *out, stringstream &ss, shared_ptr<const vmime::htmlTextPart> part) {
         //If vmime can't find a plaintext equivalent part, getPlainText() will be empty
+        std::regex utf8regex("utf-8", std::regex::ECMAScript | std::regex::icase);
+
         if (part->getPlainText()->isEmpty()) {
             part->getText()->extract(*out);
             out->flush();
+
+            if (!regex_match(part->getCharset().getName(), utf8regex)){
+                DLOG("Converting mail with charset " + part->getCharset().getName() + " to utf-8");
+                //TODO: iconvpp conversion based on length
+                string preConvert = ss.str();
+            }
+
             bool xmlSuccess = email::toXML(ss);
             pugi::xml_document doc;
             pugi::xml_parse_result res = doc.load(ss);
@@ -279,6 +289,7 @@ namespace favor {
 
         const bool media = hasMedia(structure);
 
+        //TODO: may not need this or the conditional if we move encoding handling into handleHTML
         std::regex utf8regex("utf-8", std::regex::ECMAScript | std::regex::icase);
 
         for (int i = 0; i < mp.getTextPartCount(); ++i) {
@@ -287,12 +298,13 @@ namespace favor {
                 shared_ptr<const vmime::htmlTextPart> htp = dynamic_pointer_cast<const vmime::htmlTextPart>(tp);
                 try{
                     if (!regex_match(htp->getCharset().getName(), utf8regex)) {
-                        //Encoding is supposedly handled by VMIME, but we'll need to look at charset
                         //TODO: test this converting from a non utf-8 charset. Everybody seems to send everything already in UTF-8 these days
-                        logger::info("Converting mail with UID " + string(m->getUID()) + " and charset " + htp->getCharset().getName() + " to utf-8");
-                        shared_ptr<vmime::charsetConverter> conv = vmime::charsetConverter::create(htp->getCharset(), vmime::charset("utf-8"));
-                        shared_ptr<vmime::utility::charsetFilteredOutputStream> out = conv->getFilteredOutputStream(os);
-                        handleHTML(&(*out), body, htp);
+                        DLOG("Converting mail with UID " + string(m->getUID()) + " and charset " + htp->getCharset().getName() + " to utf-8");
+
+                        //vmime wasn't handling enough of our encodings (specifically asian ones), so this commented stuff has been deprecated
+                        //shared_ptr<vmime::charsetConverter> conv = vmime::charsetConverter::create(htp->getCharset(), vmime::charset("utf-8"));
+                        //shared_ptr<vmime::utility::charsetFilteredOutputStream> out = conv->getFilteredOutputStream(os);
+                        handleHTML(&(os), body, htp);
                     }
                     else {
                         handleHTML(&os, body, htp);
