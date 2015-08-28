@@ -151,6 +151,7 @@ namespace favor {
 
     string to_utf8(const string& s, const string& inputEncoding){
         //TODO: catch exceptions here; if size problem redo with larger buffer, else deal with some other way
+        //throw badMessageDataException
         iconvpp::converter conv("UTF-8",   // output encoding
                                 inputEncoding,  // input encoding
                                 false,      // ignore errors (optional, default: fasle)

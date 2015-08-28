@@ -94,11 +94,11 @@ namespace favor {
         class InfoTracer : public vmime::net::tracer {
         public:
             void traceSend(const string &line) override {
-                logger::info("[" + service->getProtocolName() + "] Sent: " + line);
+                DLOG("[" + service->getProtocolName() + "] Sent: " + line);
             }
 
             void traceReceive(const string &line) override {
-                logger::info("[" + service->getProtocolName() + "] Received: " + line);
+                DLOG("[" + service->getProtocolName() + "] Received: " + line);
             }
 
             InfoTracer(vmime::shared_ptr<vmime::net::service> serv, const int id) : service(serv), connectionId(id) {
@@ -235,18 +235,19 @@ namespace favor {
     }
 
     //Worth noting that out is hooked into SS here, so when we extract into it it ends up writing to SS
-    void EmailManager::handleHTML(vmime::utility::outputStream *out, stringstream &ss, shared_ptr<const vmime::htmlTextPart> part) {
+    void EmailManager::handleHTMLandEncoding(vmime::utility::outputStream *out, stringstream &ss,
+                                             shared_ptr<const vmime::htmlTextPart> part, string &output) {
         //If vmime can't find a plaintext equivalent part, getPlainText() will be empty
         std::regex utf8regex("utf-8", std::regex::ECMAScript | std::regex::icase);
 
         if (part->getPlainText()->isEmpty()) {
             part->getText()->extract(*out);
             out->flush();
-
             if (!regex_match(part->getCharset().getName(), utf8regex)){
-                DLOG("Converting mail with charset " + part->getCharset().getName() + " to utf-8");
-                //TODO: iconvpp conversion based on length
+                DLOG("Converting HTML mail with charset " + part->getCharset().getName() + " to utf-8");
                 string preConvert = ss.str();
+                ss.clear();
+                ss << to_utf8(preConvert, part->getCharset().getName());
             }
 
             bool xmlSuccess = email::toXML(ss);
@@ -258,6 +259,7 @@ namespace favor {
                 else logger::error("HTML could not be tidied or parsed. Likely malformed");
                 throw badMessageDataException("Unable to process HTML in email message");
             }
+            output = ss.str();
         }
         //If there is a plaintext part, we have either already gotten it or will get it later in the iteration and this method doesn't
         //need to do anything.
@@ -271,8 +273,9 @@ namespace favor {
 
         vmime::messageParser mp(parsedMessage);
         shared_ptr<vmime::net::messageStructure> structure = m->getStructure();
-        std::stringstream body;
-        vmime::utility::outputStreamAdapter os(body);
+        std::stringstream bodyStream;
+        vmime::utility::outputStreamAdapter os(bodyStream);
+        string bodyFinal;
 
         /*Strangely, if we get the date like this:
         * shared_ptr<const vmime::datetime> rawdate = m->getHeader()->Date()->getValue<vmime::datetime>();
@@ -289,7 +292,6 @@ namespace favor {
 
         const bool media = hasMedia(structure);
 
-        //TODO: may not need this or the conditional if we move encoding handling into handleHTML
         std::regex utf8regex("utf-8", std::regex::ECMAScript | std::regex::icase);
 
         for (int i = 0; i < mp.getTextPartCount(); ++i) {
@@ -297,32 +299,30 @@ namespace favor {
             if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_HTML) {
                 shared_ptr<const vmime::htmlTextPart> htp = dynamic_pointer_cast<const vmime::htmlTextPart>(tp);
                 try{
-                    if (!regex_match(htp->getCharset().getName(), utf8regex)) {
-                        //TODO: test this converting from a non utf-8 charset. Everybody seems to send everything already in UTF-8 these days
-                        DLOG("Converting mail with UID " + string(m->getUID()) + " and charset " + htp->getCharset().getName() + " to utf-8");
-
-                        //vmime wasn't handling enough of our encodings (specifically asian ones), so this commented stuff has been deprecated
-                        //shared_ptr<vmime::charsetConverter> conv = vmime::charsetConverter::create(htp->getCharset(), vmime::charset("utf-8"));
-                        //shared_ptr<vmime::utility::charsetFilteredOutputStream> out = conv->getFilteredOutputStream(os);
-                        handleHTML(&(os), body, htp);
-                    }
-                    else {
-                        handleHTML(&os, body, htp);
-                    }
+                     //vmime wasn't handling enough of our encodings (specifically asian ones), so this commented stuff has been deprecated
+                    //shared_ptr<vmime::charsetConverter> conv = vmime::charsetConverter::create(htp->getCharset(), vmime::charset("utf-8"));
+                    //shared_ptr<vmime::utility::charsetFilteredOutputStream> out = conv->getFilteredOutputStream(os);
+                    handleHTMLandEncoding(&(os), bodyStream, htp, bodyFinal);
                 } catch (badMessageDataException& e){
                     logger::warning("Failed to parse html text part of message with UID "+as_string(uid));
                     failure = true;
                 }
             }
             else if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_PLAIN) {
-                    tp->getText()->extract(os);
-                    os.flush();
+                tp->getText()->extract(os);
+                os.flush(); //the stringstream "body" is what actually gets written to here
+                if (!regex_match(tp->getCharset().getName(), utf8regex)) {
+                    DLOG("Converting plaintext mail with UID " + string(m->getUID()) + " and charset " + tp->getCharset().getName() + " to utf-8");
+                    bodyFinal = to_utf8(bodyStream.str(), tp->getCharset().getName());
+                } else bodyFinal = bodyStream.str();
             }
             else {
                 logger::warning("Failed to parse message with text part of type: "+tp->getType().getType()+" with UID "+as_string(uid));
                 failure = true;
             }
         }
+
+        DLOG("Finalize message with body:"+bodyFinal);
 
         if (sent) {
             const vmime::addressList addrList = mp.getRecipients();
@@ -335,18 +335,18 @@ namespace favor {
                     //Remember email addresses should be converted to lowercase first
                     for (int i = 0; i < grp->getMailboxCount(); ++i) {
                         if (failure) holdMessageFailure(sent, uid, lowercase(grp->getMailboxAt(i)->getEmail().toString()));
-                        else holdMessage(sent, uid, date, lowercase(grp->getMailboxAt(i)->getEmail().toString()), media, body.str());
+                        else holdMessage(sent, uid, date, lowercase(grp->getMailboxAt(i)->getEmail().toString()), media, bodyFinal);
                     }
                 }
                 else {
                     resultAddr = dynamic_pointer_cast<const vmime::mailbox>(addr);
                     if (failure) holdMessageFailure(sent, uid, lowercase(resultAddr->getEmail().toString()));
-                    else holdMessage(sent, uid, date, lowercase(resultAddr->getEmail().toString()), media, body.str());
+                    else holdMessage(sent, uid, date, lowercase(resultAddr->getEmail().toString()), media, bodyFinal);
                 }
             }
         }
         else {
-            holdMessage(sent, uid, date, lowercase(mp.getExpeditor().getEmail().toString()), media, body.str());
+            holdMessage(sent, uid, date, lowercase(mp.getExpeditor().getEmail().toString()), media, bodyFinal);
         }
     }
 

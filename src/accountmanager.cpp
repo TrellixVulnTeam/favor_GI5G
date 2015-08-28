@@ -136,7 +136,7 @@ namespace favor {
                 long saveCount = saveHeldMessages();
                 if (saveCount / (double)totalCount < MESSAGE_FAILURE_RATIO){
                     logger::warning(accountName+" fetch saved only "+as_string(saveCount)+" of "+as_string(totalCount)+" messages");
-                } else logger::info(accountName+"fetch saved "+as_string(saveCount)+" of "+as_string(totalCount)+" messages");
+                } else logger::info(accountName+" fetch saved "+as_string(saveCount)+" of "+as_string(totalCount)+" messages");
             } catch (exception& e){
                 logger::warning(accountName+" fetch failed due to exception of nature: "+e.what());
                 saveSuccess = false;

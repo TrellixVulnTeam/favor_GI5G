@@ -16,9 +16,8 @@ This is currently very messy because I'm mostly using it for myself. Also change
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
  further down the road.
  - The reader tests need at least one test that looks for an exact message with all its attributes so we can't miss attribute-loading problems (like our previous no-id issue)
- - Japanese support is going to require we handle the "shiftJIS" ("big5" won't hurt either while we're at it, though it's Chinese) encoding, because VMIME is having none of it. 
- Look into detecting this (and any other encodings that tidyhtml handles but vmime doesn't) ~~and using TIDY to convert the text, trying to avoid any extra HTML work.~~ **The HTML work can be avoided using the tidyBodyOnly option, but Tidy will not convert asian character encodings. Look into a library to do this (probably iconv)**  __Then teach the email manager to better recognize encodings, and if it hits one it doesn't know, it to treat that
- as a failure - right now it just merrily exports it knowing we won't be able to save it properly.__ This'll also be our chance to write EmailManager tests. Yay.
+ - EmailManager tests. The most fun
+ - libiconv on Android and eventually windows platforms
  - In the worker address table computing code, we need to figure out what we're doing with suggested names (how to use/store them, whether to save them or give them to the reader, etc.)
  - Some Android specific optimizations at the C++ layer wouldn't hurt: the reader keeping contacts in a hash by id for faster lookup, and the processor potentially pushing
  cache information up to a separate java layer cache proactively. 

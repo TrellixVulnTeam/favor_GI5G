@@ -56,7 +56,8 @@ namespace favor {
 
         void parseMessage(bool sent, favor::shared_ptr<vmime::net::message> m);
 
-        void handleHTML(vmime::utility::outputStream *out, std::stringstream &ss, shared_ptr<const vmime::htmlTextPart> part);
+        void handleHTMLandEncoding(vmime::utility::outputStream *out, std::stringstream &ss,
+                                   shared_ptr<const vmime::htmlTextPart> part, string &output);
 
         bool hasMedia(shared_ptr<vmime::net::messageStructure> structure);
 
