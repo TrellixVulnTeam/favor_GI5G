@@ -150,14 +150,16 @@ namespace favor {
     }
 
     string to_utf8(const string& s, const string& inputEncoding){
-        //TODO: catch exceptions here; if size problem redo with larger buffer, else deal with some other way
-        //throw badMessageDataException
-        iconvpp::converter conv("UTF-8",   // output encoding
-                                inputEncoding,  // input encoding
-                                false,      // ignore errors (optional, default: fasle)
-                                (s.size() * 1.5)+5);     // buffer size   (optional, default: 1024) //TODO: magic number, and not good
         string out;
-        conv.convert(s, out);
+        try {
+            iconvpp::converter conv("UTF-8",   // output encoding
+                                    inputEncoding,  // input encoding
+                                    false,      // ignore errors
+                                    (size_t)(s.size() * 1.5));     // buffer size. magic number is not good, but CPP wrapper seems to handle buffer size smartly, so probably okay
+            conv.convert(s, out);
+        } catch (std::runtime_error &e){
+            throw badMessageDataException("Conversion to UTF-8 failed: "+string(e.what()));
+        }
         return out;
     }
 

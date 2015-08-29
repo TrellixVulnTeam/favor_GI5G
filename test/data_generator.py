@@ -272,6 +272,12 @@ def process_msglist(msgs, name, out):
     out.write("#define "+format_defstring(name).upper()+"_ADDRESSLIST_ARG "+
               str(address_list).replace("[", "{").replace("]", "}").replace("'", '"')+"\n")
     out.write("#define "+format_defstring(name).upper()+"_CHARCOUNTLIST_ARG "+str(charcount_list).replace("[", "{").replace("]", "}")+"\n")
+    example_msg = msgs[0]
+    out.write("#define "+format_defstring(name).upper()+"_EXAMPLE_ID "+str(msgs[0][0])+"\n")
+    out.write("#define "+format_defstring(name).upper()+"_EXAMPLE_ADDR \"" +str(msgs[0][1])+"\"\n")
+    out.write("#define "+format_defstring(name).upper()+"_EXAMPLE_DATE " +str(msgs[0][2])+"\n")
+    out.write("#define "+format_defstring(name).upper()+"_EXAMPLE_CHARCOUNT " +str(msgs[0][3])+"\n")
+    out.write("#define "+format_defstring(name).upper()+"_EXAMPLE_SENT " +str(1 if msgs[0][4] else 0)+"\n")
 
 if __name__ == '__main__':
     init()

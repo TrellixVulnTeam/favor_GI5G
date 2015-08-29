@@ -67,6 +67,25 @@ TEST_F(Reader, SQLiteAverage){
     delete Account3;
 }
 
+TEST_F(Reader, SqliteRowConfirmation){
+    AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
+    auto allResult = reader::queryAll(Account1, KEY_ALL, -1, -1, true);
+    bool success = false;
+
+    //Search for the exact message we're looking for
+    for (auto it = allResult->begin(); it!=allResult->end(); ++it){
+        if (it->id == ACCOUNT1_AT_TEST_DOT_COM_DUBTEST1_AT_TEST_DOT_COM_SENT_EXAMPLE_ID){
+            if (it->address == ACCOUNT1_AT_TEST_DOT_COM_DUBTEST1_AT_TEST_DOT_COM_SENT_EXAMPLE_ADDR &&
+               it->charCount == ACCOUNT1_AT_TEST_DOT_COM_DUBTEST1_AT_TEST_DOT_COM_SENT_EXAMPLE_CHARCOUNT &&
+               it->date == ACCOUNT1_AT_TEST_DOT_COM_DUBTEST1_AT_TEST_DOT_COM_SENT_EXAMPLE_DATE &&
+               it->sent == true) success = true;
+        }
+    }
+
+    ASSERT_TRUE(success);
+
+}
+
 TEST_F(Reader, SQliteCount){
     Contact LineEmailTest3 CONTACT_LineEmailTest3_ARGS;
     AccountManager* Account2 = AccountManager::buildManager ACC_account2_at_test_dot_com_ARGS;

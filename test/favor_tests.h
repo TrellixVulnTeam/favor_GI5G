@@ -35,6 +35,26 @@ TEST(LowercaseMethod, Lowercases) {
     ASSERT_EQ(lowercase(test3), result);
 }
 
+TEST(ToUTF8, SampleEncodings){
+    const char* shift_jis_string = "\x82\xB1\x82\xEA\x82\xCD\x95\xB6\x8E\x9A\x95\xCF\x8A\xB7\x82\xF0\x8E\x8E\x82\xB7\x82\xBD\x82\xDF\x82\xCC\x95\xB6\x8E\x9A\x97\xF1\x82\xC5\x82\xB7\x81\x42";
+    const char* shift_jis_string_out = "これは文字変換を試すための文字列です。";
+
+    ASSERT_NE(string(shift_jis_string), string(shift_jis_string_out));
+    ASSERT_EQ(string(shift_jis_string_out), to_utf8(shift_jis_string, "SHIFT_JIS"));
+
+    const char* big5_string = "\xA4\x40\xA4\x47\xA4\x54\xA5\x7C";
+    const char* big5_string_out = "一二三四";
+
+    ASSERT_NE(string(big5_string), string(big5_string_out));
+    ASSERT_EQ(string(big5_string_out), to_utf8(big5_string, "BIG5"));
+
+}
+
+TEST(ToUTF8, Errors){
+    ASSERT_THROW(to_utf8("You 'avin a giggle, mate?", "GIGGLE"), std::runtime_error); //"GIGGLE" obviously not valid encoding
+    ASSERT_THROW(to_utf8("\x81\x01", "SHIFT_JIS"), std::runtime_error); //x8101 is an invalid SHIFT_JIS char
+}
+
 TEST(AsString, Integer){
     ASSERT_EQ(as_string(359), "359");
     ASSERT_EQ(as_string(-23), "-23");

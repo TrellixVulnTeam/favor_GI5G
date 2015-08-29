@@ -9,13 +9,12 @@ This is more accurately a paragraph about what favor _will be_, as I'm very much
 TODO list, in no particular order:
 ==
 This is currently very messy because I'm mostly using it for myself. Also changes frequently.
- - Update our used libraries
- - Figure out how we want to handle failures of the AndroidTextManager the same way we do with the C++ based AccountManagers.
- - Look at how Google Test works with the NDK, because it does work with the NDK.
  - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
  (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
  further down the road.
- - The reader tests need at least one test that looks for an exact message with all its attributes so we can't miss attribute-loading problems (like our previous no-id issue)
+ - Update our used libraries
+ - Figure out how we want to handle failures of the AndroidTextManager the same way we do with the C++ based AccountManagers.
+ - Look at how Google Test works with the NDK, because it does work with the NDK.
  - EmailManager tests. The most fun
  - libiconv on Android and eventually windows platforms
  - In the worker address table computing code, we need to figure out what we're doing with suggested names (how to use/store them, whether to save them or give them to the reader, etc.)
