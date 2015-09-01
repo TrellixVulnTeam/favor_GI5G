@@ -9,10 +9,8 @@ This is more accurately a paragraph about what favor _will be_, as I'm very much
 TODO list, in no particular order:
 ==
 This is currently very messy because I'm mostly using it for myself. Also changes frequently.
- - Look at better ways to handle recovering from bad databases. For now it would be enough if we could delete the database file and rebuild it without messing up the active DB connections
- (though this may be difficult/not worth it to do threadsafely). Eventually we should look into something like trying each table and recovering whatever data we can save, but that's much
- further down the road.
  - Update our used libraries
+ - Should managed addresses be an AccountManager member, shared by all the Managers?
  - Figure out how we want to handle failures of the AndroidTextManager the same way we do with the C++ based AccountManagers.
  - Look at how Google Test works with the NDK, because it does work with the NDK.
  - EmailManager tests. The most fun
@@ -21,9 +19,6 @@ This is currently very messy because I'm mostly using it for myself. Also change
  - Some Android specific optimizations at the C++ layer wouldn't hurt: the reader keeping contacts in a hash by id for faster lookup, and the processor potentially pushing
  cache information up to a separate java layer cache proactively. 
  - Spend some time with a query analyzer and make sure that SQLlite is getting the best use possible out of our indices, and think about what might be worth changing if not.
- - In a perfect world, our methods to update contacts would properly adjust the state of the contacts and their held addresses instead of just marking the list as needing to be
- refreshed. This will take a little bit of work to do elegantly though - additions must create a new contact with an address _and_ ensure no other contacts have that address, and of
- course updates just to address linkages must do something similar. Deletions should be relatively simple. 
  
 Presentation Principles
 ==

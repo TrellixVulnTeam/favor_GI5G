@@ -38,6 +38,10 @@ namespace favor {
         void consultJson(bool initial = false) override;
 
     private:
+        string skypeDatabaseLocation;
+        long lastFetchTime;
+        std::set<string> managedAddresses;
+        static const char* addrListName;
 
     };
 }

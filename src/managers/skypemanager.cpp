@@ -25,11 +25,42 @@ namespace favor{
 
 
     void SkypeManager::updateJson() {
-        //TODO:
+        setJsonLong(lastFetchTime);
+        rapidjson::Value addrsVal;
+        addrsVal.SetArray();
+        for (auto it = managedAddresses.begin(); it != managedAddresses.end(); ++it){
+            addrsVal.PushBack(rapidjson::Value(it->c_str(), json.GetAllocator()).Move(), json.GetAllocator());
+        }
+        json[addrListName] = addrsVal;
     }
 
+
+    const char* SkypeManager::addrListName  = "managedAddresses";
+
     void SkypeManager::consultJson(bool initial) {
-        //TODO:
+        if (initial) {
+            if (json.HasMember("skypeDatabaseLocation"))
+                skypeDatabaseLocation = json["skypeDatabaseLocation"].GetString();
+            else throw badUserDataException("Skype manager missing database location");
+        }
+
+        if (json.HasMember(addrListName)){
+            rapidjson::Value& addrsVal = json[addrListName];
+            if (!addrsVal.IsArray()) throw badUserDataException("Managed addresses list improperly formatted in "+accountName +" json");
+            else {
+                for (auto it = addrsVal.Begin(); it!= addrsVal.End(); ++it){
+                    //TODO: do skype addresses need to be validated somehow?
+                    managedAddresses.insert(it->GetString());
+                }
+            }
+        }
+        else {
+            rapidjson::Value addrsVal;
+            addrsVal.SetArray();
+            json.AddMember(rapidjson::Value(addrListName, json.GetAllocator()).Move(), addrsVal, json.GetAllocator());
+        }
+
+        getJsonLong(lastFetchTime, 0);
     }
 
 

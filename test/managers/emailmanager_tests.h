@@ -21,6 +21,7 @@ Address
 
 
 TEST(EmailManager, General){
+    //TODO: this is a mess, and should at least inherit from something to use the in-memory database
     if (EMAIL_PASSWORD == ""){
         logger::warning("Email test skipped; no login info provided on this run");
         return;
