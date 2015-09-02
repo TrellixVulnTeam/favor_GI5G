@@ -43,6 +43,11 @@ namespace favor {
         std::set<string> managedAddresses;
         static const char* addrListName;
 
+        void verifyDatabase();
+
+
+
+
     };
 }
 

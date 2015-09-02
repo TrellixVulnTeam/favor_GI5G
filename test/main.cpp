@@ -5,6 +5,7 @@
 #include "accountmanager_tests.h"
 #include "processor_tests.h"
 #include "managers/emailmanager_tests.h"
+#include "managers/skypemanager_tests.h.h"
 
 
 #include "gtest/gtest.h"
