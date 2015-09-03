@@ -18,9 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "skypemanager.h"
 
-//TODO: minimal HTML (name suggests just XML?) shows up here too; we're going to need stripping
-//TODO: we can use Skype's pretty names to guess suggested display names the same way we do with the email manager
-
 namespace favor{
 
     SkypeManager::SkypeManager(string accNm, string detailsJson) : AccountManager(accNm, TYPE_SKYPE, detailsJson) {
@@ -40,25 +37,106 @@ namespace favor{
 
 
     const char* SkypeManager::addrListName  = "managedAddresses";
-    #define MSG_TABLE_NAME "Messages"
-    #define MSG_COLUMN_BODY "body_xml"
-    #define MSG_COLUMN_AUTHOR "author"
-    #define MSG_COLUMN_AUTHOR_DISPLAYNAME "from_dispname"
-    #define MSG_COLUMN_DATE "timestamp"
+    #define SKYPE_MSG_TABLE_NAME "Messages"
+    #define SKYPE_ACCOUNTS_TABLE_NAME "Accounts"
+    #define SKYPE_PARTICIPANTS_TABLE_NAME "Participants"
+
+    #define SKYPE_PARTICIPANTS_COLUMN_ACCNAME "identity"
+    #define SKYPE_PARTICIPANTS_COLUMN_CONVO "convo_id"
+
+    #define SKYPE_ACCOUNTS_COLUMN_ACCNAME "skypename"
+
+    #define SKYPE_MSG_COLUMN_BODY "body_xml"
+    #define SKYPE_MSG_COLUMN_AUTHOR "author"
+    #define SKYPE_MSG_COLUMN_AUTHOR_DISPLAYNAME "from_dispname"
+    #define SKYPE_MSG_COLUMN_DATE "timestamp"
+    #define SKYPE_MSG_COLUMN_CONVO "convo_id"
 
 
-    void SkypeManager::verifyDatabase() {
-        //TODO: this should throw an exception if we can't both open the database and find the right table(s) we need
+    void SkypeManager::verifyDatabaseContents() {
+
+        std::unordered_map<string, bool> columnCheck;
+        #define SKYPE_CHECK_COLUMN(table, col, colname) if (!columnCheck.count(col)) throw badUserDataException("Skype database missing " table " table " colname " column (" col ");")
+
         sqlite3 *db;
-        int r = sqlite3_open_v2(skypeDatabaseLocation.c_str(), &db, SQLITE_OPEN_READONLY, NULL);
-        DLOG(as_string(r));
+        sqlite3_stmt* stmt;
+        int result;
+        sqlv(sqlite3_open_v2(skypeDatabaseLocation.c_str(), &db, SQLITE_OPEN_READONLY, NULL));
+        //Look for tables, and maybe verify presence of our desired attributes?
+
+        //Messages table ------------------------
+        string sql("PRAGMA table_info(" SKYPE_MSG_TABLE_NAME ");");
+        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+
+        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+            columnCheck[reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1))] = true;
+        }
+        sqlv(result);
+        sqlite3_finalize(stmt);
+        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing messages table (" SKYPE_MSG_TABLE_NAME")");
+        else {
+            SKYPE_CHECK_COLUMN("messages", SKYPE_MSG_COLUMN_BODY, "body");
+            SKYPE_CHECK_COLUMN("messages", SKYPE_MSG_COLUMN_AUTHOR, "author");
+            SKYPE_CHECK_COLUMN("messages", SKYPE_MSG_COLUMN_AUTHOR_DISPLAYNAME, "author display name");
+            SKYPE_CHECK_COLUMN("messages", SKYPE_MSG_COLUMN_DATE, "date");
+            SKYPE_CHECK_COLUMN("messages", SKYPE_MSG_COLUMN_CONVO, "conversation id");
+            columnCheck.clear();
+        }
+
+        //Accounts table ------------------------
+        sql = ("PRAGMA table_info(" SKYPE_ACCOUNTS_TABLE_NAME ");");
+        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+
+        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+            columnCheck[reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1))] = true;
+        }
+        sqlv(result);
+        sqlite3_finalize(stmt);
+        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing accounts table (" SKYPE_ACCOUNTS_TABLE_NAME")");
+        else {
+            SKYPE_CHECK_COLUMN("accounts", SKYPE_ACCOUNTS_COLUMN_ACCNAME, "account name");
+            columnCheck.clear();
+        }
+
+        //Conversation participants table ------------------------
+        sql = ("PRAGMA table_info(" SKYPE_PARTICIPANTS_TABLE_NAME ");");
+        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+
+        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+            columnCheck[reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1))] = true;
+        }
+        sqlv(result);
+        sqlite3_finalize(stmt);
+        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing accounts table (" SKYPE_PARTICIPANTS_TABLE_NAME")");
+        else {
+            SKYPE_CHECK_COLUMN("conversation participants", SKYPE_PARTICIPANTS_COLUMN_ACCNAME, "account name");
+            SKYPE_CHECK_COLUMN("conversation participants", SKYPE_PARTICIPANTS_COLUMN_CONVO, "conversation id");
+            columnCheck.clear();
+        }
+
+
+
+        //Verify that we actually have the right account name
+        sql = ("SELECT " SKYPE_ACCOUNTS_COLUMN_ACCNAME " FROM " SKYPE_ACCOUNTS_TABLE_NAME";");
+        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+
+        bool found = false;
+        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+            if (reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)) == accountName) found = true;
+        }
+        sqlv(result);
+        if (!found) throw badUserDataException("Skype manager account name not found in database");
+
+        sqlv(sqlite3_finalize(stmt));
         sqlv(sqlite3_close(db));
     }
 
     void SkypeManager::consultJson(bool initial) {
         if (initial) {
-            if (json.HasMember("skypeDatabaseLocation"))
+            if (json.HasMember("skypeDatabaseLocation")){
                 skypeDatabaseLocation = json["skypeDatabaseLocation"].GetString();
+                verifyDatabaseContents();
+            }
             else throw badUserDataException("Skype manager missing database location");
         }
 
@@ -83,27 +161,48 @@ namespace favor{
 
 
     void SkypeManager::fetchAddresses() {
-        //TODO
+        //TODO: we can use Skype's pretty names to guess suggested display names the same way we do with the email manager
 
     }
 
     void SkypeManager::fetchMessages() {
 
-        //TODO: figure out a way to verify we have the right database file; the wrong one simply gives us "Table does not exist" which is tremendously uninformative
+        //TODO: minimal HTML (name suggests just XML?) shows up here too; we're going to need stripping
+
+
         sqlite3 *db;
         sqlite3_stmt* stmt;
         DLOG(skypeDatabaseLocation);
         sqlv(sqlite3_open_v2(skypeDatabaseLocation.c_str(), &db, SQLITE_OPEN_READONLY, NULL));
+        int result;
+        string sql("SELECT " SKYPE_PARTICIPANTS_COLUMN_ACCNAME "," SKYPE_PARTICIPANTS_COLUMN_CONVO " FROM " SKYPE_PARTICIPANTS_TABLE_NAME ";");
+        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+        std::unordered_map<string, int> conversationIDMap;
+        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+            string name = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
+            int convoId = sqlite3_column_int(stmt, 1);
+            //TODO put the id in the map, keyed to name
+            DLOG(name + " - " + as_string(convoId));
+        }
+        sqlv(sqlite3_finalize(stmt));
+
+
+
+
         //TODO: include our lastFetchTime here as a limiter, and eventually go back and get newly added accounts
-        string sql("SELECT " MSG_COLUMN_AUTHOR "," MSG_COLUMN_DATE "," MSG_COLUMN_BODY " FROM " MSG_TABLE_NAME " ORDER BY " MSG_COLUMN_DATE " " DB_SORT_ORDER";");
+        sql = "SELECT " SKYPE_MSG_COLUMN_AUTHOR "," SKYPE_MSG_COLUMN_DATE "," SKYPE_MSG_COLUMN_BODY " FROM " SKYPE_MSG_TABLE_NAME " ORDER BY " SKYPE_MSG_COLUMN_DATE " " DB_SORT_ORDER";";
         DLOG(sql);
         DLOG(skypeDatabaseLocation);
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-        int result;
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
             string body = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
+            //TODO: we need to deal with nulls here, see failure "basic_string::_S_construct null not valid" thrown in the test body.
+            DLOG(body);
+  //          string address
+//            holdMessage()
 
         }
+        sqlv(result); //make sure we broke out with good results
         sqlv(sqlite3_finalize(stmt));
         sqlv(sqlite3_close(db));
 

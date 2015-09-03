@@ -69,7 +69,9 @@ namespace favor {
             case SQLITE_DONE:
                 break;
             default:
-                logger::error("SQLite error #" + as_string(result) + ", db says \"" + sqlite3_errmsg(db) + "\"");
+                DLOG("Sqlite failure with error code "+as_string(result));
+                if (result == 14) logger::error("SQlite error #14, database failed to open");
+                else logger::error("SQLite error #" + as_string(result) + ", db says \"" + sqlite3_errmsg(db) + "\"");
                 throw sqliteException();
         }
     }
