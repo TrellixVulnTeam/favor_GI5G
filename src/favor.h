@@ -90,6 +90,8 @@ namespace favor {
     //Utility
     void sqlite3_validate(int result, sqlite3 *db);
 
+    string sqlite3_build_string(const unsigned char * ptr);
+
     bool compareAddress(const Address& lhs, const Address& rhs);
 
     double round(double d);

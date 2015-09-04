@@ -40,6 +40,8 @@ namespace favor{
     #define SKYPE_MSG_TABLE_NAME "Messages"
     #define SKYPE_ACCOUNTS_TABLE_NAME "Accounts"
     #define SKYPE_PARTICIPANTS_TABLE_NAME "Participants"
+    #define SKYPE_TRANSFERS_TABLE_NAME "Tranfers"
+
 
     #define SKYPE_PARTICIPANTS_COLUMN_ACCNAME "identity"
     #define SKYPE_PARTICIPANTS_COLUMN_CONVO "convo_id"
@@ -48,10 +50,15 @@ namespace favor{
 
     #define SKYPE_MSG_COLUMN_BODY "body_xml"
     #define SKYPE_MSG_COLUMN_AUTHOR "author"
-    #define SKYPE_MSG_COLUMN_AUTHOR_DISPLAYNAME "from_dispname"
+    #define SKYPE_MSG_COLUMN_AUTHOR_DISPLAYNAME "from_dispname" //TODO: do we need this? we can get the info from other tables, and might use those for contacts anyway
     #define SKYPE_MSG_COLUMN_DATE "timestamp"
     #define SKYPE_MSG_COLUMN_CONVO "convo_id"
+    #define SKYPE_MSG_COLUMN_RMID "remote_id"
 
+    #define SKYPE_TRANSFERS_COLUMN_AUTHOR "partner_id"
+    #define SKYPE_TRANSFERS_COLUMN_CONVO "convo_id"
+    #define SKYPE_TRANSFERS_COLUMN_STATUS "status"
+    #define SKYPE_TRANSFERS_STATUS_SUCCESS "8" //This just has to be inferred from looking at the database
 
     void SkypeManager::verifyDatabaseContents() {
 
@@ -114,6 +121,24 @@ namespace favor{
             columnCheck.clear();
         }
 
+        //Transfers table
+        sql = ("PRAGMA table_info(" SKYPE_TRANSFERS_TABLE_NAME ");");
+        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+
+        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+            columnCheck[reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1))] = true;
+        }
+        sqlv(result);
+        sqlite3_finalize(stmt);
+        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing accounts table (" SKYPE_PARTICIPANTS_TABLE_NAME")");
+        else {
+            SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_AUTHOR, "author");
+            SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_CONVO, "conversation id");
+            SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_STATUS, "status");
+            columnCheck.clear();
+        }
+
+
 
 
         //Verify that we actually have the right account name
@@ -122,7 +147,7 @@ namespace favor{
 
         bool found = false;
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-            if (reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)) == accountName) found = true;
+            if (sqlite3_build_string(sqlite3_column_text(stmt, 0)) == accountName) found = true;
         }
         sqlv(result);
         if (!found) throw badUserDataException("Skype manager account name not found in database");
@@ -170,6 +195,7 @@ namespace favor{
         //TODO: minimal HTML (name suggests just XML?) shows up here too; we're going to need stripping
 
 
+
         sqlite3 *db;
         sqlite3_stmt* stmt;
         DLOG(skypeDatabaseLocation);
@@ -177,33 +203,59 @@ namespace favor{
         int result;
         string sql("SELECT " SKYPE_PARTICIPANTS_COLUMN_ACCNAME "," SKYPE_PARTICIPANTS_COLUMN_CONVO " FROM " SKYPE_PARTICIPANTS_TABLE_NAME ";");
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-        std::unordered_map<string, int> conversationIDMap;
+        std::unordered_map<int, vector<string>> conversationIDMap;
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-            string name = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
-            int convoId = sqlite3_column_int(stmt, 1);
-            //TODO put the id in the map, keyed to name
-            DLOG(name + " - " + as_string(convoId));
+            //Build a map of convo id to name so we can use it for messages later. Every convo includes at least two participants:
+            //the account owner, plus the person (people) they are talking to.
+            string participant = sqlite3_build_string(sqlite3_column_text(stmt, 0));
+            if (participant != accountName) conversationIDMap[sqlite3_column_int(stmt, 1)].push_back(participant);
         }
+        sqlv(result);
         sqlv(sqlite3_finalize(stmt));
 
 
 
 
+
+        //Normal messages
         //TODO: include our lastFetchTime here as a limiter, and eventually go back and get newly added accounts
-        sql = "SELECT " SKYPE_MSG_COLUMN_AUTHOR "," SKYPE_MSG_COLUMN_DATE "," SKYPE_MSG_COLUMN_BODY " FROM " SKYPE_MSG_TABLE_NAME " ORDER BY " SKYPE_MSG_COLUMN_DATE " " DB_SORT_ORDER";";
-        DLOG(sql);
-        DLOG(skypeDatabaseLocation);
+        sql = "SELECT " SKYPE_MSG_COLUMN_RMID "," SKYPE_MSG_COLUMN_AUTHOR "," SKYPE_MSG_COLUMN_DATE "," SKYPE_MSG_COLUMN_BODY "," SKYPE_MSG_COLUMN_CONVO
+                " FROM " SKYPE_MSG_TABLE_NAME " ORDER BY " SKYPE_MSG_COLUMN_DATE " " DB_SORT_ORDER";";
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-            string body = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
-            //TODO: we need to deal with nulls here, see failure "basic_string::_S_construct null not valid" thrown in the test body.
-            DLOG(body);
-  //          string address
-//            holdMessage()
+            long rmid = sqlite3_column_int64(stmt, 0);
+            long timestamp =  sqlite3_column_int64(stmt, 2); //TODO: is this fine? proper unix timestamp?
+            //TODO: and if it is, compare it to lastfetch and select the larger
+            string body = sqlite3_build_string(sqlite3_column_text(stmt, 3));
+            long convId = sqlite3_column_int64(stmt,4);
+
+            string author = sqlite3_build_string(sqlite3_column_text(stmt, 1));
+            bool sent = author == accountName;
+            if (sent){
+                for (int i = 0; i < conversationIDMap[convId].size(); ++i){
+                    holdMessage(sent, rmid, timestamp, conversationIDMap[convId][i], true, body);
+                }
+            } else {
+                string address = author;
+                holdMessage(sent, rmid, timestamp, address, false, body);
+            }
 
         }
         sqlv(result); //make sure we broke out with good results
         sqlv(sqlite3_finalize(stmt));
+
+        //File transfers (media-only messages, as far as Favor is concerned)
+        sql = "SELECT " SKYPE_TRANSFERS_COLUMN_AUTHOR "," SKYPE_TRANSFERS_COLUMN_CONVO "," SKYPE_TRANSFERS_COLUMN_STATUS " FROM " SKYPE_TRANSFERS_TABLE_NAME
+                " WHERE " SKYPE_TRANSFERS_COLUMN_STATUS "=" SKYPE_TRANSFERS_STATUS_SUCCESS ";";
+        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+
+            //TODO:
+        }
+        sqlv(result); //make sure we broke out with good results
+        sqlv(sqlite3_finalize(stmt));
+
+
         sqlv(sqlite3_close(db));
 
 

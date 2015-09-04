@@ -76,6 +76,11 @@ namespace favor {
         }
     }
 
+    string sqlite3_build_string(const unsigned char* ptr){
+        if (ptr == NULL) return "";
+        else return string(reinterpret_cast<const char *>(ptr));
+    }
+
     bool compareAddress(const Address &lhs, const Address &rhs) {
         //Results in a largest first array
         if (lhs.contactId > -1){
