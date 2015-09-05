@@ -41,7 +41,7 @@ namespace favor{
     #define SKYPE_MSG_TABLE_NAME "Messages"
     #define SKYPE_ACCOUNTS_TABLE_NAME "Accounts"
     #define SKYPE_PARTICIPANTS_TABLE_NAME "Participants"
-    #define SKYPE_TRANSFERS_TABLE_NAME "Tranfers"
+    #define SKYPE_TRANSFERS_TABLE_NAME "Transfers"
 
 
     #define SKYPE_PARTICIPANTS_COLUMN_ACCNAME "identity"
@@ -56,7 +56,7 @@ namespace favor{
     #define SKYPE_MSG_COLUMN_CONVO "convo_id"
     #define SKYPE_MSG_COLUMN_RMID "remote_id"
 
-    #define SKYPE_TRANSFERS_COLUMN_AUTHOR "partner_id"
+    #define SKYPE_TRANSFERS_COLUMN_AUTHOR "partner_handle"
     #define SKYPE_TRANSFERS_COLUMN_CONVO "convo_id"
     #define SKYPE_TRANSFERS_COLUMN_STATUS "status"
     #define SKYPE_TRANSFERS_STATUS_SUCCESS "8" //This just has to be inferred from looking at the database
@@ -117,7 +117,7 @@ namespace favor{
         }
         sqlv(result);
         sqlite3_finalize(stmt);
-        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing accounts table (" SKYPE_PARTICIPANTS_TABLE_NAME")");
+        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing conversation participants table (" SKYPE_PARTICIPANTS_TABLE_NAME")");
         else {
             SKYPE_CHECK_COLUMN("conversation participants", SKYPE_PARTICIPANTS_COLUMN_ACCNAME, "account name");
             SKYPE_CHECK_COLUMN("conversation participants", SKYPE_PARTICIPANTS_COLUMN_CONVO, "conversation id");
@@ -133,7 +133,7 @@ namespace favor{
         }
         sqlv(result);
         sqlite3_finalize(stmt);
-        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing accounts table (" SKYPE_PARTICIPANTS_TABLE_NAME")");
+        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing transfers table (" SKYPE_TRANSFERS_TABLE_NAME")");
         else {
             SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_AUTHOR, "author");
             SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_CONVO, "conversation id");
@@ -190,6 +190,34 @@ namespace favor{
         getJsonLong(lastTransferTime, 0);
     }
 
+    string SkypeManager::buildSelection(const vector<Address> &addresses, const std::set<string>& badAddresses, const string convoIDColumn, const string timeColumn) {
+        string selection = "WHERE (";
+        for (int i = 0; i < addresses.size(); ++i){
+            if (!badAddresses.count(addresses[i].addr)){
+                selection += convoIDColumn +"=?";
+                if (i != addresses.size() -1 ) selection += " OR ";
+            }
+            if (i == addresses.size() -1 ) selection += ")";
+        }
+        selection += " AND "+timeColumn+">?";
+        return selection;
+
+    }
+
+    void SkypeManager::bindSelection(sqlite3_stmt *stmt, const vector<Address>& addresses, const std::set<string>& badAddresses,
+                                     const std::unordered_map<string, int>& participantIds, long time) {
+        int usedAddressTotal = 1; //We start from 1 because bindings start from 1
+        for (int i=0; i < addresses.size(); ++i){
+            if (!badAddresses.count(addresses[i].addr)){
+                DLOG("Bind "+as_string(usedAddressTotal) +" to convo id "+as_string(participantIds.at(addresses[i].addr)));
+                sqlite3_bind_int64(stmt, usedAddressTotal, participantIds.at(addresses[i].addr));
+                ++usedAddressTotal;
+            }
+        }
+        DLOG("Bind "+as_string(usedAddressTotal)+" to timestamp "+as_string(time));
+        sqlite3_bind_int64(stmt, usedAddressTotal, time);
+    }
+
 
     void SkypeManager::fetchAddresses() {
         //TODO: we can use Skype's pretty names to guess suggested display names the same way we do with the email manager
@@ -201,9 +229,14 @@ namespace favor{
 
         //TODO: minimal HTML (name suggests just XML?) shows up here too; we're going to need stripping
 
-        //TODO: limit by appropriate time and relevant accounts, and use sqlite3's proper binding interface for variables in WHERE clauses
-
         //TODO code for going back and getting messages for newly added accounts
+
+        //TODO: this seems to be saving an awful lot of messages. worth confirming it's doing things right
+
+
+
+        shared_ptr<vector<Address>> addresses = contactAddresses();
+        vector<Address> newAddresses;
 
 
 
@@ -214,15 +247,36 @@ namespace favor{
         int result;
         string sql("SELECT " SKYPE_PARTICIPANTS_COLUMN_ACCNAME "," SKYPE_PARTICIPANTS_COLUMN_CONVO " FROM " SKYPE_PARTICIPANTS_TABLE_NAME ";");
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-        std::unordered_map<int, vector<string>> conversationIDMap;
+        std::unordered_map<int, vector<string>> conversationIDToParticipantMap; //For determining who sent things
+        std::unordered_map<string, int> participantToIDMap; //For building selections to only get messages we want
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
             //Build a map of convo id to name so we can use it for messages later. Every convo includes at least two participants:
             //the account owner, plus the person (people) they are talking to.
             string participant = sqlite3_get_string(stmt, 0);
-            if (participant != accountName) conversationIDMap[sqlite3_column_int(stmt, 1)].push_back(participant);
+            if (participant != accountName){
+                conversationIDToParticipantMap[sqlite3_column_int64(stmt, 1)].push_back(participant);
+                participantToIDMap[participant] = sqlite3_column_int64(stmt, 1);
+            }
         }
         sqlv(result);
         sqlv(sqlite3_finalize(stmt));
+
+        std::set<string> badAddressIDs;
+        if (addresses->size() != participantToIDMap.size()){
+            for (int i = 0; i < addresses->size(); ++i){
+                if (!participantToIDMap.count(addresses->at(i).addr)){
+                    string addr = addresses->at(i).addr;
+                    logger::warning("Ignoring skype address "+addr+" because a corresponding participant conversation ID cannot be found.");
+                    badAddressIDs.insert(addr);
+                }
+            }
+        }
+
+        if (addresses->size() - badAddressIDs.size() == 0){
+            logger::info("Account "+accountName+" fetchMessages returned because no usable addresses found");
+            return;
+        }
+
 
 
 
@@ -231,8 +285,13 @@ namespace favor{
         //Normal messages
         //TODO: include our lastMessageTime here as a limiter, and eventually go back and get newly added accounts
         sql = "SELECT " SKYPE_MSG_COLUMN_RMID "," SKYPE_MSG_COLUMN_AUTHOR "," SKYPE_MSG_COLUMN_DATE "," SKYPE_MSG_COLUMN_BODY "," SKYPE_MSG_COLUMN_CONVO
-                " FROM " SKYPE_MSG_TABLE_NAME " ORDER BY " SKYPE_MSG_COLUMN_DATE " " DB_SORT_ORDER";";
+                " FROM " SKYPE_MSG_TABLE_NAME " ";
+        sql += buildSelection((*addresses), badAddressIDs,SKYPE_MSG_COLUMN_CONVO, SKYPE_MSG_COLUMN_DATE);
+        sql += " ORDER BY " SKYPE_MSG_COLUMN_DATE " " DB_SORT_ORDER;
+        DLOG(sql);
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+        bindSelection(stmt, (*addresses), badAddressIDs, participantToIDMap, lastMessageTime);
+
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
             long rmid = sqlite3_column_int64(stmt, 0);
             long timestamp =  sqlite3_column_int64(stmt, 2);
@@ -243,8 +302,8 @@ namespace favor{
             string author = sqlite3_get_string(stmt, 1);
             bool sent = author == accountName;
             if (sent){
-                for (int i = 0; i < conversationIDMap[convId].size(); ++i){
-                    holdMessage(sent, rmid, timestamp, conversationIDMap[convId][i], false, body);
+                for (int i = 0; i < conversationIDToParticipantMap[convId].size(); ++i){
+                    holdMessage(sent, rmid, timestamp, conversationIDToParticipantMap[convId][i], false, body);
                 }
             } else {
                 holdMessage(sent, rmid, timestamp, author, false, body);
@@ -255,9 +314,14 @@ namespace favor{
         sqlv(sqlite3_finalize(stmt));
 
         //File transfers (media-only messages, as far as Favor is concerned)
-        sql = "SELECT " SKYPE_TRANSFERS_COLUMN_PKID "," SKYPE_TRANSFERS_COLUMN_AUTHOR ","  SKYPE_MSG_COLUMN_DATE "," SKYPE_TRANSFERS_COLUMN_CONVO ","
-                SKYPE_TRANSFERS_COLUMN_STATUS " FROM " SKYPE_TRANSFERS_TABLE_NAME " WHERE " SKYPE_TRANSFERS_COLUMN_STATUS "=" SKYPE_TRANSFERS_STATUS_SUCCESS ";";
+        sql = "SELECT " SKYPE_TRANSFERS_COLUMN_PKID "," SKYPE_TRANSFERS_COLUMN_AUTHOR ","  SKYPE_TRANSFERS_COLUMN_DATE "," SKYPE_TRANSFERS_COLUMN_CONVO ","
+                SKYPE_TRANSFERS_COLUMN_STATUS " FROM " SKYPE_TRANSFERS_TABLE_NAME " ";
+        sql += buildSelection((*addresses), badAddressIDs, SKYPE_TRANSFERS_COLUMN_CONVO, SKYPE_TRANSFERS_COLUMN_DATE);
+        sql += " AND " SKYPE_TRANSFERS_COLUMN_STATUS "=" SKYPE_TRANSFERS_STATUS_SUCCESS ";";
+        DLOG(sql)
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+        bindSelection(stmt, (*addresses), badAddressIDs, participantToIDMap, lastTransferTime);
+
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
             long id = -1 * sqlite3_column_int64(stmt, 0); //Multiply by -1 to prevent collisions with normal Skype message IDs
             long timestamp = sqlite3_column_int64(stmt, 2);
@@ -267,8 +331,8 @@ namespace favor{
             string author = sqlite3_get_string(stmt, 1);
             bool sent = author == accountName;
             if (sent) {
-                for (int i = 0; i < conversationIDMap[convId].size(); ++i){
-                    holdMessage(sent, id, timestamp, conversationIDMap[convId][i], true, "");
+                for (int i = 0; i < conversationIDToParticipantMap[convId].size(); ++i){
+                    holdMessage(sent, id, timestamp, conversationIDToParticipantMap[convId][i], true, "");
                 }
             } else {
                 holdMessage(sent, id, timestamp, author, true, "");

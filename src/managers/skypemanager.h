@@ -43,7 +43,8 @@ namespace favor {
         long lastTransferTime;
         std::set<string> managedAddresses;
         static const char* addrListName;
-
+        string buildSelection(const vector<Address>& addresses, const std::set<string>& badAddresses, string convoIDColumn, string timeColumn);
+        void bindSelection(sqlite3_stmt* stmt, const vector<Address>& addresses, const std::set<string>& badAddresses, const std::unordered_map<string, int>& participantIds, long time);
 
         void verifyDatabaseContents();
 

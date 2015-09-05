@@ -9,6 +9,7 @@
 
 #define SKYPE_TEST_DB_LOC "/home/josh/.Skype/joshua.tanner/main.db"
 #define SKYPE_ACCOUNT_NAME "joshua.tanner"
+#define SKYPE_CONTACT_NAME ""
 
 
 TEST(SkypeManager, General){
@@ -18,6 +19,7 @@ TEST(SkypeManager, General){
     //reader::refreshAll();
 
     AccountManager::addAccount(SKYPE_ACCOUNT_NAME, TYPE_SKYPE, "{\"skypeDatabaseLocation\":\"" SKYPE_TEST_DB_LOC "\"}");
+    worker::createContactWithAddress(SKYPE_CONTACT_NAME,TYPE_SKYPE, "SKYPE_TEST_Z");
     reader::accountList()->front()->updateMessages();
 
 
