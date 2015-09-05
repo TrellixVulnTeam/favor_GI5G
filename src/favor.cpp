@@ -76,7 +76,8 @@ namespace favor {
         }
     }
 
-    string sqlite3_build_string(const unsigned char* ptr){
+    string sqlite3_get_string(sqlite3_stmt* stmt, int col){
+        const unsigned char *ptr = sqlite3_column_text(stmt, col);
         if (ptr == NULL) return "";
         else return string(reinterpret_cast<const char *>(ptr));
     }

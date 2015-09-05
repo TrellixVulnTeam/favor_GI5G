@@ -26,7 +26,8 @@ namespace favor{
 
 
     void SkypeManager::updateJson() {
-        setJsonLong(lastFetchTime);
+        setJsonLong(lastMessageTime);
+        setJsonLong(lastTransferTime);
         rapidjson::Value addrsVal;
         addrsVal.SetArray();
         for (auto it = managedAddresses.begin(); it != managedAddresses.end(); ++it){
@@ -59,6 +60,8 @@ namespace favor{
     #define SKYPE_TRANSFERS_COLUMN_CONVO "convo_id"
     #define SKYPE_TRANSFERS_COLUMN_STATUS "status"
     #define SKYPE_TRANSFERS_STATUS_SUCCESS "8" //This just has to be inferred from looking at the database
+    #define SKYPE_TRANSFERS_COLUMN_DATE "starttime"
+    #define SKYPE_TRANSFERS_COLUMN_PKID "pk_id" //Wish I knew what "PK" stood for, but this appears to be unique
 
     void SkypeManager::verifyDatabaseContents() {
 
@@ -135,6 +138,8 @@ namespace favor{
             SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_AUTHOR, "author");
             SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_CONVO, "conversation id");
             SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_STATUS, "status");
+            SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_DATE, "start time");
+            SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_PKID, "pk id");
             columnCheck.clear();
         }
 
@@ -147,7 +152,7 @@ namespace favor{
 
         bool found = false;
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-            if (sqlite3_build_string(sqlite3_column_text(stmt, 0)) == accountName) found = true;
+            if (sqlite3_get_string(stmt, 0) == accountName) found = true;
         }
         sqlv(result);
         if (!found) throw badUserDataException("Skype manager account name not found in database");
@@ -181,7 +186,8 @@ namespace favor{
             json.AddMember(rapidjson::Value(addrListName, json.GetAllocator()).Move(), addrsVal, json.GetAllocator());
         }
 
-        getJsonLong(lastFetchTime, 0);
+        getJsonLong(lastMessageTime, 0);
+        getJsonLong(lastTransferTime, 0);
     }
 
 
@@ -190,9 +196,14 @@ namespace favor{
 
     }
 
+
     void SkypeManager::fetchMessages() {
 
         //TODO: minimal HTML (name suggests just XML?) shows up here too; we're going to need stripping
+
+        //TODO: limit by appropriate time and relevant accounts, and use sqlite3's proper binding interface for variables in WHERE clauses
+
+        //TODO code for going back and getting messages for newly added accounts
 
 
 
@@ -207,7 +218,7 @@ namespace favor{
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
             //Build a map of convo id to name so we can use it for messages later. Every convo includes at least two participants:
             //the account owner, plus the person (people) they are talking to.
-            string participant = sqlite3_build_string(sqlite3_column_text(stmt, 0));
+            string participant = sqlite3_get_string(stmt, 0);
             if (participant != accountName) conversationIDMap[sqlite3_column_int(stmt, 1)].push_back(participant);
         }
         sqlv(result);
@@ -218,26 +229,25 @@ namespace favor{
 
 
         //Normal messages
-        //TODO: include our lastFetchTime here as a limiter, and eventually go back and get newly added accounts
+        //TODO: include our lastMessageTime here as a limiter, and eventually go back and get newly added accounts
         sql = "SELECT " SKYPE_MSG_COLUMN_RMID "," SKYPE_MSG_COLUMN_AUTHOR "," SKYPE_MSG_COLUMN_DATE "," SKYPE_MSG_COLUMN_BODY "," SKYPE_MSG_COLUMN_CONVO
                 " FROM " SKYPE_MSG_TABLE_NAME " ORDER BY " SKYPE_MSG_COLUMN_DATE " " DB_SORT_ORDER";";
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
             long rmid = sqlite3_column_int64(stmt, 0);
-            long timestamp =  sqlite3_column_int64(stmt, 2); //TODO: is this fine? proper unix timestamp?
-            //TODO: and if it is, compare it to lastfetch and select the larger
-            string body = sqlite3_build_string(sqlite3_column_text(stmt, 3));
+            long timestamp =  sqlite3_column_int64(stmt, 2);
+            if (timestamp > lastMessageTime) lastMessageTime = timestamp;
+            string body = sqlite3_get_string(stmt, 3);
             long convId = sqlite3_column_int64(stmt,4);
 
-            string author = sqlite3_build_string(sqlite3_column_text(stmt, 1));
+            string author = sqlite3_get_string(stmt, 1);
             bool sent = author == accountName;
             if (sent){
                 for (int i = 0; i < conversationIDMap[convId].size(); ++i){
-                    holdMessage(sent, rmid, timestamp, conversationIDMap[convId][i], true, body);
+                    holdMessage(sent, rmid, timestamp, conversationIDMap[convId][i], false, body);
                 }
             } else {
-                string address = author;
-                holdMessage(sent, rmid, timestamp, address, false, body);
+                holdMessage(sent, rmid, timestamp, author, false, body);
             }
 
         }
@@ -245,12 +255,25 @@ namespace favor{
         sqlv(sqlite3_finalize(stmt));
 
         //File transfers (media-only messages, as far as Favor is concerned)
-        sql = "SELECT " SKYPE_TRANSFERS_COLUMN_AUTHOR "," SKYPE_TRANSFERS_COLUMN_CONVO "," SKYPE_TRANSFERS_COLUMN_STATUS " FROM " SKYPE_TRANSFERS_TABLE_NAME
-                " WHERE " SKYPE_TRANSFERS_COLUMN_STATUS "=" SKYPE_TRANSFERS_STATUS_SUCCESS ";";
+        sql = "SELECT " SKYPE_TRANSFERS_COLUMN_PKID "," SKYPE_TRANSFERS_COLUMN_AUTHOR ","  SKYPE_MSG_COLUMN_DATE "," SKYPE_TRANSFERS_COLUMN_CONVO ","
+                SKYPE_TRANSFERS_COLUMN_STATUS " FROM " SKYPE_TRANSFERS_TABLE_NAME " WHERE " SKYPE_TRANSFERS_COLUMN_STATUS "=" SKYPE_TRANSFERS_STATUS_SUCCESS ";";
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+            long id = -1 * sqlite3_column_int64(stmt, 0); //Multiply by -1 to prevent collisions with normal Skype message IDs
+            long timestamp = sqlite3_column_int64(stmt, 2);
+            if (timestamp > lastTransferTime) lastTransferTime = timestamp;
+            long convId = sqlite3_column_int64(stmt,3);
 
-            //TODO:
+            string author = sqlite3_get_string(stmt, 1);
+            bool sent = author == accountName;
+            if (sent) {
+                for (int i = 0; i < conversationIDMap[convId].size(); ++i){
+                    holdMessage(sent, id, timestamp, conversationIDMap[convId][i], true, "");
+                }
+            } else {
+                holdMessage(sent, id, timestamp, author, true, "");
+            }
+
         }
         sqlv(result); //make sure we broke out with good results
         sqlv(sqlite3_finalize(stmt));

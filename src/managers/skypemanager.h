@@ -39,9 +39,11 @@ namespace favor {
 
     private:
         string skypeDatabaseLocation;
-        long lastFetchTime;
+        long lastMessageTime;
+        long lastTransferTime;
         std::set<string> managedAddresses;
         static const char* addrListName;
+
 
         void verifyDatabaseContents();
 
