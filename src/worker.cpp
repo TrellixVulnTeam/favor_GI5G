@@ -251,13 +251,14 @@ namespace favor {
                 sqlv(sqlite3_bind_int64(stmt, 4, m.charCount));
                 sqlv(sqlite3_bind_int(stmt, 5, m.media()));
                 if (SAVE_BODY) sqlv(sqlite3_bind_text(stmt, 6, m.body().c_str(), m.body().length(), SQLITE_STATIC));
-            }
+            } else DLOG("Saving failed message with id="+as_string(m.id));
             bool inserted = true;
 
             int result = sqlite3_step(stmt);
             if (result != SQLITE_OK && result != SQLITE_ROW && result != SQLITE_DONE){
                 int extErrCode = sqlite3_extended_errcode(db);
                 if (extErrCode == SQLITE_CONSTRAINT_PRIMARYKEY){
+                    logger::info("Did not save message to/from "+m.address+" with id="+as_string(m.id)+" due to private key constraints");
                     inserted = false;
                     sqlite3_reset(stmt); //This is something we can handle, so we don't want to validate the reset because it'll return the same error as above
                 } else sqlv(sqlite3_reset(stmt)); //This reset should return the same code as the previous result anyway

@@ -205,7 +205,7 @@ namespace favor{
     }
 
     void SkypeManager::bindSelection(sqlite3_stmt *stmt, const vector<Address>& addresses, const std::set<string>& badAddresses,
-                                     const std::unordered_map<string, int>& participantIds, long time) {
+                                     const std::unordered_map<string, vector<long>>& participantIds, long time) {
         int usedAddressTotal = 1; //We start from 1 because bindings start from 1
         for (int i=0; i < addresses.size(); ++i){
             if (!badAddresses.count(addresses[i].addr)){
@@ -231,8 +231,6 @@ namespace favor{
 
         //TODO code for going back and getting messages for newly added accounts
 
-        //TODO: this seems to be saving an awful lot of messages. worth confirming it's doing things right
-
 
 
         shared_ptr<vector<Address>> addresses = contactAddresses();
@@ -247,8 +245,11 @@ namespace favor{
         int result;
         string sql("SELECT " SKYPE_PARTICIPANTS_COLUMN_ACCNAME "," SKYPE_PARTICIPANTS_COLUMN_CONVO " FROM " SKYPE_PARTICIPANTS_TABLE_NAME ";");
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-        std::unordered_map<int, vector<string>> conversationIDToParticipantMap; //For determining who sent things
-        std::unordered_map<string, int> participantToIDMap; //For building selections to only get messages we want
+        std::unordered_map<long, vector<string>> conversationIDToParticipantMap; //For determining who sent things
+        std::unordered_map<string, vector<long>> participantToIDMap; //For building selections to only get messages we want
+        //TODO: multiple conversation IDs can map to a single participant, so we have to rewrite things to work with that
+
+
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
             //Build a map of convo id to name so we can use it for messages later. Every convo includes at least two participants:
             //the account owner, plus the person (people) they are talking to.
