@@ -47,6 +47,8 @@ namespace favor {
 
         void rollbackTransaction();
 
+        void backupDatabase();
+
         //Writing methods
         void exec(string sql);
 

@@ -38,8 +38,9 @@ protected:
 };
 
 
-//So that Google Test knows how to print favor objects
+
 namespace favor{
+    //So that Google Test knows how to print favor objects
     void PrintTo(const Message& m, ::std::ostream* os){
         *os << as_string(m);
     }

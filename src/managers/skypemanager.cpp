@@ -190,14 +190,19 @@ namespace favor{
         getJsonLong(lastTransferTime, 0);
     }
 
-    string SkypeManager::buildSelection(const vector<Address> &addresses, const std::set<string>& badAddresses, const string convoIDColumn, const string timeColumn) {
+    string SkypeManager::buildSelection(const vector<Address> &addresses, const std::set<string>& badAddresses, const std::unordered_map<string, vector<long>>& participantIds,
+                                        const string convoIDColumn, const string timeColumn) {
         string selection = "WHERE (";
+        int totalCount = 0;
         for (int i = 0; i < addresses.size(); ++i){
             if (!badAddresses.count(addresses[i].addr)){
-                selection += convoIDColumn +"=?";
-                if (i != addresses.size() -1 ) selection += " OR ";
+                for (int j = 0; j < participantIds.at(addresses[i].addr).size(); ++j) ++totalCount;
             }
-            if (i == addresses.size() -1 ) selection += ")";
+        }
+        for (int i = 0; i < totalCount; ++i){
+                selection += convoIDColumn +"=?";
+                if (i != totalCount -1 ) selection += " OR ";
+                else selection += ")";
         }
         selection += " AND "+timeColumn+">?";
         return selection;
@@ -209,9 +214,12 @@ namespace favor{
         int usedAddressTotal = 1; //We start from 1 because bindings start from 1
         for (int i=0; i < addresses.size(); ++i){
             if (!badAddresses.count(addresses[i].addr)){
-                DLOG("Bind "+as_string(usedAddressTotal) +" to convo id "+as_string(participantIds.at(addresses[i].addr)));
-                sqlite3_bind_int64(stmt, usedAddressTotal, participantIds.at(addresses[i].addr));
-                ++usedAddressTotal;
+                const vector<long>& ids = participantIds.at(addresses[i].addr);
+                for (int j = 0; j < ids.size(); ++j){
+                    DLOG("Bind "+as_string(usedAddressTotal) +" to convo id "+as_string(ids[j]));
+                    sqlite3_bind_int64(stmt, usedAddressTotal, ids[j]);
+                    ++usedAddressTotal;
+                }
             }
         }
         DLOG("Bind "+as_string(usedAddressTotal)+" to timestamp "+as_string(time));
@@ -247,16 +255,16 @@ namespace favor{
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
         std::unordered_map<long, vector<string>> conversationIDToParticipantMap; //For determining who sent things
         std::unordered_map<string, vector<long>> participantToIDMap; //For building selections to only get messages we want
-        //TODO: multiple conversation IDs can map to a single participant, so we have to rewrite things to work with that
 
 
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
             //Build a map of convo id to name so we can use it for messages later. Every convo includes at least two participants:
             //the account owner, plus the person (people) they are talking to.
             string participant = sqlite3_get_string(stmt, 0);
+            long participantID = sqlite3_column_int64(stmt, 1);
             if (participant != accountName){
-                conversationIDToParticipantMap[sqlite3_column_int64(stmt, 1)].push_back(participant);
-                participantToIDMap[participant] = sqlite3_column_int64(stmt, 1);
+                conversationIDToParticipantMap[participantID].push_back(participant);
+                participantToIDMap[participant].push_back(participantID);
             }
         }
         sqlv(result);
@@ -284,10 +292,9 @@ namespace favor{
 
 
         //Normal messages
-        //TODO: include our lastMessageTime here as a limiter, and eventually go back and get newly added accounts
         sql = "SELECT " SKYPE_MSG_COLUMN_RMID "," SKYPE_MSG_COLUMN_AUTHOR "," SKYPE_MSG_COLUMN_DATE "," SKYPE_MSG_COLUMN_BODY "," SKYPE_MSG_COLUMN_CONVO
                 " FROM " SKYPE_MSG_TABLE_NAME " ";
-        sql += buildSelection((*addresses), badAddressIDs,SKYPE_MSG_COLUMN_CONVO, SKYPE_MSG_COLUMN_DATE);
+        sql += buildSelection((*addresses), badAddressIDs, participantToIDMap, SKYPE_MSG_COLUMN_CONVO, SKYPE_MSG_COLUMN_DATE);
         sql += " ORDER BY " SKYPE_MSG_COLUMN_DATE " " DB_SORT_ORDER;
         DLOG(sql);
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
@@ -317,7 +324,7 @@ namespace favor{
         //File transfers (media-only messages, as far as Favor is concerned)
         sql = "SELECT " SKYPE_TRANSFERS_COLUMN_PKID "," SKYPE_TRANSFERS_COLUMN_AUTHOR ","  SKYPE_TRANSFERS_COLUMN_DATE "," SKYPE_TRANSFERS_COLUMN_CONVO ","
                 SKYPE_TRANSFERS_COLUMN_STATUS " FROM " SKYPE_TRANSFERS_TABLE_NAME " ";
-        sql += buildSelection((*addresses), badAddressIDs, SKYPE_TRANSFERS_COLUMN_CONVO, SKYPE_TRANSFERS_COLUMN_DATE);
+        sql += buildSelection((*addresses), badAddressIDs, participantToIDMap, SKYPE_TRANSFERS_COLUMN_CONVO, SKYPE_TRANSFERS_COLUMN_DATE);
         sql += " AND " SKYPE_TRANSFERS_COLUMN_STATUS "=" SKYPE_TRANSFERS_STATUS_SUCCESS ";";
         DLOG(sql)
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));

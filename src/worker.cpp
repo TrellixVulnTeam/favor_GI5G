@@ -208,6 +208,19 @@ namespace favor {
             }
         }
 
+        void backupDatabase(){
+            //Mostly used for testing purposes at current, but could easily be adapted to perform actual backups
+            sqlite3* outputFile;
+            sqlite3_backup *backup;
+            sqlv(sqlite3_open("favor_test_output.db", &outputFile));
+            backup = sqlite3_backup_init(outputFile, "main", db, "main");
+            if (backup){
+                sqlv(sqlite3_backup_step(backup, -1));
+                sqlv(sqlite3_backup_finish(backup));
+            } else logger::error("Saving test database failed :(");
+            sqlite3_close(outputFile);
+        }
+
 
 
         /* --------------------------------------------------------------------------------

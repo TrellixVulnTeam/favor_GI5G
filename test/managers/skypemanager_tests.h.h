@@ -19,9 +19,13 @@ TEST(SkypeManager, General){
     //reader::refreshAll();
 
     AccountManager::addAccount(SKYPE_ACCOUNT_NAME, TYPE_SKYPE, "{\"skypeDatabaseLocation\":\"" SKYPE_TEST_DB_LOC "\"}");
-    worker::createContactWithAddress(SKYPE_CONTACT_NAME,TYPE_SKYPE, "SKYPE_TEST_Z");
+    worker::createContactWithAddress(SKYPE_CONTACT_NAME,TYPE_SKYPE, "SKYPE_TEST");
     reader::accountList()->front()->updateMessages();
+    DLOG(as_string(reader::sum(reader::accountList()->front(),reader::contactList()->front(), KEY_CHARCOUNT, -1, -1, true)));
 
+    //worker::createContactWithAddress("GIGGLE", TYPE_LINE, "GIGGLE_WIGGLE");
+
+    worker::backupDatabase();
 
 
 }
