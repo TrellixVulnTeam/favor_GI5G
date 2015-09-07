@@ -192,7 +192,7 @@ namespace favor{
     }
 
     string SkypeManager::buildSelection(const vector<Address> &addresses, const std::set<string>& badAddresses, const std::unordered_map<string, vector<long>>& participantIds,
-                                        const string convoIDColumn, const string timeColumn) {
+                                        const string convoIDColumn, const string timeColumn, bool catchUp = false) {
         string selection = "WHERE (";
         int totalCount = 0;
         for (int i = 0; i < addresses.size(); ++i){
@@ -205,7 +205,8 @@ namespace favor{
                 if (i != totalCount -1 ) selection += " OR ";
                 else selection += ")";
         }
-        selection += " AND "+timeColumn+">?";
+        if (!catchUp) selection += " AND "+timeColumn+">?";
+        else selection += " AND "+timeColumn+"<=?";
         return selection;
 
     }
@@ -243,21 +244,113 @@ namespace favor{
     }
 
 
-    void SkypeManager::fetchMessages() {
-        //TODO code for going back and getting messages for newly added accounts
+    void SkypeManager::fetchFromMessagesTable(sqlite3 *db,
+                                              const shared_ptr<vector<Address>> addresses,
+                                              const std::set<string>& badAddressIDs,
+                                              const std::unordered_map<long, vector<string>>& conversationIDToParticipantMap,
+                                              const std::unordered_map<string, vector<long>>& participantToIDMap,
+                                              bool catchUp = false){
+        sqlite3_stmt* stmt;
+        int result;
 
+        if (catchUp && lastMessageTime == 0) return; //No need to run specific catch-ups for new addresses on first fetch
+
+
+        string sql("SELECT " SKYPE_MSG_COLUMN_RMID "," SKYPE_MSG_COLUMN_AUTHOR "," SKYPE_MSG_COLUMN_DATE "," SKYPE_MSG_COLUMN_BODY "," SKYPE_MSG_COLUMN_CONVO
+                " FROM " SKYPE_MSG_TABLE_NAME " ");
+        sql += buildSelection((*addresses), badAddressIDs, participantToIDMap, SKYPE_MSG_COLUMN_CONVO, SKYPE_MSG_COLUMN_DATE, catchUp);
+        sql += " ORDER BY " SKYPE_MSG_COLUMN_DATE " " DB_SORT_ORDER;
+        DLOG(sql);
+        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+        bindSelection(stmt, (*addresses), badAddressIDs, participantToIDMap, lastMessageTime);
+
+        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+            long rmid = sqlite3_column_int64(stmt, 0);
+            long timestamp =  sqlite3_column_int64(stmt, 2);
+            if (timestamp > lastMessageTime) lastMessageTime = timestamp;
+            string body = sqlite3_get_string(stmt, 3);
+            long convId = sqlite3_column_int64(stmt,4);
+
+            bool failure = false;
+            try {
+                body = processBody(body);
+            } catch (badMessageDataException& e){
+                logger::warning("Failed to parse XML in body of Skype message with ID "+as_string(rmid));
+                failure = true;
+            }
+
+            string author = sqlite3_get_string(stmt, 1);
+            bool sent = author == accountName;
+            if (sent){
+                for (int i = 0; i < conversationIDToParticipantMap.at(convId).size(); ++i){
+                    if (failure) holdMessageFailure(sent, rmid, conversationIDToParticipantMap.at(convId)[i]);
+                    else holdMessage(sent, rmid, timestamp, conversationIDToParticipantMap.at(convId)[i], false, body);
+                }
+            } else {
+                if (failure) holdMessageFailure(sent, rmid, author);
+                else holdMessage(sent, rmid, timestamp, author, false, body);
+            }
+
+        }
+        sqlv(result); //make sure we broke out with good results
+        sqlv(sqlite3_finalize(stmt));
+    }
+
+    void SkypeManager::fetchFromTransfersTable(sqlite3 *db,
+                                               const shared_ptr<vector<Address>> addresses,
+                                               const std::set<string>& badAddressIDs,
+                                               const std::unordered_map<long, vector<string>>& conversationIDToParticipantMap,
+                                               const std::unordered_map<string, vector<long>>& participantToIDMap,
+                                               bool catchUp = false ){
+        sqlite3_stmt* stmt;
+        int result;
+
+        if (catchUp && lastTransferTime == 0) return; //No need to run specific catch-ups for new addresses on first fetch
+
+        //File transfers (media-only messages, as far as Favor is concerned)
+        string sql("SELECT " SKYPE_TRANSFERS_COLUMN_PKID "," SKYPE_TRANSFERS_COLUMN_AUTHOR ","  SKYPE_TRANSFERS_COLUMN_DATE "," SKYPE_TRANSFERS_COLUMN_CONVO ","
+                SKYPE_TRANSFERS_COLUMN_STATUS " FROM " SKYPE_TRANSFERS_TABLE_NAME " ");
+        sql += buildSelection((*addresses), badAddressIDs, participantToIDMap, SKYPE_TRANSFERS_COLUMN_CONVO, SKYPE_TRANSFERS_COLUMN_DATE, catchUp);
+        sql += " AND " SKYPE_TRANSFERS_COLUMN_STATUS "=" SKYPE_TRANSFERS_STATUS_SUCCESS ";";
+        DLOG(sql);
+        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+        bindSelection(stmt, (*addresses), badAddressIDs, participantToIDMap, lastTransferTime);
+
+        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+            long id = -1 * sqlite3_column_int64(stmt, 0); //Multiply by -1 to prevent collisions with normal Skype message IDs
+            long timestamp = sqlite3_column_int64(stmt, 2);
+            if (timestamp > lastTransferTime) lastTransferTime = timestamp;
+            long convId = sqlite3_column_int64(stmt,3);
+
+            string author = sqlite3_get_string(stmt, 1);
+            bool sent = author == accountName;
+            if (sent) {
+                for (int i = 0; i < conversationIDToParticipantMap.at(convId).size(); ++i){
+                    holdMessage(sent, id, timestamp, conversationIDToParticipantMap.at(convId)[i], true, "");
+                }
+            } else {
+                holdMessage(sent, id, timestamp, author, true, "");
+            }
+
+        }
+        sqlv(result); //make sure we broke out with good results
+        sqlv(sqlite3_finalize(stmt));
+
+    }
+
+
+    void SkypeManager::fetchMessages() {
 
 
         shared_ptr<vector<Address>> addresses = contactAddresses();
-        vector<Address> newAddresses;
+        shared_ptr<vector<Address>> newAddresses  = std::make_shared<vector<Address>>();
 
 
 
         sqlite3 *db;
         sqlite3_stmt* stmt;
-        DLOG(skypeDatabaseLocation);
-        sqlv(sqlite3_open_v2(skypeDatabaseLocation.c_str(), &db, SQLITE_OPEN_READONLY, NULL));
         int result;
+        sqlv(sqlite3_open_v2(skypeDatabaseLocation.c_str(), &db, SQLITE_OPEN_READONLY, NULL));
         string sql("SELECT " SKYPE_PARTICIPANTS_COLUMN_ACCNAME "," SKYPE_PARTICIPANTS_COLUMN_CONVO " FROM " SKYPE_PARTICIPANTS_TABLE_NAME ";");
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
         std::unordered_map<long, vector<string>> conversationIDToParticipantMap; //For determining who sent things
@@ -293,80 +386,25 @@ namespace favor{
             return;
         }
 
-
-
-
-
-
-        //Normal messages
-        sql = "SELECT " SKYPE_MSG_COLUMN_RMID "," SKYPE_MSG_COLUMN_AUTHOR "," SKYPE_MSG_COLUMN_DATE "," SKYPE_MSG_COLUMN_BODY "," SKYPE_MSG_COLUMN_CONVO
-                " FROM " SKYPE_MSG_TABLE_NAME " ";
-        sql += buildSelection((*addresses), badAddressIDs, participantToIDMap, SKYPE_MSG_COLUMN_CONVO, SKYPE_MSG_COLUMN_DATE);
-        sql += " ORDER BY " SKYPE_MSG_COLUMN_DATE " " DB_SORT_ORDER;
-        DLOG(sql);
-        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-        bindSelection(stmt, (*addresses), badAddressIDs, participantToIDMap, lastMessageTime);
-
-        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-            long rmid = sqlite3_column_int64(stmt, 0);
-            long timestamp =  sqlite3_column_int64(stmt, 2);
-            if (timestamp > lastMessageTime) lastMessageTime = timestamp;
-            string body = sqlite3_get_string(stmt, 3);
-            long convId = sqlite3_column_int64(stmt,4);
-
-            bool failure = false;
-            try {
-                body = processBody(body);
-            } catch (badMessageDataException& e){
-                logger::warning("Failed to parse XML in body of Skype message with ID "+as_string(rmid));
-                failure = true;
+        for (auto it = addresses->begin(); it != addresses->end(); ++it){
+            if (!badAddressIDs.count(it->addr) && !managedAddresses.count(it->addr)){
+                logger::info("New Skype address "+it->addr+" detected");
+                newAddresses->push_back(*it);
             }
-
-            string author = sqlite3_get_string(stmt, 1);
-            bool sent = author == accountName;
-            if (sent){
-                for (int i = 0; i < conversationIDToParticipantMap[convId].size(); ++i){
-                    if (failure) holdMessageFailure(sent, rmid, conversationIDToParticipantMap[convId][i]);
-                    else holdMessage(sent, rmid, timestamp, conversationIDToParticipantMap[convId][i], false, body);
-                }
-            } else {
-                if (failure) holdMessageFailure(sent, rmid, author);
-                else holdMessage(sent, rmid, timestamp, author, false, body);
-            }
+        }
+        if (newAddresses->size()){
+            //If there are new addresses, we run catchup fetches before the new normal fetch
+            fetchFromTransfersTable(db, newAddresses, badAddressIDs, conversationIDToParticipantMap, participantToIDMap, true);
+            fetchFromMessagesTable(db, newAddresses, badAddressIDs, conversationIDToParticipantMap, participantToIDMap, true);
 
         }
-        sqlv(result); //make sure we broke out with good results
-        sqlv(sqlite3_finalize(stmt));
 
-        //File transfers (media-only messages, as far as Favor is concerned)
-        sql = "SELECT " SKYPE_TRANSFERS_COLUMN_PKID "," SKYPE_TRANSFERS_COLUMN_AUTHOR ","  SKYPE_TRANSFERS_COLUMN_DATE "," SKYPE_TRANSFERS_COLUMN_CONVO ","
-                SKYPE_TRANSFERS_COLUMN_STATUS " FROM " SKYPE_TRANSFERS_TABLE_NAME " ";
-        sql += buildSelection((*addresses), badAddressIDs, participantToIDMap, SKYPE_TRANSFERS_COLUMN_CONVO, SKYPE_TRANSFERS_COLUMN_DATE);
-        sql += " AND " SKYPE_TRANSFERS_COLUMN_STATUS "=" SKYPE_TRANSFERS_STATUS_SUCCESS ";";
-        DLOG(sql)
-        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-        bindSelection(stmt, (*addresses), badAddressIDs, participantToIDMap, lastTransferTime);
+        fetchFromMessagesTable(db, addresses, badAddressIDs, conversationIDToParticipantMap, participantToIDMap);
 
-        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-            long id = -1 * sqlite3_column_int64(stmt, 0); //Multiply by -1 to prevent collisions with normal Skype message IDs
-            long timestamp = sqlite3_column_int64(stmt, 2);
-            if (timestamp > lastTransferTime) lastTransferTime = timestamp;
-            long convId = sqlite3_column_int64(stmt,3);
+        fetchFromTransfersTable(db, addresses, badAddressIDs, conversationIDToParticipantMap, participantToIDMap);
 
-            string author = sqlite3_get_string(stmt, 1);
-            bool sent = author == accountName;
-            if (sent) {
-                for (int i = 0; i < conversationIDToParticipantMap[convId].size(); ++i){
-                    holdMessage(sent, id, timestamp, conversationIDToParticipantMap[convId][i], true, "");
-                }
-            } else {
-                holdMessage(sent, id, timestamp, author, true, "");
-            }
-
-        }
-        sqlv(result); //make sure we broke out with good results
-        sqlv(sqlite3_finalize(stmt));
-
+        //Many of these inserts will be redundant, but it's just our way of updating the fetch data
+        for (auto it = addresses->begin(); it != addresses->end(); ++it) managedAddresses.insert(it->addr);
 
         sqlv(sqlite3_close(db));
 

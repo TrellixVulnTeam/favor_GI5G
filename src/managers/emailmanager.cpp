@@ -519,7 +519,7 @@ namespace favor {
             SentRec<shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
             for (auto it = addresses->begin(); it != addresses->end(); ++it){
                 if (!managedAddresses.count(it->addr)){
-                    logger::info("New address "+it->addr+" detected");
+                    logger::info("New email address "+it->addr+" detected");
                     newAddresses->push_back(*it);
                 }
             }

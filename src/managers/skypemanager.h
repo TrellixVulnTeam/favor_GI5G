@@ -44,12 +44,24 @@ namespace favor {
         std::set<string> managedAddresses;
         static const char* addrListName;
         string buildSelection(const vector<Address>& addresses, const std::set<string>& badAddresses, const std::unordered_map<string, vector<long>>& participantIds,
-                              string convoIDColumn, string timeColumn);
+                              string convoIDColumn, string timeColumn, bool catchUp);
         void bindSelection(sqlite3_stmt* stmt, const vector<Address>& addresses, const std::set<string>& badAddresses, const std::unordered_map<string,
                 vector<long>>& participantIds, long time);
 
         void verifyDatabaseContents();
         string processBody(string body);
+        void fetchFromTransfersTable(sqlite3 *db,
+                                     const shared_ptr<vector<Address>> addresses,
+                                     const std::set<string>& badAddressIDs,
+                                     const std::unordered_map<long, vector<string>>& conversationIDToParticipantMap,
+                                     const std::unordered_map<string, vector<long>>& participantToIDMap,
+                                     bool catchUp);
+        void fetchFromMessagesTable(sqlite3 *db,
+                                     const shared_ptr<vector<Address>> addresses,
+                                     const std::set<string>& badAddressIDs,
+                                     const std::unordered_map<long, vector<string>>& conversationIDToParticipantMap,
+                                     const std::unordered_map<string, vector<long>>& participantToIDMap,
+                                     bool catchUp);
 
 
 

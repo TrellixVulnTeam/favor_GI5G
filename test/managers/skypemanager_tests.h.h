@@ -10,9 +10,12 @@
 #define SKYPE_TEST_DB_LOC "/home/josh/.Skype/joshua.tanner/main.db"
 #define SKYPE_ACCOUNT_NAME "joshua.tanner"
 #define SKYPE_CONTACT_NAME ""
+#define SKYPE_CONTACT_NAME2 ""
 
 
 TEST(SkypeManager, General){
+
+    //TODO: test on bigger data; figure out why fetches about Z are failing to save some messages
 
     initialize();
     worker::buildDatabase();
@@ -20,6 +23,9 @@ TEST(SkypeManager, General){
 
     AccountManager::addAccount(SKYPE_ACCOUNT_NAME, TYPE_SKYPE, "{\"skypeDatabaseLocation\":\"" SKYPE_TEST_DB_LOC "\"}");
     worker::createContactWithAddress(SKYPE_CONTACT_NAME,TYPE_SKYPE, "SKYPE_TEST");
+    reader::accountList()->front()->updateMessages();
+    DLOG("Test sum:"+as_string(reader::sum(reader::accountList()->front(),reader::contactList()->front(), KEY_CHARCOUNT, -1, -1, true)));
+    worker::createContactWithAddress(SKYPE_CONTACT_NAME2, TYPE_SKYPE, "SKYPE_TEST2");
     reader::accountList()->front()->updateMessages();
     DLOG("Test sum:"+as_string(reader::sum(reader::accountList()->front(),reader::contactList()->front(), KEY_CHARCOUNT, -1, -1, true)));
 
