@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "skypemanager.h"
+#include <sstream>
 
 namespace favor{
 
@@ -232,11 +233,17 @@ namespace favor{
 
     }
 
+    string SkypeManager::processBody(string body) {
+        //Even if we're removing XML, ironically, the whole thing has to be in a <body> element to be valid
+        std::stringstream ss("<body>"+body+"</body>");
+        pugi::xml_document doc;
+        pugi::xml_parse_result res = doc.load(ss);
+        if (res) return stripXML(doc);
+        else throw badMessageDataException("Unable to process Skype message body XML");
+    }
+
 
     void SkypeManager::fetchMessages() {
-
-        //TODO: minimal HTML (name suggests just XML?) shows up here too; we're going to need stripping
-
         //TODO code for going back and getting messages for newly added accounts
 
 
@@ -307,14 +314,24 @@ namespace favor{
             string body = sqlite3_get_string(stmt, 3);
             long convId = sqlite3_column_int64(stmt,4);
 
+            bool failure = false;
+            try {
+                body = processBody(body);
+            } catch (badMessageDataException& e){
+                logger::warning("Failed to parse XML in body of Skype message with ID "+as_string(rmid));
+                failure = true;
+            }
+
             string author = sqlite3_get_string(stmt, 1);
             bool sent = author == accountName;
             if (sent){
                 for (int i = 0; i < conversationIDToParticipantMap[convId].size(); ++i){
-                    holdMessage(sent, rmid, timestamp, conversationIDToParticipantMap[convId][i], false, body);
+                    if (failure) holdMessageFailure(sent, rmid, conversationIDToParticipantMap[convId][i]);
+                    else holdMessage(sent, rmid, timestamp, conversationIDToParticipantMap[convId][i], false, body);
                 }
             } else {
-                holdMessage(sent, rmid, timestamp, author, false, body);
+                if (failure) holdMessageFailure(sent, rmid, author);
+                else holdMessage(sent, rmid, timestamp, author, false, body);
             }
 
         }

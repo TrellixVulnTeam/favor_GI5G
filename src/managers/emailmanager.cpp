@@ -44,17 +44,6 @@ namespace favor {
         //could be done much better by someone more experienced with regular expressions than I. The aaddresses given
         //here: http://stackoverflow.com/questions/297420/list-of-email-addresses-that-can-be-used-to-test-a-javascript-validation-script are a good resource
 
-        string stripXML(const pugi::xml_document &doc) {
-            string withoutHTML;
-            pugi::xpath_node_set ns = doc.select_nodes("//text()");
-            if (ns.type() != pugi::xpath_node_set::type_sorted) ns.sort();
-            for (size_t i = 0; i < ns.size(); ++i) {
-                withoutHTML += ns[i].node().value();
-                if (i < (ns.size() - 1)) withoutHTML += " ";
-            }
-            return withoutHTML;
-        }
-
         bool toXML(stringstream &ss) {
             TidyBuffer output = {0};
             TidyBuffer errbuf = {0};
@@ -253,7 +242,7 @@ namespace favor {
             bool xmlSuccess = email::toXML(ss);
             pugi::xml_document doc;
             pugi::xml_parse_result res = doc.load(ss);
-            if (res) ss.str(email::stripXML(doc));
+            if (res) ss.str(stripXML(doc));
             else {
                 if (xmlSuccess) logger::error("PugiXML could not parse HTML despite tidying and transformation to XML");
                 else logger::error("HTML could not be tidied or parsed. Likely malformed");

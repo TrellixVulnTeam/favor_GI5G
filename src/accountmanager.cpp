@@ -263,6 +263,17 @@ namespace favor {
             return ret;
         }
 
+        string AccountManager::stripXML(const pugi::xml_document &doc) {
+            string withoutXML;
+            pugi::xpath_node_set ns = doc.select_nodes("//text()");
+            if (ns.type() != pugi::xpath_node_set::type_sorted) ns.sort();
+            for (size_t i = 0; i < ns.size(); ++i) {
+                withoutXML += ns[i].node().value();
+                if (i < (ns.size() - 1)) withoutXML += " ";
+            }
+            return withoutXML;
+        }
+
 
         //AccountManagers are pretty lightweight so they don't need to be on the heap for memory reasons, but we have to use pointers for polymorphism
         AccountManager* AccountManager::buildManager(string accNm, favor::MessageType typ, string detailsJson) {

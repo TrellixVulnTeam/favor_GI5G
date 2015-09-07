@@ -49,6 +49,7 @@ namespace favor {
                 vector<long>>& participantIds, long time);
 
         void verifyDatabaseContents();
+        string processBody(string body);
 
 
 
