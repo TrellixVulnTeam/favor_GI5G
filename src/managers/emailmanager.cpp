@@ -22,14 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "emailmanager.h"
 #include "logger.h"
 
-#include <regex> 
-/* "Why is such a useful/broad STD header only included in this specific manager?", you may ask. Because, as of
- * writing this, gcc 4.8 (which is what a lot of people are using, and more importantly is what we're compiling our
- * Android code with) doesn't implement all of the <regex> functions. See: http://stackoverflow.com/a/11635087
- * In short, this should work fine if compiled with gcc 4.9, but we're keeping <regex> out of the larger project until it is
- * at least functional for our Android compilations
- */
-
 using namespace vmime;
 using namespace vmime::net;
 

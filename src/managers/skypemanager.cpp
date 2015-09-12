@@ -44,6 +44,8 @@ namespace favor{
     #define SKYPE_PARTICIPANTS_TABLE_NAME "Participants"
     #define SKYPE_TRANSFERS_TABLE_NAME "Transfers"
 
+    #define SKYPE_PHONE_REGEXP "'^\\+\\d+$'"
+
 
     #define SKYPE_PARTICIPANTS_COLUMN_ACCNAME "identity"
     #define SKYPE_PARTICIPANTS_COLUMN_CONVO "convo_id"
@@ -231,6 +233,41 @@ namespace favor{
 
     void SkypeManager::fetchAddresses() {
         //TODO: we can use Skype's pretty names to guess suggested display names the same way we do with the email manager
+
+        //Go through the participants table, pick up every participant who isn't a phone number and their convo IDs (for now; not sure we want to deal with numbers)
+        //go to the messages table and run a count looking for all messages that correspond to that participant's ID(s)
+        //we now have a number of messages corresponding to each participant and can organize by that
+
+        //finally, to get the suggested pretty name, run a query in the messages table by (a) convo ID for each participant, excluding messages where
+        //the "author" is our account. Then, we can use the display name on the message to get a pretty name for that contact
+
+        std::unordered_map<string, vector<long>> participantToIDMap;
+
+        sqlite3 *db;
+        sqlite3_stmt* stmt;
+        int result;
+        sqlv(sqlite3_open_v2(skypeDatabaseLocation.c_str(), &db, SQLITE_OPEN_READONLY, NULL));
+        sqlite3_bind_regexp_function(db);
+
+        string sql("SELECT " SKYPE_PARTICIPANTS_COLUMN_ACCNAME "," SKYPE_PARTICIPANTS_COLUMN_CONVO " FROM " SKYPE_PARTICIPANTS_TABLE_NAME
+        " WHERE NOT " SKYPE_PARTICIPANTS_COLUMN_ACCNAME " REGEXP " SKYPE_PHONE_REGEXP ";" );
+
+        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+
+
+
+        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
+            //TODO: get participant name and id and put them in the participantToIDMap, but also print them so we know the regex is working
+//            long id = -1 * sqlite3_column_int64(stmt, 0); //Multiply by -1 to prevent collisions with normal Skype message IDs
+//            long timestamp = sqlite3_column_int64(stmt, 2);
+
+        }
+        sqlv(result); //make sure we broke out with good results
+        sqlv(sqlite3_finalize(stmt));
+
+
+
+
 
     }
 

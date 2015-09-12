@@ -10,6 +10,7 @@ TODO list, in no particular order:
 ==
 This is currently very messy because I'm mostly using it for myself. Also changes frequently.
  - Update our used libraries
+ - Briefly verify that <regex> does indeed compile/work on the NDK via 4.9. It should, but it's still an untested change for us
  - Should managed addresses be an AccountManager member, shared by all the Managers?
  - Figure out how we want to handle failures of the AndroidTextManager the same way we do with the C++ based AccountManagers.
  - Look at how Google Test works with the NDK, because it does work with the NDK.

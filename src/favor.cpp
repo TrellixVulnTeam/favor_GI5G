@@ -30,6 +30,7 @@ namespace favor {
     const char* dbPath = ".";
     const char* dbName = "/favor.db";
 
+
     void initialize() {
         assert(sqlite3_config(SQLITE_CONFIG_MULTITHREAD)==SQLITE_OK);
         assert(sqlite3_initialize()==SQLITE_OK);
@@ -82,6 +83,29 @@ namespace favor {
         else return string(reinterpret_cast<const char *>(ptr));
     }
 
+    //thanks to http://www.blackdogfoundry.com/blog/supporting-regular-expressions-in-sqlite/
+    static void sqlite3_regexp(sqlite3_context *context, int argc, sqlite3_value **argv) {
+        //TODO: this work? why is it static?
+        int numberOfMatches = 0;
+        //regex is "^\+\d+$"
+        if (argc == 2) {
+            const char* patternChars = (const char*)sqlite3_value_text(argv[0]);
+            const char* valueChars = (const char*)sqlite3_value_text(argv[1]);
+
+            if (patternChars != NULL && valueChars != NULL){
+                std::regex pattern(patternChars, std::regex::ECMAScript | std::regex::icase);
+                string value(valueChars);
+                if (regex_match(value, pattern)) numberOfMatches = 1;
+            }
+
+        } else logger::warning("Sqlite3 regexp function called with improper number of arguments ("+as_string(argc)+")");
+        sqlite3_result_int(context, numberOfMatches);
+    }
+
+    void sqlite3_bind_regexp_function(sqlite3* db){
+        sqlite3_create_function_v2(db, "REGEXP", 2, SQLITE_ANY | SQLITE_DETERMINISTIC, 0, sqlite3_regexp, NULL, NULL, NULL);
+    }
+
     bool compareAddress(const Address &lhs, const Address &rhs) {
         //Results in a largest first array
         if (lhs.contactId > -1){
@@ -95,6 +119,8 @@ namespace favor {
             return lhs.count == rhs.count ? lhs.addr > rhs.addr : lhs.count > rhs.count;
         }
     }
+
+
 
     double round(double d)
     {

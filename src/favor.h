@@ -35,6 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <mutex>
 #include <set>
+#include <regex>
 
 //External libraries
 #include "sqlite/sqlite3.h"
@@ -89,6 +90,8 @@ namespace favor {
 
     //Utility
     void sqlite3_validate(int result, sqlite3 *db);
+
+    void sqlite3_bind_regexp_function(sqlite3* db);
 
     string sqlite3_get_string(sqlite3_stmt* stmt, int col);
 
