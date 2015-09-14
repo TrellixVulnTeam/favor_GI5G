@@ -97,6 +97,8 @@ namespace favor {
 
             void countAddress(const string &address);
 
+            void setAddressCount(const string& address, int count);
+
             void setCountedAddressName(const string &address, const string &name);
 
             string stripXML(const pugi::xml_document &doc);

@@ -246,6 +246,10 @@ namespace favor {
             //unordered_map [] operator creats the value with default (0 for int, empty str for str) if it doesn't exist
         }
 
+        void AccountManager::setAddressCount(const string& address, int count){
+            countedAddresses[address] = count;
+        }
+
         void AccountManager::setCountedAddressName(const string &address, const string &name){
             addressNames[address] = name;
         }

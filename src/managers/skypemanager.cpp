@@ -215,6 +215,7 @@ namespace favor{
 
     void SkypeManager::bindSelection(sqlite3_stmt *stmt, const vector<Address>& addresses, const std::set<string>& badAddresses,
                                      const std::unordered_map<string, vector<long>>& participantIds, long time) {
+        //The bindings here aren't validated which isn't ideal, but we'd have to also take the DB as an argument for that
         int usedAddressTotal = 1; //We start from 1 because bindings start from 1
         for (int i=0; i < addresses.size(); ++i){
             if (!badAddresses.count(addresses[i].addr)){
@@ -238,8 +239,9 @@ namespace favor{
         //go to the messages table and run a count looking for all messages that correspond to that participant's ID(s)
         //we now have a number of messages corresponding to each participant and can organize by that
 
-        //finally, to get the suggested pretty name, run a query in the messages table by (a) convo ID for each participant, excluding messages where
+        //TODO: finally, to get the suggested pretty name, run a query in the messages table by (a) convo ID for each participant, excluding messages where
         //the "author" is our account. Then, we can use the display name on the message to get a pretty name for that contact
+
 
         std::unordered_map<string, vector<long>> participantToIDMap;
 
@@ -249,17 +251,23 @@ namespace favor{
         sqlv(sqlite3_open_v2(skypeDatabaseLocation.c_str(), &db, SQLITE_OPEN_READONLY, NULL));
         sqlite3_bind_regexp_function(db);
 
+
+        //Get our participants
         string sql("SELECT " SKYPE_PARTICIPANTS_COLUMN_ACCNAME "," SKYPE_PARTICIPANTS_COLUMN_CONVO " FROM " SKYPE_PARTICIPANTS_TABLE_NAME
-        " WHERE NOT " SKYPE_PARTICIPANTS_COLUMN_ACCNAME " REGEXP " SKYPE_PHONE_REGEXP ";" );
+        " WHERE (" SKYPE_PARTICIPANTS_COLUMN_ACCNAME "!=?) AND (NOT " SKYPE_PARTICIPANTS_COLUMN_ACCNAME " REGEXP " SKYPE_PHONE_REGEXP ");" );
 
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+        sqlv(sqlite3_bind_text(stmt, 1, accountName.c_str(), accountName.length(), SQLITE_STATIC));
 
 
 
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-            //TODO: get participant name and id and put them in the participantToIDMap, but also print them so we know the regex is working
-//            long id = -1 * sqlite3_column_int64(stmt, 0); //Multiply by -1 to prevent collisions with normal Skype message IDs
-//            long timestamp = sqlite3_column_int64(stmt, 2);
+            string participant = sqlite3_get_string(stmt, 0);
+            long convoID = sqlite3_column_int64(stmt, 1);
+
+            DLOG(participant + " : "+ as_string(convoID));
+
+            participantToIDMap[participant].push_back(convoID);
 
         }
         sqlv(result); //make sure we broke out with good results
@@ -267,6 +275,49 @@ namespace favor{
 
 
 
+        //Count messages from each participant
+        for (auto it = participantToIDMap.begin(); it != participantToIDMap.end(); ++it){
+            string sqlSubstmt("SELECT COUNT(*) FROM " SKYPE_MSG_TABLE_NAME " WHERE " SKYPE_MSG_COLUMN_AUTHOR "=? AND (");
+
+            vector<long>& participantIDs = it->second;
+            for (int i = 0; i < participantIDs.size(); ++i){
+                sqlSubstmt += SKYPE_MSG_COLUMN_CONVO "=?";
+                if (i < participantIDs.size() -1 ) sqlSubstmt += " OR ";
+                else sqlSubstmt += ");";
+            }
+
+
+            DLOG(sqlSubstmt)
+            sqlv(sqlite3_prepare_v2(db, sqlSubstmt.c_str(), sqlSubstmt.length(), &stmt, NULL));
+
+            sqlv(sqlite3_bind_text(stmt, 1, accountName.c_str(), accountName.length(), SQLITE_STATIC));
+
+            for (int i = 0; i < participantIDs.size(); ++i){
+                //sqlite bindings start at 1, so add 1 for binding value and 1 because we've already bound a parameter for author column
+                sqlite3_bind_int64(stmt, i+2, participantIDs[i]);
+            }
+
+            sqlv(sqlite3_step(stmt));
+            long sum = sqlite3_column_int64(stmt, 0);
+            setAddressCount(it->first, sum);
+            DLOG("sent msg sum for "+it->first+" : "+as_string(sum));
+            sqlv(sqlite3_finalize(stmt));
+        }
+
+
+        //Get participant suggested names
+        sql = "SELECT " SKYPE_MSG_COLUMN_AUTHOR_DISPLAYNAME "," SKYPE_MSG_COLUMN_CONVO "," SKYPE_MSG_COLUMN_AUTHOR " FROM "
+                SKYPE_MSG_TABLE_NAME " WHERE " SKYPE_MSG_COLUMN_CONVO "=? AND " SKYPE_MSG_COLUMN_AUTHOR "!=? LIMIT 1";
+        for (auto it = participantToIDMap.begin(); it != participantToIDMap.end(); ++it){
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            sqlv(sqlite3_bind_int64(stmt, 1, it->second[0])); //This only uses the first convo_id, but any of them should work, and there will always be at least 1
+            sqlv(sqlite3_bind_text(stmt, 2, accountName.c_str(), accountName.length(), SQLITE_STATIC));
+            
+            sqlv(sqlite3_finalize(stmt));
+        }
+
+
+        sqlv(sqlite3_close(db));
 
 
     }

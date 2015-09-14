@@ -29,6 +29,8 @@ TEST(SkypeManager, General){
     reader::accountList()->front()->updateMessages();
     DLOG("Test sum:"+as_string(reader::sum(reader::accountList()->front(),reader::contactList()->front(), KEY_CHARCOUNT, -1, -1, true)));
 
+    reader::accountList()->front()->updateAddresses();
+
     //worker::createContactWithAddress("GIGGLE", TYPE_LINE, "GIGGLE_WIGGLE");
 
     worker::backupDatabase();
