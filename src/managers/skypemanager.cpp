@@ -312,7 +312,15 @@ namespace favor{
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             sqlv(sqlite3_bind_int64(stmt, 1, it->second[0])); //This only uses the first convo_id, but any of them should work, and there will always be at least 1
             sqlv(sqlite3_bind_text(stmt, 2, accountName.c_str(), accountName.length(), SQLITE_STATIC));
-            
+            int result = sqlite3_step(stmt);
+            if (result == SQLITE_ROW){
+                string displayName = sqlite3_get_string(stmt, 0);
+                string accountName = it->first;
+                DLOG("Author: "+accountName +" Display Name: "+displayName);
+            } else if (result == SQLITE_DONE){
+                DLOG("No name found for "+it->first);
+            } else sqlv(result);
+
             sqlv(sqlite3_finalize(stmt));
         }
 

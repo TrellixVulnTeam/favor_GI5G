@@ -6,9 +6,10 @@ What is Favor
 ==
 This is more accurately a paragraph about what favor _will be_, as I'm very much still in the middle of development. The idea is to produce an application that can store information about, and perform analytics on, any type of communication that can be represented as sent and received messages. This repository is a C++ backend which is intended to run as the code behind both an Android application (hence the JNI bindings) and an eventual desktop application. I hope that Favor will distinguish itself for interesting analytics, but the truly unique thing about it will be its breadth of applicable communications platforms: the data is stored in a generic format in Favor's own SQLite database, and as long as we have an adapter (called Managers right now) to pull information from a given communications platform, we can perform analytics on that platform. Right now there's an email adapter that runs on the desktop and a text message adapter (primarily written in Java, as part of the Android application) that runs on Android phones, but my hope is to eventually cover Line, Skype (on desktop), and potentially many more. 
 
-TODO list, in no particular order:
+TODO list:
 ==
 This is currently very messy because I'm mostly using it for myself. Also changes frequently.
+ - Make use of _AccountManager::setCountedAddressName_. Then, in the worker address table computing code, we need to figure out what we're doing with suggested names (how to use/store them, whether to save them or give them to the reader, etc.)
  - Update our used libraries
  - Briefly verify that <regex> does indeed compile/work on the NDK via 4.9. It should, but it's still an untested change for us
  - Should managed addresses be an AccountManager member, shared by all the Managers?
@@ -16,7 +17,6 @@ This is currently very messy because I'm mostly using it for myself. Also change
  - Look at how Google Test works with the NDK, because it does work with the NDK.
  - EmailManager tests. The most fun
  - libiconv on Android and eventually windows platforms
- - In the worker address table computing code, we need to figure out what we're doing with suggested names (how to use/store them, whether to save them or give them to the reader, etc.)
  - Some Android specific optimizations at the C++ layer wouldn't hurt: the reader keeping contacts in a hash by id for faster lookup, and the processor potentially pushing
  cache information up to a separate java layer cache proactively. 
  - Spend some time with a query analyzer and make sure that SQLlite is getting the best use possible out of our indices, and think about what might be worth changing if not.
