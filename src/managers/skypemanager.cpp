@@ -315,8 +315,9 @@ namespace favor{
             int result = sqlite3_step(stmt);
             if (result == SQLITE_ROW){
                 string displayName = sqlite3_get_string(stmt, 0);
-                string accountName = it->first;
-                DLOG("Author: "+accountName +" Display Name: "+displayName);
+                string authorAddress= it->first;
+                setCountedAddressName(authorAddress, displayName);
+                DLOG("Author: "+authorAddress +" Display Name: "+displayName);
             } else if (result == SQLITE_DONE){
                 DLOG("No name found for "+it->first);
             } else sqlv(result);

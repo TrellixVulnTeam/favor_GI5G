@@ -567,17 +567,24 @@ namespace favor {
             vector<shared_ptr<vmime::net::message>> result = sent->getAndFetchMessages(wantedMessages, attribs);
             sent->close(false);
 
+            std::unordered_map<string, std::unordered_map<string, int>> nameOccurenceCount;
+
             for (int i = 0; i < result.size(); ++i) {
                 shared_ptr<const vmime::addressList> addrList = result[i]->getHeader()->To()->getValue<vmime::addressList>();
 
                 //TODO: Write some email-specific code to use the most common name for a given contact, because any other medium should have a
                 //very well defined mapping. throw names into hash tables of counts per address, associate the most common ones with the address
                 for (int i = 0; i < addrList->getAddressCount(); ++i) {
-                    shared_ptr<const vmime::address> addr = addrList->getAddressAt(i);
-                    string address;
-                    if (addr->isGroup()) address = dynamic_pointer_cast<const vmime::mailboxGroup>(addr)->getMailboxAt(0)->getEmail().toString();
-                    else address = dynamic_pointer_cast<const vmime::mailbox>(addr)->getEmail().toString();
-                    countAddress(lowercase(address)); //Have to lowercase email addresses
+                    shared_ptr<const vmime::address> vmimeAddress = addrList->getAddressAt(i); //vmime "addresses" can be multiple addresses
+                    shared_ptr<const vmime::mailbox> mailbox; //Mailbox is vmime's somehwhat confusing term for an actual address...
+                    if (vmimeAddress->isGroup()) mailbox = dynamic_pointer_cast<const vmime::mailboxGroup>(vmimeAddress)->getMailboxAt(0);
+                    else mailbox = dynamic_pointer_cast<const vmime::mailbox>(vmimeAddress);
+                    string addressString = lowercase(mailbox->getEmail().toString());
+                    mailbox->getName().getWordList(); //TODO: do something with this
+
+
+                    //nameOccurenceCount[addressString][mailbox->getName().getWordList()]
+                    countAddress(addressString); //Have to lowercase email addresses
                 }
             }
         }
