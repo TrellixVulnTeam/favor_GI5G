@@ -62,6 +62,8 @@ namespace favor {
 
         protected:
             rapidjson::Document json;
+            std::set<string> managedAddresses;
+            static const char* managedAddrListName;
 
         private:
             std::vector<favor::Message> heldMessages;
@@ -100,6 +102,9 @@ namespace favor {
             void setAddressCount(const string& address, int count);
 
             void setCountedAddressName(const string &address, const string &name);
+
+            virtual bool addressValid(const string& address);
+
 
             string stripXML(const pugi::xml_document &doc);
 

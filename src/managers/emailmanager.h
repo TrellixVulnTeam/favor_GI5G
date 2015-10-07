@@ -40,6 +40,8 @@ namespace favor {
         void updateJson() override;
         void consultJson(bool initial = false) override;
 
+        bool addressValid(const string &address) override;
+
     private:
         long lastSentUid;
         long lastReceivedUid;
@@ -47,8 +49,8 @@ namespace favor {
         long lastReceivedUidValidity;
         string password;
         vmime::utility::url serverURL;
-        static const char* addrListName;
-        std::set<string> managedAddresses;
+        static std::regex utf8regex;
+        static std::regex emailRegex;
 
         shared_ptr<vmime::net::store> login();
 
@@ -56,10 +58,17 @@ namespace favor {
 
         void parseMessage(bool sent, favor::shared_ptr<vmime::net::message> m);
 
+        bool parseMessageParts(long uid, const vmime::messageParser& mp, string& bodyFinal);
+
+        void holdParsedMessage(bool failure, const vmime::messageParser &mp, bool sent, long uid, time_t date,
+                               bool media, string bodyFinal);
+
         void handleHTMLandEncoding(vmime::utility::outputStream *out, std::stringstream &ss,
                                    shared_ptr<const vmime::htmlTextPart> part, string &output);
 
         bool hasMedia(shared_ptr<vmime::net::messageStructure> structure);
+
+        void processFetchedAddresses(vector<shared_ptr<vmime::net::message>> fetchedAddresses);
 
         std::time_t toTime(const vmime::datetime input);
 

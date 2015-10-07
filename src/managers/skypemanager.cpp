@@ -34,11 +34,10 @@ namespace favor{
         for (auto it = managedAddresses.begin(); it != managedAddresses.end(); ++it){
             addrsVal.PushBack(rapidjson::Value(it->c_str(), json.GetAllocator()).Move(), json.GetAllocator());
         }
-        json[addrListName] = addrsVal;
+        json[managedAddrListName] = addrsVal;
     }
 
 
-    const char* SkypeManager::addrListName  = "managedAddresses";
     #define SKYPE_MSG_TABLE_NAME "Messages"
     #define SKYPE_ACCOUNTS_TABLE_NAME "Accounts"
     #define SKYPE_PARTICIPANTS_TABLE_NAME "Participants"
@@ -68,6 +67,8 @@ namespace favor{
 
     void SkypeManager::verifyDatabaseContents() {
 
+        //TODO: refactor this method so it takes up less space and has less redundancy
+
         std::unordered_map<string, bool> columnCheck;
         #define SKYPE_CHECK_COLUMN(table, col, colname) if (!columnCheck.count(col)) throw badUserDataException("Skype database missing " table " table " colname " column (" col ");")
 
@@ -75,9 +76,11 @@ namespace favor{
         sqlite3_stmt* stmt;
         int result;
         sqlv(sqlite3_open_v2(skypeDatabaseLocation.c_str(), &db, SQLITE_OPEN_READONLY, NULL));
-        //Look for tables, and maybe verify presence of our desired attributes?
+        //Look for tables, and verify presence of our desired columns
 
-        //Messages table ------------------------
+        /*
+         * Messages table ------------------------
+         */
         string sql("PRAGMA table_info(" SKYPE_MSG_TABLE_NAME ");");
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
 
@@ -96,7 +99,9 @@ namespace favor{
             columnCheck.clear();
         }
 
-        //Accounts table ------------------------
+        /*
+         * Accounts table ------------------------
+         */
         sql = ("PRAGMA table_info(" SKYPE_ACCOUNTS_TABLE_NAME ");");
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
 
@@ -111,7 +116,9 @@ namespace favor{
             columnCheck.clear();
         }
 
-        //Conversation participants table ------------------------
+        /*
+         * Conversation participants table ------------------------
+         */
         sql = ("PRAGMA table_info(" SKYPE_PARTICIPANTS_TABLE_NAME ");");
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
 
@@ -127,7 +134,9 @@ namespace favor{
             columnCheck.clear();
         }
 
-        //Transfers table
+        /*
+         * Transfers table
+         */
         sql = ("PRAGMA table_info(" SKYPE_TRANSFERS_TABLE_NAME ");");
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
 
@@ -171,22 +180,6 @@ namespace favor{
                 verifyDatabaseContents();
             }
             else throw badUserDataException("Skype manager missing database location");
-        }
-
-        if (json.HasMember(addrListName)){
-            rapidjson::Value& addrsVal = json[addrListName];
-            if (!addrsVal.IsArray()) throw badUserDataException("Managed addresses list improperly formatted in "+accountName +" json");
-            else {
-                for (auto it = addrsVal.Begin(); it!= addrsVal.End(); ++it){
-                    //TODO: do skype addresses need to be validated somehow?
-                    managedAddresses.insert(it->GetString());
-                }
-            }
-        }
-        else {
-            rapidjson::Value addrsVal;
-            addrsVal.SetArray();
-            json.AddMember(rapidjson::Value(addrListName, json.GetAllocator()).Move(), addrsVal, json.GetAllocator());
         }
 
         getJsonLong(lastMessageTime, 0);

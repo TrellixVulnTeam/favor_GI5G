@@ -53,6 +53,8 @@ The Json is mostly just used by the subordinate classes, but we do use the "prev
 using namespace std;
 namespace favor {
     namespace worker {
+        const char* AccountManager::managedAddrListName  = "managedAddresses";
+
         AccountManager::AccountManager(string accNm, MessageType typ, string detailsJson)
                 : type(typ), accountName(accNm) {
             json.Parse(detailsJson.c_str());
@@ -60,12 +62,34 @@ namespace favor {
                 logger::error("Parse error on json: \"" + detailsJson + "\". RapidJson says: " + rapidjson::GetParseError_En(json.GetParseError()));
                 throw badUserDataException("Failed to parse JSON details for account "+accountName);
             }
+
+            if (json.HasMember(managedAddrListName)){
+                rapidjson::Value& addrsVal = json[managedAddrListName];
+                if (!addrsVal.IsArray()) throw badUserDataException("Managed addresses list improperly formatted in "+accountName +" json");
+                else {
+                    for (auto it = addrsVal.Begin(); it!= addrsVal.End(); ++it){
+                        if (!addressValid(it->GetString())) logger::warning("Managed address "+string(it->GetString())+" fails validation as an "+
+                                                                            string(MessageTypeName[type])+" address");
+                        managedAddresses.insert(it->GetString());
+                    }
+                }
+            }
+            else {
+                rapidjson::Value addrsVal;
+                addrsVal.SetArray();
+                json.AddMember(rapidjson::Value(managedAddrListName, json.GetAllocator()).Move(), addrsVal, json.GetAllocator());
+            }
         }
 
         AccountManager::~AccountManager(){}
 
         bool AccountManager::operator==(const AccountManager& rhs) const{
             return type == rhs.type && accountName == rhs.accountName;
+        }
+
+
+        bool AccountManager::addressValid(const string& address){
+            return true; //This must be overriden if we want to actually validate something
         }
 
         void AccountManager::buildTables() {

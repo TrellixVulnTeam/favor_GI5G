@@ -100,14 +100,18 @@ namespace favor {
 
 
         /*
-        * If you need to do more complex verifications on certificates, you will
-        * have to write your own verifier. Your verifier should inherit from the
-        * vmime::security::cert::certificateVerifier class and implement the method
-        * verify(). Then, if the specified certificate chain is trusted, simply return from the function,
-        * or else throw a certificate verification exception.
+         * According to VMIME:
+         * If you need to do more complex verifications on certificates, you will
+         * have to write your own verifier. Your verifier should inherit from the
+         * vmime::security::cert::certificateVerifier class and implement the method
+         * verify(). Then, if the specified certificate chain is trusted, simply return from the function,
+         * or else throw a certificate verification exception.
+         *
+         * ...but this is not something Favor currently implements. A lot of potential maintenance work/overhead in
+         * maintaining certificates that would just be for one manager.
         */
         // Certificate verifier (TLS/SSL)
-        //TODO: We might want to actually verify something here. See the VMIME documentation
+
 
         class TrustingCertificateVerifier : public vmime::security::cert::certificateVerifier {
         public:
@@ -117,7 +121,8 @@ namespace favor {
         };
     }
 
-    const char* EmailManager::addrListName  = "managedAddresses";
+    std::regex EmailManager::utf8regex = std::regex("utf-8", std::regex::ECMAScript | std::regex::icase);
+    std::regex EmailManager::emailRegex = std::regex(email::emailRegex, std::regex::ECMAScript | std::regex::icase);
 
     //TODO: test this with bad URLS, and an unrecognized email+custom URL
     EmailManager::EmailManager(string accNm, string detailsJson)
@@ -126,7 +131,6 @@ namespace favor {
     }
 
     void EmailManager::consultJson(bool initial) {
-        std::regex emailRegex(email::emailRegex, std::regex::ECMAScript | std::regex::icase);
         if (initial){
             if (json.HasMember("password")) password = json["password"].GetString();
             else throw badUserDataException("EmailManager missing password");
@@ -134,13 +138,13 @@ namespace favor {
             //http://www.regular-expressions.info/email.html
             if (!regex_match(accountName, emailRegex)) logger::warning("Account name " + accountName + " for email manager does not match email regex");
 
-            size_t atSign = accountName.find_first_of("@");
-            if (atSign == string::npos) {
+            size_t atSignPosition = accountName.find_first_of("@");
+            if (atSignPosition == string::npos) {
                 logger::error("Could not find \"@\" in \"" + accountName + "\"");
                 throw badUserDataException("EmailManager initialized with bad email address");
             }
 
-            string domain = accountName.substr(atSign + 1);
+            string domain = accountName.substr(atSignPosition + 1);
             unordered_map<string, string>::const_iterator it = email::imapServers.find(domain);
             if (it != email::imapServers.end()) {
                 serverURL = vmime::utility::url(it->second);
@@ -162,26 +166,14 @@ namespace favor {
             }
         }
 
-        if (json.HasMember(addrListName)){
-            rapidjson::Value& addrsVal = json[addrListName];
-            if (!addrsVal.IsArray()) throw badUserDataException("Managed addresses list improperly formatted in "+accountName +" json");
-            else {
-                for (auto it = addrsVal.Begin(); it!= addrsVal.End(); ++it){
-                    if (!regex_match(it->GetString(), emailRegex)) logger::warning("Managed address "+string(it->GetString())+" does not match email regex");
-                    managedAddresses.insert(it->GetString());
-                }
-            }
-        }
-        else {
-            rapidjson::Value addrsVal;
-            addrsVal.SetArray();
-            json.AddMember(rapidjson::Value(addrListName, json.GetAllocator()).Move(), addrsVal, json.GetAllocator());
-        }
-
         getJsonLong(lastReceivedUid, 1); //Uids start from 1, always
         getJsonLong(lastSentUid, 1);
         getJsonLong(lastReceivedUidValidity, -1); // <0 if we don't know
         getJsonLong(lastSentUidValidity, -1);
+    }
+
+    bool EmailManager::addressValid(const string &address) {
+        return regex_match(address, emailRegex);
     }
 
 
@@ -246,65 +238,42 @@ namespace favor {
         //need to do anything.
     }
 
+    bool EmailManager::parseMessageParts(long uid, const vmime::messageParser& mp, string& bodyFinal){
 
-    void EmailManager::parseMessage(bool sent, shared_ptr<vmime::net::message> m) {
-        long &lastUid = sent ? lastSentUid : lastReceivedUid;
-
-        shared_ptr<vmime::message> parsedMessage = m->getParsedMessage();
-
-        vmime::messageParser mp(parsedMessage);
-        shared_ptr<vmime::net::messageStructure> structure = m->getStructure();
         std::stringstream bodyStream;
         vmime::utility::outputStreamAdapter os(bodyStream);
-        string bodyFinal;
-
-        /*Strangely, if we get the date like this:
-        * shared_ptr<const vmime::datetime> rawdate = m->getHeader()->Date()->getValue<vmime::datetime>();
-        * it reports a one second difference (earlier) than if we get it the way we're doing below.
-        * Probably just a rounding quirk, but something word recording */
-
-
-        bool failure = false;
-
-        const time_t date = toTime(mp.getDate());
-
-        const long uid = stoi(m->getUID()); //stoi function may not be implemented on Android but this mail client is dekstop-only anyway
-        lastUid = (uid > lastUid) ? uid : lastUid; //Update our last UID to this new one if it's larger (which it almost always should be)
-
-        const bool media = hasMedia(structure);
-
-        std::regex utf8regex("utf-8", std::regex::ECMAScript | std::regex::icase);
 
         for (int i = 0; i < mp.getTextPartCount(); ++i) {
             vmime::shared_ptr<const vmime::textPart> tp = mp.getTextPartAt(i);
             if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_HTML) {
                 shared_ptr<const vmime::htmlTextPart> htp = dynamic_pointer_cast<const vmime::htmlTextPart>(tp);
                 try{
-                     //vmime wasn't handling enough of our encodings (specifically asian ones), so this commented stuff has been deprecated
-                    //shared_ptr<vmime::charsetConverter> conv = vmime::charsetConverter::create(htp->getCharset(), vmime::charset("utf-8"));
-                    //shared_ptr<vmime::utility::charsetFilteredOutputStream> out = conv->getFilteredOutputStream(os);
                     handleHTMLandEncoding(&(os), bodyStream, htp, bodyFinal);
                 } catch (badMessageDataException& e){
                     logger::warning("Failed to parse html text part of message with UID "+as_string(uid));
-                    failure = true;
+                    return false;
                 }
             }
             else if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_PLAIN) {
                 tp->getText()->extract(os);
                 os.flush(); //the stringstream "body" is what actually gets written to here
                 if (!regex_match(tp->getCharset().getName(), utf8regex)) {
-                    DLOG("Converting plaintext mail with UID " + string(m->getUID()) + " and charset " + tp->getCharset().getName() + " to utf-8");
+                    DLOG("Converting plaintext mail with UID " + as_string(uid) + " and charset " + tp->getCharset().getName() + " to utf-8");
                     bodyFinal = to_utf8(bodyStream.str(), tp->getCharset().getName());
                 } else bodyFinal = bodyStream.str();
             }
             else {
-                logger::warning("Failed to parse message with text part of type: "+tp->getType().getType()+" with UID "+as_string(uid));
-                failure = true;
+                logger::warning("Failed to parse message with unfamiliar text part of type: "+tp->getType().getType()+" with UID "+as_string(uid));
+                return false;
             }
         }
 
-        DLOG("Finalize message with body:"+bodyFinal);
+        return true;
 
+    }
+
+    void EmailManager::holdParsedMessage(bool failure, const vmime::messageParser &mp, bool sent, long uid, time_t date,
+                                         bool media, string bodyFinal){
         if (sent) {
             const vmime::addressList addrList = mp.getRecipients();
             for (int i = 0; i < addrList.getAddressCount(); ++i) {
@@ -329,6 +298,34 @@ namespace favor {
         else {
             holdMessage(sent, uid, date, lowercase(mp.getExpeditor().getEmail().toString()), media, bodyFinal);
         }
+    }
+
+
+    void EmailManager::parseMessage(bool sent, shared_ptr<vmime::net::message> m) {
+        long &lastUid = sent ? lastSentUid : lastReceivedUid;
+
+        shared_ptr<vmime::message> parsedMessage = m->getParsedMessage();
+        vmime::messageParser mp(parsedMessage);
+
+        string bodyFinal;
+
+        /*Strangely, if we get the date like this:
+        * shared_ptr<const vmime::datetime> rawdate = m->getHeader()->Date()->getValue<vmime::datetime>();
+        * it reports a one second difference (earlier) than if we get it the way we're doing below.
+        * Probably just a rounding quirk, but something word recording */
+
+        const time_t date = toTime(mp.getDate());
+
+        const long uid = stoi(m->getUID()); //stoi function may not be implemented on Android but this mail client is dekstop-only anyway
+        lastUid = (uid > lastUid) ? uid : lastUid; //Update our last UID to this new one if it's larger (which it almost always should be)
+        const bool media = hasMedia(m->getStructure());
+
+
+        bool failure = !parseMessageParts(uid, mp, bodyFinal);
+
+        DLOG("Finalize message with body:"+bodyFinal);
+
+        holdParsedMessage(failure, mp, sent, uid, date, media, bodyFinal);
     }
 
 
@@ -491,7 +488,7 @@ namespace favor {
         for (auto it = managedAddresses.begin(); it != managedAddresses.end(); ++it){
             addrsVal.PushBack(rapidjson::Value(it->c_str(), json.GetAllocator()).Move(), json.GetAllocator());
         }
-        json[addrListName] = addrsVal;
+        json[managedAddrListName] = addrsVal;
     }
 
     void EmailManager::fetchMessages() {
@@ -539,7 +536,32 @@ namespace favor {
         for (auto it = addresses->begin(); it != addresses->end(); ++it) managedAddresses.insert(it->addr);
     }
 
-    //TODO: untested since minor changes, but should still work perfectly fine.
+
+    void EmailManager::processFetchedAddresses(vector<shared_ptr<vmime::net::message>> fetchedAddresses){
+
+        std::unordered_map<string, std::unordered_map<string, int>> nameOccurenceCount;
+
+        for (int i = 0; i < fetchedAddresses.size(); ++i) {
+            shared_ptr<const vmime::addressList> addrList = fetchedAddresses[i]->getHeader()->To()->getValue<vmime::addressList>();
+
+            //TODO: Write some email-specific code to use the most common name for a given contact, because any other medium should have a
+            //very well defined mapping. throw names into hash tables of counts per address, associate the most common ones with the address
+            for (int i = 0; i < addrList->getAddressCount(); ++i) {
+                shared_ptr<const vmime::address> vmimeAddress = addrList->getAddressAt(i); //vmime "addresses" can be multiple addresses
+                shared_ptr<const vmime::mailbox> mailbox; //Mailbox is vmime's somehwhat confusing term for an actual address...
+                if (vmimeAddress->isGroup()) mailbox = dynamic_pointer_cast<const vmime::mailboxGroup>(vmimeAddress)->getMailboxAt(0);
+                else mailbox = dynamic_pointer_cast<const vmime::mailbox>(vmimeAddress);
+                string addressString = lowercase(mailbox->getEmail().toString()); //Have to lowercase email addresses
+                mailbox->getName().getWordList(); //TODO: do something with this
+
+
+                //nameOccurenceCount[addressString][mailbox->getName().getWordList()]
+                countAddress(addressString);
+            }
+        }
+    }
+
+
     void EmailManager::fetchAddresses() {
         try {
             vmime::shared_ptr<vmime::net::store> st = login();
@@ -564,29 +586,10 @@ namespace favor {
             vmime::net::messageSet wantedMessages(vmime::net::messageSet::byUID(minUid, nextUid));
             vmime::net::fetchAttributes attribs;
             attribs.add("To");
-            vector<shared_ptr<vmime::net::message>> result = sent->getAndFetchMessages(wantedMessages, attribs);
+            vector<shared_ptr<vmime::net::message>> fetchedAddresses = sent->getAndFetchMessages(wantedMessages, attribs);
             sent->close(false);
 
-            std::unordered_map<string, std::unordered_map<string, int>> nameOccurenceCount;
-
-            for (int i = 0; i < result.size(); ++i) {
-                shared_ptr<const vmime::addressList> addrList = result[i]->getHeader()->To()->getValue<vmime::addressList>();
-
-                //TODO: Write some email-specific code to use the most common name for a given contact, because any other medium should have a
-                //very well defined mapping. throw names into hash tables of counts per address, associate the most common ones with the address
-                for (int i = 0; i < addrList->getAddressCount(); ++i) {
-                    shared_ptr<const vmime::address> vmimeAddress = addrList->getAddressAt(i); //vmime "addresses" can be multiple addresses
-                    shared_ptr<const vmime::mailbox> mailbox; //Mailbox is vmime's somehwhat confusing term for an actual address...
-                    if (vmimeAddress->isGroup()) mailbox = dynamic_pointer_cast<const vmime::mailboxGroup>(vmimeAddress)->getMailboxAt(0);
-                    else mailbox = dynamic_pointer_cast<const vmime::mailbox>(vmimeAddress);
-                    string addressString = lowercase(mailbox->getEmail().toString());
-                    mailbox->getName().getWordList(); //TODO: do something with this
-
-
-                    //nameOccurenceCount[addressString][mailbox->getName().getWordList()]
-                    countAddress(addressString); //Have to lowercase email addresses
-                }
-            }
+            processFetchedAddresses(fetchedAddresses);
         }
         catch (vmime::exceptions::connection_error &e) {
             logger::error("Error connecting to " + serverURL.getHost() + ". This can mean a bad host or no internet connectivity");
