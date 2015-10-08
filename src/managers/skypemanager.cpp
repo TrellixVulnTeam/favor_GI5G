@@ -65,101 +65,33 @@ namespace favor{
     #define SKYPE_TRANSFERS_COLUMN_DATE "starttime"
     #define SKYPE_TRANSFERS_COLUMN_PKID "pk_id" //Wish I knew what "PK" stood for, but this appears to be unique
 
-    void SkypeManager::verifyDatabaseContents() {
-
-        //TODO: refactor this method so it takes up less space and has less redundancy
-
-        std::unordered_map<string, bool> columnCheck;
-        #define SKYPE_CHECK_COLUMN(table, col, colname) if (!columnCheck.count(col)) throw badUserDataException("Skype database missing " table " table " colname " column (" col ");")
-
-        sqlite3 *db;
+    //vector is pairs of <Column Name, Pretty Name>
+    void SkypeManager::verifyTable(const string& tableName, sqlite3* db, const vector<std::pair<string, string>>& columns){
         sqlite3_stmt* stmt;
         int result;
-        sqlv(sqlite3_open_v2(skypeDatabaseLocation.c_str(), &db, SQLITE_OPEN_READONLY, NULL));
-        //Look for tables, and verify presence of our desired columns
+        std::unordered_map<string, bool> columnCheck;
 
-        /*
-         * Messages table ------------------------
-         */
-        string sql("PRAGMA table_info(" SKYPE_MSG_TABLE_NAME ");");
+        string sql("PRAGMA table_info(" + tableName+ ");");
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-
         while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
             columnCheck[reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1))] = true;
         }
         sqlv(result);
         sqlite3_finalize(stmt);
-        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing messages table (" SKYPE_MSG_TABLE_NAME")");
+        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing table ("+tableName+")");
         else {
-            SKYPE_CHECK_COLUMN("messages", SKYPE_MSG_COLUMN_BODY, "body");
-            SKYPE_CHECK_COLUMN("messages", SKYPE_MSG_COLUMN_AUTHOR, "author");
-            SKYPE_CHECK_COLUMN("messages", SKYPE_MSG_COLUMN_AUTHOR_DISPLAYNAME, "author display name");
-            SKYPE_CHECK_COLUMN("messages", SKYPE_MSG_COLUMN_DATE, "date");
-            SKYPE_CHECK_COLUMN("messages", SKYPE_MSG_COLUMN_CONVO, "conversation id");
-            columnCheck.clear();
+            for (int i = 0; i < columns.size(); ++i){
+                if (!columnCheck.count(columns[i].first)) throw badUserDataException("Skype database missing "+tableName+
+                    " table's "+columns[i].second+" column ("+columns[i].first+")");
+            }
         }
 
-        /*
-         * Accounts table ------------------------
-         */
-        sql = ("PRAGMA table_info(" SKYPE_ACCOUNTS_TABLE_NAME ");");
-        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+    }
 
-        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-            columnCheck[reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1))] = true;
-        }
-        sqlv(result);
-        sqlite3_finalize(stmt);
-        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing accounts table (" SKYPE_ACCOUNTS_TABLE_NAME")");
-        else {
-            SKYPE_CHECK_COLUMN("accounts", SKYPE_ACCOUNTS_COLUMN_ACCNAME, "account name");
-            columnCheck.clear();
-        }
-
-        /*
-         * Conversation participants table ------------------------
-         */
-        sql = ("PRAGMA table_info(" SKYPE_PARTICIPANTS_TABLE_NAME ");");
-        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-
-        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-            columnCheck[reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1))] = true;
-        }
-        sqlv(result);
-        sqlite3_finalize(stmt);
-        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing conversation participants table (" SKYPE_PARTICIPANTS_TABLE_NAME")");
-        else {
-            SKYPE_CHECK_COLUMN("conversation participants", SKYPE_PARTICIPANTS_COLUMN_ACCNAME, "account name");
-            SKYPE_CHECK_COLUMN("conversation participants", SKYPE_PARTICIPANTS_COLUMN_CONVO, "conversation id");
-            columnCheck.clear();
-        }
-
-        /*
-         * Transfers table
-         */
-        sql = ("PRAGMA table_info(" SKYPE_TRANSFERS_TABLE_NAME ");");
-        sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-
-        while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-            columnCheck[reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1))] = true;
-        }
-        sqlv(result);
-        sqlite3_finalize(stmt);
-        if (columnCheck.size() == 0) throw badUserDataException("Skype database missing transfers table (" SKYPE_TRANSFERS_TABLE_NAME")");
-        else {
-            SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_AUTHOR, "author");
-            SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_CONVO, "conversation id");
-            SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_STATUS, "status");
-            SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_DATE, "start time");
-            SKYPE_CHECK_COLUMN("file transfers", SKYPE_TRANSFERS_COLUMN_PKID, "pk id");
-            columnCheck.clear();
-        }
-
-
-
-
-        //Verify that we actually have the right account name
-        sql = ("SELECT " SKYPE_ACCOUNTS_COLUMN_ACCNAME " FROM " SKYPE_ACCOUNTS_TABLE_NAME";");
+    void SkypeManager::verifyAccountName(sqlite3* db){
+        string sql = ("SELECT " SKYPE_ACCOUNTS_COLUMN_ACCNAME " FROM " SKYPE_ACCOUNTS_TABLE_NAME";");
+        sqlite3_stmt* stmt;
+        int result;
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
 
         bool found = false;
@@ -170,6 +102,47 @@ namespace favor{
         if (!found) throw badUserDataException("Skype manager account name not found in database");
 
         sqlv(sqlite3_finalize(stmt));
+    }
+
+    void SkypeManager::verifyDatabaseContents() {
+
+        sqlite3 *db;
+        sqlv(sqlite3_open_v2(skypeDatabaseLocation.c_str(), &db, SQLITE_OPEN_READONLY, NULL));
+        //Look for tables, and verify presence of our desired columns
+
+
+        //Messages table ------------------------
+        vector<std::pair<string, string>> messageColumns = {{SKYPE_MSG_COLUMN_BODY, "body"},
+                                                            {SKYPE_MSG_COLUMN_AUTHOR, "author"},
+                                                            {SKYPE_MSG_COLUMN_AUTHOR_DISPLAYNAME, "author display name"},
+                                                            {SKYPE_MSG_COLUMN_DATE, "date"},
+                                                            {SKYPE_MSG_COLUMN_CONVO, "conversation id"}};
+        verifyTable(SKYPE_MSG_TABLE_NAME, db, messageColumns);
+
+
+        //Accounts table ------------------------
+        vector<std::pair<string, string>> accountsColumns = {{SKYPE_ACCOUNTS_COLUMN_ACCNAME, "account name"}};
+        verifyTable(SKYPE_ACCOUNTS_TABLE_NAME, db, accountsColumns);
+
+
+        // Conversation participants table ------------------------
+        vector<std::pair<string, string>> participantsColumns = {{SKYPE_PARTICIPANTS_COLUMN_ACCNAME, "account name"},
+                                                                 {SKYPE_PARTICIPANTS_COLUMN_CONVO, "conversation id"}};
+
+        verifyTable(SKYPE_PARTICIPANTS_TABLE_NAME, db, participantsColumns);
+
+
+        //Transfers table
+        vector<std::pair<string, string>> transfersColumns = {{SKYPE_TRANSFERS_COLUMN_AUTHOR, "author"},
+                                                              {SKYPE_TRANSFERS_COLUMN_CONVO, "conversation id"},
+                                                              {SKYPE_TRANSFERS_COLUMN_STATUS, "status"},
+                                                              {SKYPE_TRANSFERS_COLUMN_DATE, "start time"},
+                                                              {SKYPE_TRANSFERS_COLUMN_PKID, "pk id"}};
+        verifyTable(SKYPE_TRANSFERS_TABLE_NAME, db, transfersColumns);
+
+
+        //Lastly, verify that we actually have the right account name
+        verifyAccountName(db);
         sqlv(sqlite3_close(db));
     }
 

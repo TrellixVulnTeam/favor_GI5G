@@ -47,6 +47,8 @@ namespace favor {
                 vector<long>>& participantIds, long time);
 
         void verifyDatabaseContents();
+        void verifyTable(const string& tableName, sqlite3* db, const vector<std::pair<string, string>>& columns);
+        void verifyAccountName(sqlite3* db);
 
         string processBody(string body);
         void fetchFromTransfersTable(sqlite3 *db,
