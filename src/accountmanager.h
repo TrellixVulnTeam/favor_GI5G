@@ -103,7 +103,6 @@ namespace favor {
 
             void setCountedAddressName(const string &address, const string &name);
 
-            virtual bool addressValid(const string& address);
 
 
             string stripXML(const pugi::xml_document &doc);
@@ -120,6 +119,8 @@ namespace favor {
             ~AccountManager();
 
             bool operator==(const AccountManager& rhs) const;
+
+            virtual bool addressValid(const string& address);
 
             //Database
             static AccountManager* addAccount(string name, MessageType type, string detailsJson);

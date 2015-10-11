@@ -27,106 +27,23 @@ using namespace vmime::net;
 
 using namespace std;
 namespace favor {
-    namespace email {
-
-        const char *emailRegex = "[a-zA-Z0-9_%+-]+[a-zA-Z0-9._%+-]+[a-zA-Z0-9_%+-]+@[a-zA-Z0-9.-]+[a-zA-Z0-9-]+\\.[a-zA-Z]{2,4}";
-        //A poorly expanded version of this: http://www.regular-expressions.info/email.html
-        //Added a-z to things because case insensitive compilation wasn't handling character rangers properly (I.E., A-Z -> a-z wasn't happening)
-        //also added insulations to avoid consecutive periods and make sure the email doesn't start with one. This made it much longer, and I'm sure
-        //could be done much better by someone more experienced with regular expressions than I. The aaddresses given
-        //here: http://stackoverflow.com/questions/297420/list-of-email-addresses-that-can-be-used-to-test-a-javascript-validation-script are a good resource
-
-        bool toXML(stringstream &ss) {
-            TidyBuffer output = {0};
-            TidyBuffer errbuf = {0};
-            int rc;
-
-            TidyDoc tdoc = tidyCreate();                     // Initialize "document";
-
-            tidyOptSetBool(tdoc, TidyXhtmlOut, yes);  // Tell tidy to convert to xtml
-            tidyOptSetBool(tdoc, TidyDropFontTags, yes); //Slight efficiency
-            tidyOptSetBool(tdoc, TidyHideComments, yes);
-            tidyOptSetValue(tdoc, TidyCharEncoding, "UTF8");
-            tidyOptSetBool(tdoc, TidyQuoteNbsp, no);
-            rc = tidySetErrorBuffer(tdoc, &errbuf);      // This just sets up someplace for error messages
-            if (rc >= 0) rc = tidyParseString(tdoc, ss.str().c_str());           // Parse the input string
-            if (rc >= 0) rc = tidyCleanAndRepair(tdoc);               // Execute the actual cleaning and repairing after configuring and parsing
-            if (rc >= 0) rc = tidyRunDiagnostics(tdoc);               // Kvetch
-            if (rc > 1) rc = (tidyOptSetBool(tdoc, TidyForceOutput, yes) ? rc : -1);                            // If error, force output.
-            if (rc >= 0) rc = tidySaveBuffer(tdoc, &output);          // Pretty Print
-
-            if (rc >= 0) {
-                if (rc > 0) logger::info("Diagnostics for converted HTML: " + string(reinterpret_cast<const char *>(errbuf.bp)));
-            }
-            else {
-                logger::warning("Unable to parse HTML, TidyLib has errno " + as_string(rc) + " and says: \"" + string(reinterpret_cast<const char *>(errbuf.bp)) + "\"");
-                return false;
-            }
-            ss.str(reinterpret_cast<const char *>(output.bp));
-            tidyBufFree(&output);
-            tidyBufFree(&errbuf);
-            tidyRelease(tdoc);
-        }
-
-
-        const unordered_map<string, string> imapServers({{"gmail.com", "imaps://imap.gmail.com:993"}});
-
-
-        class InfoTracer : public vmime::net::tracer {
-        public:
-            void traceSend(const string &line) override {
-                DLOG("[" + service->getProtocolName() + "] Sent: " + line);
-            }
-
-            void traceReceive(const string &line) override {
-                DLOG("[" + service->getProtocolName() + "] Received: " + line);
-            }
-
-            InfoTracer(vmime::shared_ptr<vmime::net::service> serv, const int id) : service(serv), connectionId(id) {
-            }
-
-        private:
-            vmime::shared_ptr<vmime::net::service> service;
-            const int connectionId;
-        };
-
-        class InfoTracerFactory : public vmime::net::tracerFactory {
-        public:
-            shared_ptr<vmime::net::tracer> create(shared_ptr<vmime::net::service> serv, const int connectionId) override {
-                return make_shared<InfoTracer>(serv, connectionId);
-            }
-
-        };
-
-
-        /*
-         * According to VMIME:
-         * If you need to do more complex verifications on certificates, you will
-         * have to write your own verifier. Your verifier should inherit from the
-         * vmime::security::cert::certificateVerifier class and implement the method
-         * verify(). Then, if the specified certificate chain is trusted, simply return from the function,
-         * or else throw a certificate verification exception.
-         *
-         * ...but this is not something Favor currently implements. A lot of potential maintenance work/overhead in
-         * maintaining certificates that would just be for one manager.
-        */
-        // Certificate verifier (TLS/SSL)
-
-
-        class TrustingCertificateVerifier : public vmime::security::cert::certificateVerifier {
-        public:
-            void verify(vmime::shared_ptr<vmime::security::cert::certificateChain> certs, const string &hostname) override {
-                return;
-            }
-        };
-    }
-
+    //A poorly expanded version of this: http://www.regular-expressions.info/email.html
+    //Added a-z to things because case insensitive compilation wasn't handling character rangers properly (I.E., A-Z -> a-z wasn't happening)
+    //also added insulations to avoid consecutive periods and make sure the email doesn't start with one. This made it much longer, and I'm sure
+    //could be done much better by someone more experienced with regular expressions than I. The aaddresses given
+    //here: http://stackoverflow.com/questions/297420/list-of-email-addresses-that-can-be-used-to-test-a-javascript-validation-script are a good resource
+    std::regex EmailManager::emailRegex = std::regex("[a-zA-Z0-9_%+-]+[a-zA-Z0-9._%+-]+[a-zA-Z0-9_%+-]+@[a-zA-Z0-9.-]+[a-zA-Z0-9-]+\\.[a-zA-Z]{2,4}",
+                                                     std::regex::ECMAScript | std::regex::icase);
     std::regex EmailManager::utf8regex = std::regex("utf-8", std::regex::ECMAScript | std::regex::icase);
-    std::regex EmailManager::emailRegex = std::regex(email::emailRegex, std::regex::ECMAScript | std::regex::icase);
+
+    //TODO: this needs to be updated with more imap servers, somehwat obviously
+    const unordered_map<string, string> EmailManager::imapServers({{"gmail.com", "imaps://imap.gmail.com:993"}});
+
 
     //TODO: test this with bad URLS, and an unrecognized email+custom URL
     EmailManager::EmailManager(string accNm, string detailsJson)
             : AccountManager(accNm, TYPE_EMAIL, detailsJson), serverURL("imap://bad.url:0") {
+        if (!addressValid(accountName)) logger::warning("Account name " + accountName + " for email manager does not match email regex");
         consultJson(true);
     }
 
@@ -135,9 +52,6 @@ namespace favor {
             if (json.HasMember("password")) password = json["password"].GetString();
             else throw badUserDataException("EmailManager missing password");
 
-            //http://www.regular-expressions.info/email.html
-            if (!regex_match(accountName, emailRegex)) logger::warning("Account name " + accountName + " for email manager does not match email regex");
-
             size_t atSignPosition = accountName.find_first_of("@");
             if (atSignPosition == string::npos) {
                 logger::error("Could not find \"@\" in \"" + accountName + "\"");
@@ -145,8 +59,8 @@ namespace favor {
             }
 
             string domain = accountName.substr(atSignPosition + 1);
-            unordered_map<string, string>::const_iterator it = email::imapServers.find(domain);
-            if (it != email::imapServers.end()) {
+            unordered_map<string, string>::const_iterator it = imapServers.find(domain);
+            if (it != imapServers.end()) {
                 serverURL = vmime::utility::url(it->second);
             }
             else {
@@ -176,19 +90,55 @@ namespace favor {
         return regex_match(address, emailRegex);
     }
 
+    bool tidyNoErrors(int rc){
+        return rc >= 0 && rc < 2;
+    }
+
+    bool EmailManager::toXML(stringstream &ss) {
+        TidyBuffer output = {0};
+        TidyBuffer errbuf = {0};
+        int rc;
+
+        TidyDoc tdoc = tidyCreate();                     // Initialize "document";
+
+        tidyOptSetBool(tdoc, TidyXhtmlOut, yes);  // Tell tidy to convert to xtml
+        tidyOptSetBool(tdoc, TidyDropFontTags, yes); //Slight efficiency
+        tidyOptSetBool(tdoc, TidyHideComments, yes);
+        tidyOptSetValue(tdoc, TidyCharEncoding, "UTF8");
+        tidyOptSetBool(tdoc, TidyQuoteNbsp, no);
+        rc = tidySetErrorBuffer(tdoc, &errbuf);      // This just sets up someplace for error messages
+        if (tidyNoErrors(rc)) rc = tidyParseString(tdoc, ss.str().c_str());            // Parse the input string
+        if (tidyNoErrors(rc)) rc = tidyCleanAndRepair(tdoc);              // Execute the actual cleaning and repairing after configuring and parsing
+        if (tidyNoErrors(rc)) rc = tidyRunDiagnostics(tdoc);              // Kvetch
+        //if (rc > 1) rc = (tidyOptSetBool(tdoc, TidyForceOutput, yes) ? rc : -1);     //Here in case we need it, but currently, do not force output
+        if (tidyNoErrors(rc)) rc = tidySaveBuffer(tdoc, &output);           // Pretty Print
+
+        if (tidyNoErrors(rc)) {
+            logger::info("Diagnostics for converted HTML: " + string(reinterpret_cast<const char *>(errbuf.bp)));
+        }
+        else {
+            logger::warning("Unable to parse HTML, TidyLib has errno " + as_string(rc) + " and says: \"" + string(reinterpret_cast<const char *>(errbuf.bp)) + "\"");
+            return false;
+        }
+        ss.str(reinterpret_cast<const char *>(output.bp));
+        tidyBufFree(&output);
+        tidyBufFree(&errbuf);
+        tidyRelease(tdoc);
+        return true;
+    }
+
 
     std::time_t EmailManager::toTime(const vmime::datetime input) {
-        //TODO: test this to verify this works properly
         struct tm timeinfo;
         const vmime::datetime time = vmime::utility::datetimeUtils::toUniversalTime(input);
-        timeinfo.tm_sec = time.getSecond();
-        timeinfo.tm_min = time.getMinute();
-        timeinfo.tm_hour = time.getHour();
-        timeinfo.tm_mday = time.getDay();
+        timeinfo.tm_sec = time.getSecond(); DLOG("Seconds:"+as_string(time.getSecond()))
+        timeinfo.tm_min = time.getMinute(); DLOG("Minutes:"+as_string(time.getMinute()))
+        timeinfo.tm_hour = time.getHour(); DLOG("Hours:"+as_string(time.getHour()))
+        timeinfo.tm_mday = time.getDay(); DLOG("Day:"+as_string(time.getDay()))
         timeinfo.tm_mon = time.getMonth() - 1; //tm specification is "Months since January"
         timeinfo.tm_year = time.getYear() - 1900; //tm specification is "Years since 1900"
         timeinfo.tm_isdst = 0; //No daylight savings in universal time, I believe
-        time_t ret = mktime(&timeinfo);
+        time_t ret = to_time_t_utc(&timeinfo);
         return ret;
     }
 
@@ -223,7 +173,7 @@ namespace favor {
                 ss << to_utf8(preConvert, part->getCharset().getName());
             }
 
-            bool xmlSuccess = email::toXML(ss);
+            bool xmlSuccess = toXML(ss);
             pugi::xml_document doc;
             pugi::xml_parse_result res = doc.load(ss);
             if (res) ss.str(stripXML(doc));
@@ -355,8 +305,8 @@ namespace favor {
         vmime::shared_ptr<vmime::net::store> st = sess->getStore(serverURL);
 
         try {
-            st->setCertificateVerifier(vmime::make_shared<email::TrustingCertificateVerifier>());
-            st->setTracerFactory(make_shared<email::InfoTracerFactory>());
+            st->setCertificateVerifier(vmime::make_shared<TrustingCertificateVerifier>());
+            st->setTracerFactory(make_shared<InfoTracerFactory>());
             st->connect();
             logger::info("Successfully connected to " + string(serverURL) + "as " + accountName);
         }
@@ -544,18 +494,35 @@ namespace favor {
         for (int i = 0; i < fetchedAddresses.size(); ++i) {
             shared_ptr<const vmime::addressList> addrList = fetchedAddresses[i]->getHeader()->To()->getValue<vmime::addressList>();
 
-            //TODO: Write some email-specific code to use the most common name for a given contact, because any other medium should have a
-            //very well defined mapping. throw names into hash tables of counts per address, associate the most common ones with the address
+
             for (int i = 0; i < addrList->getAddressCount(); ++i) {
                 shared_ptr<const vmime::address> vmimeAddress = addrList->getAddressAt(i); //vmime "addresses" can be multiple addresses
                 shared_ptr<const vmime::mailbox> mailbox; //Mailbox is vmime's somehwhat confusing term for an actual address...
                 if (vmimeAddress->isGroup()) mailbox = dynamic_pointer_cast<const vmime::mailboxGroup>(vmimeAddress)->getMailboxAt(0);
                 else mailbox = dynamic_pointer_cast<const vmime::mailbox>(vmimeAddress);
+
                 string addressString = lowercase(mailbox->getEmail().toString()); //Have to lowercase email addresses
-                mailbox->getName().getWordList(); //TODO: do something with this
 
+                //While most other mediums are going to have a clean 1:1 mapping, different email clients can send
+                //differet names from the same address, so we just pick the most common one
 
-                //nameOccurenceCount[addressString][mailbox->getName().getWordList()]
+                auto words = mailbox->getName().getWordList();
+                if (words.size() != 0){
+                    nameOccurenceCount[addressString][words[0]->getConvertedText(vmime::charsets::UTF_8)]+= 1;
+                }
+
+                for (auto it = nameOccurenceCount.begin(); it != nameOccurenceCount.end(); ++it){
+                    int localMaxNameCount = 0;
+                    const string* mostCommonName;
+                    for (auto innerIt = it->second.begin(); innerIt != it->second.end(); ++innerIt){
+                        if (innerIt->second > localMaxNameCount){
+                            localMaxNameCount = innerIt->second;
+                            mostCommonName = &(it->first);
+                        }
+                    }
+                    setCountedAddressName(it->first, *mostCommonName);
+                }
+
                 countAddress(addressString);
             }
         }

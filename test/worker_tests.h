@@ -33,9 +33,11 @@ bool findContact (InputIterator first, InputIterator last, const Contact& val)
                         equal = equal && foundMatch;
                 }
                 if (equal){
-                       // logger::info("True");
+                        //logger::info("True");
                         return true;
-                } //else logger::info("False");
+                } else {
+                    //logger::info("False");
+                }
                 ++first;
         }
         return false;
@@ -59,24 +61,36 @@ TEST_F(Worker, CreateContactWithAddress){
                 ASSERT_TRUE(findContact(contacts->begin(), contacts->end(), *it));
         }
 
+}
 
-        //What we are now testing is moving existing addresses to new contacts with this method; this should snipe the contact from EmailTest1
-        worker::createContactWithAddress(EmailTest1.getAddresses()[0].addr, TYPE_EMAIL, "EmailTest2");
+TEST_F(Worker, CreateContactWithAddressExisting){
+        //What we are now testing is moving existing addresses to new contacts with this method
+        Contact EmailTest1 CONTACT_EmailTest1_ARGS;
+        worker::createContactWithAddress(EmailTest1.getAddresses()[0].addr, TYPE_EMAIL, EmailTest1.displayName);
 
-        Contact NewEmailTest1(EmailTest1.id, EmailTest1.displayName); //No addresses
-        Address NewEmailAddress(EmailTest1.getAddresses()[0].addr, EmailTest1.getAddresses()[0].count, 3, TYPE_EMAIL); //Have to create this so we can change the contactId
-        Contact EmailTest2(3, "EmailTest2", NewEmailAddress); //Id of 3 since created third, and holding EmailTest1's address that it took
 
-        definedContacts.clear();
+        string emailTest2Name("EmailTest2");
+
+        /*
+         * This may look confusing because it's out of order, but first we create EmailTest 2 in the database with the address previously used by EmailTest1
+         * so that EmailTest2 takes ownership of it. Then we create an address variable that looks like EmailTest1's address, except it has the ID of the new
+         * EmaiLTest2 (which is 2) so that we can add it to EmailTest2 and later verify the two are correctly associated. Lastly we create the actual EmailTest2
+         * variable so we can check for it in the results
+         */
+        worker::createContactWithAddress(EmailTest1.getAddresses()[0].addr, TYPE_EMAIL, emailTest2Name); //Take ownership of the address previously owned by EmailTest1
+        Address NewEmailAddress(EmailTest1.getAddresses()[0].addr, EmailTest1.getAddresses()[0].count, 2, TYPE_EMAIL);
+        Contact EmailTest2(2, emailTest2Name, NewEmailAddress); //Id of 3 since created third, and holding EmailTest1's address that it took
+
+        Contact NewEmailTest1(EmailTest1.id, EmailTest1.displayName); //Recreate EmailTest1 without any linked contacts
+
+        std::list<Contact> definedContacts;
         definedContacts.push_back(NewEmailTest1);
-        definedContacts.push_back(LineTest2);
         definedContacts.push_back(EmailTest2);
 
-        contacts = reader::contactList();
+        auto contacts = reader::contactList();
         for (auto it = definedContacts.begin(); it != definedContacts.end();++it){
-                ASSERT_TRUE(findContact(contacts->begin(), contacts->end(), *it));
+            ASSERT_TRUE(findContact(contacts->begin(), contacts->end(), *it));
         }
-
 }
 
 TEST_F(Worker, CreateContactFromAddress){

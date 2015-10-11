@@ -91,6 +91,10 @@ namespace favor {
     //Utility
     void sqlite3_validate(int result, sqlite3 *db);
 
+    void refresh_utc_offset();
+
+    time_t to_time_t_utc( struct tm* timeptr );
+
     void sqlite3_bind_regexp_function(sqlite3* db);
 
     string sqlite3_get_string(sqlite3_stmt* stmt, int col);

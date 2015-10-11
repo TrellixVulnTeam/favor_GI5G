@@ -96,15 +96,6 @@ TEST(CompareAddress, Compare){
     addrs.push_back(a3);
     addrs.push_back(a4);
     addrs.sort(compareAddress);
-    auto it = addrs.begin();
-    ASSERT_EQ(*it, a4);
-    ++it;
-    ASSERT_EQ(*it, a3);
-    ++it;
-    ASSERT_EQ(*it, a2);
-    ++it;
-    ASSERT_EQ(*it, a1);
-    ++it;
 
     ASSERT_TRUE(compareAddress(a2, a1));
     ASSERT_TRUE(compareAddress(a3, a2));

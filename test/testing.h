@@ -12,6 +12,16 @@
 using namespace std;
 using namespace favor;
 
+namespace favor{
+    void configureDatabaseForTesting(){
+        ASSERT_EQ(sqlite3_config(SQLITE_CONFIG_URI,1), SQLITE_OK);
+        favor::dbName = "file::memory:?cache=shared";
+        favor::dbPath = "";
+        favor::initialize();
+        worker::buildDatabase();
+    }
+}
+
 class DatabaseTest : public ::testing::Test {
 protected:
 
@@ -25,11 +35,7 @@ protected:
     const string messagesSeed = MESSAGE_TEST_DATA;
 
     virtual void SetUp() override {
-        ASSERT_EQ(sqlite3_config(SQLITE_CONFIG_URI,1), SQLITE_OK);
-        favor::dbName = "file::memory:?cache=shared";
-        favor::dbPath = "";
-        favor::initialize();
-        worker::buildDatabase();
+        favor::configureDatabaseForTesting();
     }
 
     virtual void TearDown() override {

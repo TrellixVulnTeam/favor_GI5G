@@ -29,18 +29,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace favor {
     class EmailManager : public AccountManager {
+        friend class EmailManagerTest;
+        friend class AccountManager;
+
     public:
-        EmailManager(string accNm, string detailsJson);
+        bool addressValid(const string &address) override;
 
     protected:
+        EmailManager(string accNm, string detailsJson);
         void fetchMessages() override;
 
         void fetchAddresses() override;
 
         void updateJson() override;
         void consultJson(bool initial = false) override;
-
-        bool addressValid(const string &address) override;
 
     private:
         long lastSentUid;
@@ -51,10 +53,13 @@ namespace favor {
         vmime::utility::url serverURL;
         static std::regex utf8regex;
         static std::regex emailRegex;
+        static const std::unordered_map<string, string> imapServers;
 
         shared_ptr<vmime::net::store> login();
 
         string folderList(vector<shared_ptr<vmime::net::folder>> folders);
+
+        bool toXML(std::stringstream &ss);
 
         void parseMessage(bool sent, favor::shared_ptr<vmime::net::message> m);
 
@@ -70,13 +75,61 @@ namespace favor {
 
         void processFetchedAddresses(vector<shared_ptr<vmime::net::message>> fetchedAddresses);
 
-        std::time_t toTime(const vmime::datetime input);
+        static std::time_t toTime(const vmime::datetime input);
 
         string searchCommand(bool sent, shared_ptr<const vector<Address>> addresses, long startUid, long endUid);
 
         SentRec<std::shared_ptr<vmime::net::folder>> findSentRecFolder(favor::shared_ptr<vmime::net::store> st);
 
         void fetchFromFolder(favor::shared_ptr<vmime::net::folder> folder, shared_ptr<const vector<Address>> addresses, bool catchUp);
+
+        class InfoTracer : public vmime::net::tracer {
+        public:
+            void traceSend(const string &line) override {
+                DLOG("[" + service->getProtocolName() + "] Sent: " + line);
+            }
+
+            void traceReceive(const string &line) override {
+                DLOG("[" + service->getProtocolName() + "] Received: " + line);
+            }
+
+            InfoTracer(vmime::shared_ptr<vmime::net::service> serv, const int id) : service(serv), connectionId(id) {
+            }
+
+        private:
+            vmime::shared_ptr<vmime::net::service> service;
+            const int connectionId;
+        };
+
+        class InfoTracerFactory : public vmime::net::tracerFactory {
+        public:
+            shared_ptr<vmime::net::tracer> create(shared_ptr<vmime::net::service> serv, const int connectionId) override {
+                return std::make_shared<InfoTracer>(serv, connectionId);
+            }
+
+        };
+
+
+        /*
+         * According to VMIME:
+         * If you need to do more complex verifications on certificates, you will
+         * have to write your own verifier. Your verifier should inherit from the
+         * vmime::security::cert::certificateVerifier class and implement the method
+         * verify(). Then, if the specified certificate chain is trusted, simply return from the function,
+         * or else throw a certificate verification exception.
+         *
+         * ...but this is not something Favor currently implements. A lot of potential maintenance work/overhead in
+         * maintaining certificates that would just be for one manager.
+        */
+        // Certificate verifier (TLS/SSL)
+
+
+        class TrustingCertificateVerifier : public vmime::security::cert::certificateVerifier {
+        public:
+            void verify(vmime::shared_ptr<vmime::security::cert::certificateChain> certs, const string &hostname) override {
+                return;
+            }
+        };
     };
 }
 

@@ -78,6 +78,8 @@ namespace favor {
 
         void cleanup() {
             sqlv(sqlite3_close(db));
+            writeableAccountList()->clear();
+            writeableContactList()->clear();
         }
 
         DataLock<list<AccountManager*>> accountList() {

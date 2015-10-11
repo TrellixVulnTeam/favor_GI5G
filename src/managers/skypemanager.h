@@ -25,11 +25,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace favor {
     class SkypeManager : public AccountManager {
-    public:
-        SkypeManager(string accNm, string detailsJson);
-
+        friend class SkypeManagerTest;
+        friend class AccountManager;
 
     protected:
+        SkypeManager(string accNm, string detailsJson);
         void fetchMessages() override;
 
         void fetchAddresses() override;

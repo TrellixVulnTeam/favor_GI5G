@@ -29,6 +29,32 @@ namespace favor {
     const char *MessageTypeName[] = {NAME_EMAIL, NAME_ANDROIDTEXT, NAME_LINE, NAME_SKYPE};
     const char* dbPath = ".";
     const char* dbName = "/favor.db";
+    namespace {
+        int utcOffset;
+    }
+
+
+    /* http://stackoverflow.com/a/9088549
+    returns the utc timezone offset
+    (e.g. -8 hours for PST)
+    */
+    void refresh_utc_offset() {
+
+        time_t zero = 24*60*60L;
+        struct tm * timeptr;
+        int gmtime_hours;
+
+        /* get the local time for Jan 2, 1900 00:00 UTC */
+        timeptr = localtime( &zero );
+        gmtime_hours = timeptr->tm_hour;
+
+        /* if the local time is the "day before" the UTC, subtract 24 hours
+          from the hours to get the UTC offset */
+        if( timeptr->tm_mday < 2 )
+            gmtime_hours -= 24;
+
+        utcOffset = gmtime_hours;
+    }
 
 
     void initialize() {
@@ -39,7 +65,10 @@ namespace favor {
         //The worker must be initialized first, because it will create the database if there is none
         worker::initialize();
         reader::initialize();
+        refresh_utc_offset();
     }
+
+
 
     void cleanup() {
         worker::cleanup();
@@ -234,6 +263,11 @@ namespace favor {
         string ret = s;
         transform(s.begin(), s.end(), ret.begin(), ::tolower); //Only compiles specifically with "::tolower"
         return ret;
+    }
+
+    //For lack of a generalizable timegm()
+    time_t to_time_t_utc( struct tm* timeptr ) {
+        return mktime( timeptr ) + utcOffset * 3600;
     }
 
 

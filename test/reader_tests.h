@@ -11,6 +11,13 @@ using namespace std;
 using namespace favor;
 
 class Reader : public DatabaseTest {
+
+protected:
+    AccountManager* Account1;
+    AccountManager* Account2;
+    AccountManager* Account3;
+
+
     void populateDb(){
         string sql = "BEGIN IMMEDIATE TRANSACTION;";
         sql += contactSeed;
@@ -26,6 +33,17 @@ class Reader : public DatabaseTest {
         DatabaseTest::SetUp();
         populateDb();
         reader::refreshAll(); //These values are expected to be correct in other methods, so it tests the refresh methods
+
+        Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
+        Account2 = AccountManager::buildManager ACC_account2_at_test_dot_com_ARGS;
+        Account3 = AccountManager::buildManager ACC_account3_ARGS;
+    }
+
+    virtual void TearDown() override {
+        DatabaseTest::TearDown();
+        delete Account1;
+        delete Account2;
+        delete Account3;
     }
 
 
@@ -42,15 +60,11 @@ TEST_F(Reader, SQLiteSum){
 
     result = reader::sumAll(Account1, KEY_CHARCOUNT, -1, -1, false);
     ASSERT_EQ(ACCOUNT1_AT_TEST_DOT_COM_OVERALL_CHARCOUNT_RECEIVED, result);
-
-    delete Account1;
 }
 
 
 TEST_F(Reader, SQLiteAverage){
     Contact LineEmailTest3 CONTACT_LineEmailTest3_ARGS;
-    AccountManager* Account2 = AccountManager::buildManager ACC_account2_at_test_dot_com_ARGS;
-    AccountManager* Account3 = AccountManager::buildManager ACC_account3_ARGS; //Line
 
     //Also tests contact-address mapping separation across types
     double result = reader::average(Account2, LineEmailTest3, KEY_CHARCOUNT, -1, -1, true);
@@ -62,13 +76,9 @@ TEST_F(Reader, SQLiteAverage){
     result = reader::average(Account3, LineEmailTest3, KEY_CHARCOUNT, -1, -1, true);
     logger::info(as_string(result)+"=~="+as_string(ACCOUNT3_TEST2_CHARCOUNT_SENT / ACCOUNT3_TEST2_MSGCOUNT_SENT));
     ASSERT_EQ(ACCOUNT3_TEST2_CHARCOUNT_SENT / ACCOUNT3_TEST2_MSGCOUNT_SENT, (long)result);
-
-    delete Account2;
-    delete Account3;
 }
 
 TEST_F(Reader, SqliteRowConfirmation){
-    AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
     auto allResult = reader::queryAll(Account1, KEY_ALL, -1, -1, true);
     bool success = false;
 
@@ -88,7 +98,6 @@ TEST_F(Reader, SqliteRowConfirmation){
 
 TEST_F(Reader, SQliteCount){
     Contact LineEmailTest3 CONTACT_LineEmailTest3_ARGS;
-    AccountManager* Account2 = AccountManager::buildManager ACC_account2_at_test_dot_com_ARGS;
 
     //Also tests dates on reader selections for the basic SQL queries
     long result = reader::count(Account2, LineEmailTest3, 0, ACCOUNT2_AT_TEST_DOT_COM_TEST4_AT_TEST_DOT_COM_SENT_MIDDATE, true);
@@ -110,16 +119,14 @@ TEST_F(Reader, SQliteCount){
 
     long result_all = reader::count(Account2, LineEmailTest3, 0, -1, true);
     ASSERT_EQ((result*2)-1, result_all);
-
-    delete Account2;
 }
 
 TEST_F(Reader, AccountList){
     auto result = reader::accountList();
     std::list<AccountManager*> definedAccounts;
-    definedAccounts.push_back(AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS);
-    definedAccounts.push_back(AccountManager::buildManager ACC_account2_at_test_dot_com_ARGS);
-    definedAccounts.push_back(AccountManager::buildManager ACC_account3_ARGS);
+    definedAccounts.push_back(Account1);
+    definedAccounts.push_back(Account2);
+    definedAccounts.push_back(Account3);
 
     ASSERT_EQ(definedAccounts.size(), result->size());
     for (auto it = result->begin(); it != result->end(); ++it){
@@ -202,7 +209,6 @@ TEST_F(Reader, QueryContact){
     Contact EmailTest1 CONTACT_EmailTest1_ARGS;
     Contact DoubleEmailTest4 CONTACT_TwoEmailTest4_ARGS;
     Contact LineTest2 CONTACT_LineTest2_ARGS;
-    AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
     auto result = reader::queryContact(Account1, EmailTest1, KEY_DATE | KEY_CHARCOUNT, -1, -1, false);
     //test3@test.com is the address bound to EmailTest1
 
@@ -252,14 +258,9 @@ TEST_F(Reader, QueryContact){
 
     auto emptyResult = reader::queryContact(Account1, LineTest2, KEY_ID, -1, -1, true);
     ASSERT_EQ(0, emptyResult->size());
-
-    delete Account1;
 }
 
 TEST_F(Reader, QueryAll){
-    AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
-    AccountManager* Account3 = AccountManager::buildManager ACC_account3_ARGS;
-
     auto smallerResult = reader::queryAll(Account1, KEY_ALL, ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_RECEIVED_MIDDATE, -1, false);
     auto result = reader::queryAll(Account1, KEY_CHARCOUNT, -1, -1, false);
 
@@ -295,15 +296,9 @@ TEST_F(Reader, QueryAll){
     }
     ASSERT_EQ(ACCOUNT3_OVERALL_CHARCOUNT_SENT, sum);
     ASSERT_EQ(ACCOUNT3_OVERALL_MSGCOUNT_SENT, result2->size());
-
-    delete Account1;
-    delete Account3;
 }
 
 TEST_F(Reader, QueryConversation){
-    AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
-    AccountManager* Account3 = AccountManager::buildManager ACC_account3_ARGS;
-
     Contact EmailTest1 CONTACT_EmailTest1_ARGS;
     Contact DoubleEmailTest4 CONTACT_TwoEmailTest4_ARGS;
     Contact LineTest2 CONTACT_LineTest2_ARGS;
@@ -358,8 +353,5 @@ TEST_F(Reader, QueryConversation){
     ASSERT_EQ(ACCOUNT1_AT_TEST_DOT_COM_DUBTEST1_AT_TEST_DOT_COM_MSGCOUNT_RECEIVED+ACCOUNT1_AT_TEST_DOT_COM_DUBTEST1_AT_TEST_DOT_COM_MSGCOUNT_SENT+
             ACCOUNT1_AT_TEST_DOT_COM_DUBTEST2_AT_TEST_DOT_COM_MSGCOUNT_RECEIVED+ACCOUNT1_AT_TEST_DOT_COM_DUBTEST2_AT_TEST_DOT_COM_MSGCOUNT_SENT,
             doubleResult->size());
-
-    delete Account1;
-    delete Account3;
 
 }
