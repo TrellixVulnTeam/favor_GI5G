@@ -9,6 +9,7 @@ This is more accurately a paragraph about what favor _will be_, as I'm very much
 TODO list:
 ==
 This is currently very messy because I'm mostly using it for myself. Also changes frequently.
+ - Dependency fetching for libtidy is still broken, although we have it compiling now. Static library builds as "libtidys" which CMake can't find...
  - In the worker address table computing code, we need to figure out what we're doing with snames suggested by _AccountManager::setCountedAddressName_ (how to use/store them, whether to save them or give them to the reader, etc.)
  - Use [Google Mock](https://github.com/google/googletest/blob/master/googlemock/docs/ForDummies.md) to write EmailManager and SkypeManager tests, refactoring code as appropriate/necessary
  - Update our used libraries
@@ -70,7 +71,7 @@ Dependencies are fetched via a python script in lib. How exactly some of these w
  - [UTF8-CPP] (http://utfcpp.sourceforge.net/)
  - [rapidjson](https://github.com/miloyip/rapidjson)
  - [pugixml](https://github.com/zeux/pugixml)
- - A [very slightly modified tidy-html5](https://github.com/Mindful/tidy-html5). The changes here are just to get it to compile on Android.
+ - [tidy-html5](https://github.com/htacg/tidy-html5) 
  - [iconvpp](https://github.com/unnonouno/iconvpp)
  - The desktop implementation of the Email MessageManager (EmailManager) uses a [very slightly modified VMIME](https://github.com/Mindful/vmime/)  built using the command in 
  favor/src/lib/vmime/build_cmd. We'll move to using the official library as soon as it has support for IMAP search. Until then, the only changes in the homebrew version are to expose some 

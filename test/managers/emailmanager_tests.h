@@ -15,6 +15,13 @@ using namespace favor;
 #define ALT_EMAIL ""
 
 namespace favor {
+
+    class mockMessageStructure : public vmime::net::messageStructure {
+//        MOCK_METHOD0(getPartCount, size_t());
+//        MOCK_METHOD1(getPartAt, mockMessagePart(size_t pos));
+    };
+
+
     class EmailManagerTest : public ::testing::Test {
     protected:
 

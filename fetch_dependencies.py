@@ -51,6 +51,7 @@ def run_commands_in_directory(cmds, directory):
     os.chdir(directory)
     for cmd in cmds:
         try:
+            print("Run "+cmd)
             process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             while True:
                 nextline = process.stdout.readline().decode()
@@ -115,8 +116,18 @@ if __name__ == "__main__":
     download_dependency('https://docs.google.com/uc?export=download&id=0B9ZUy-jroUhzdGhwUUNhaFBXXzA', 'utf8cpp', ['source'],
                         '2.3.4', type='.zip')
 
-    github_dependency('https://github.com/Mindful/tidy-html5', 'tidy-html5', ['lib', 'include'],
-                      ['cd build/gmake/', 'make', 'cd ../..'])
+    #Old tidy-html5 that I configured to be compilable on android. Deprecated now because we
+    #don't (yet?) need tidy on Android and it's way too far behind master
+    #github_dependency('https://github.com/Mindful/tidy-html5', 'tidy-html5', ['lib', 'include'],
+                      #['cd build/gmake/', 'make', 'cd ../..'])
+    
+    #As of 10/11/15, the added -fPIC here is necessary for tidy to work when Favor is compiled into
+    #a dynamic library on Unix systems. I don't know why it doesn't have this flag by default,
+    #but without it the code isn't position independent and can't be used to compile something
+    #position independent
+    github_dependency('https://github.com/htacg/tidy-html5', 'tidy-html5', ['build/cmake', 'include'],
+                      ['cd build/cmake && cmake ../.. -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS} -fPIC" -DBUILD_SHARED_LIB:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../include && make && make install && cd ../..'])
+
     github_dependency('https://github.com/miloyip/rapidjson', 'rapidjson', ['include/rapidjson'])
     download_dependency('http://www.sqlite.org/2014/sqlite-amalgamation-3080600.zip', 'sqlite',
                         ['sqlite-amalgamation-3080600'], '3.8.6')
