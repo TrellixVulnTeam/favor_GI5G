@@ -113,14 +113,17 @@ if __name__ == "__main__":
         os.makedirs(DIRNAME)
     os.chdir(DIRNAME)
 
+    #SASL support is turned off for now because it introduces more dependencies
+    #The TLS_SUPPORT_LIB and CHARSETCONV_LIB could conceivably be changed, but
+    #at least the former would also requires changes to the cmake file
     github_dependency('https://github.com/Mindful/vmime', 'vmime', ['install'],
-    ['cmake -G "Unix Makefiles" -DCMAKE_CXX_FLAGS="${CMAKE_C_FLAGS} -fPIC -lgnutls" '
+    ['cmake -G "Unix Makefiles" -DCMAKE_CXX_FLAGS="${CMAKE_C_FLAGS} -fPIC" '
     '-DVMIME_HAVE_MESSAGING_PROTO_POP3=OFF -DVMIME_HAVE_MESSAGING_PROTO_SENDMAIL=OFF '
     '-DVMIME_HAVE_MESSAGING_PROTO_MAILDIR=OFF -DVMIME_HAVE_MESSAGING_PROTO_SMTP=OFF '
     '-DVMIME_SHARED_PTR_USE_CXX=ON -DVMIME_SHARED_PTR_USE_BOOST=OFF -DVMIME_BUILD_SHARED_LIBRARY=OFF'
     '-DCMAKE_BUILD_TYPE="Release" -DVMIME_BUILD_SAMPLES=OFF -DVMIME_BUILD_STATIC_LIBRARY=ON '
-    '-DVMIME_TLS_SUPPORT_LIB_IS_OPENSSL=ON -DVMIME_TLS_SUPPORT_LIB_IS_GNUTLS=OFF -DCMAKE_INSTALL_PREFIX=install'
-     , 'make install'])
+    '-DVMIME_HAVE_SASL_SUPPORT=OFF -DVMIME_TLS_SUPPORT_LIB=openssl -DVMIME_CHARSETCONV_LIB=iconv '
+    '-DCMAKE_INSTALL_PREFIX=install' , 'make install'])
     exit()
 
     download_dependency('https://docs.google.com/uc?export=download&id=0B9ZUy-jroUhzdGhwUUNhaFBXXzA', 'utf8cpp', ['source'],
@@ -149,13 +152,13 @@ if __name__ == "__main__":
                         ['pugixml-1.4/src'], '1.4')
     #TODO: adjust the vmime one so it doesn't spit stuff out in disparate directories like it is now (see tidy-html5)
     github_dependency('https://github.com/Mindful/vmime', 'vmime', ['install'],
-    ['cmake -G "Unix Makefiles" -DCMAKE_CXX_FLAGS="${CMAKE_C_FLAGS} -fPIC -lgnutls" '
+    ['cmake -G "Unix Makefiles" -DCMAKE_CXX_FLAGS="${CMAKE_C_FLAGS} -fPIC" '
     '-DVMIME_HAVE_MESSAGING_PROTO_POP3=OFF -DVMIME_HAVE_MESSAGING_PROTO_SENDMAIL=OFF '
     '-DVMIME_HAVE_MESSAGING_PROTO_MAILDIR=OFF -DVMIME_HAVE_MESSAGING_PROTO_SMTP=OFF '
     '-DVMIME_SHARED_PTR_USE_CXX=ON -DVMIME_SHARED_PTR_USE_BOOST=OFF -DVMIME_BUILD_SHARED_LIBRARY=OFF'
     '-DCMAKE_BUILD_TYPE="Release" -DVMIME_BUILD_SAMPLES=OFF -DVMIME_BUILD_STATIC_LIBRARY=ON '
-    '-DVMIME_TLS_SUPPORT_LIB_IS_OPENSSL=ON -DVMIME_TLS_SUPPORT_LIB_IS_GNUTLS=OFF -DCMAKE_INSTALL_PREFIX=install'
-     , 'make install'])
+    '-DVMIME_HAVE_SASL_SUPPORT=OFF -DVMIME_TLS_SUPPORT_LIB=openssl -DVMIME_CHARSETCONV_LIB=iconv '
+    '-DCMAKE_INSTALL_PREFIX=install' , 'make install'])
 
     #A little silly to get the same git repo twice, but it's clearer this way
     github_dependency('https://github.com/google/googletest', 'gtest', ['googletest'], ['cd googletest && cmake -G "Unix Makefiles" && make'])
