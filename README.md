@@ -9,7 +9,7 @@ This is more accurately a paragraph about what favor _will be_, as I'm very much
 TODO list:
 ==
 This is currently very messy because I'm mostly using it for myself. Also changes frequently.
- - Dependency fetching for libtidy is still broken, although we have it compiling now. Static library builds as "libtidys" which CMake can't find...
+ - Move as much as we can (ideally everything) from the python dependency fetching script to using CMake's [ExternalProject](https://cmake.org/cmake/help/v2.8.8/cmake.html#module%3AExternalProject) module
  - In the worker address table computing code, we need to figure out what we're doing with snames suggested by _AccountManager::setCountedAddressName_ (how to use/store them, whether to save them or give them to the reader, etc.)
  - Use [Google Mock](https://github.com/google/googletest/blob/master/googlemock/docs/ForDummies.md) to write EmailManager and SkypeManager tests, refactoring code as appropriate/necessary
  - Update our used libraries

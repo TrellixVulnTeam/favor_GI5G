@@ -113,6 +113,16 @@ if __name__ == "__main__":
         os.makedirs(DIRNAME)
     os.chdir(DIRNAME)
 
+    github_dependency('https://github.com/Mindful/vmime', 'vmime', ['install'],
+    ['cmake -G "Unix Makefiles" -DCMAKE_CXX_FLAGS="${CMAKE_C_FLAGS} -fPIC -lgnutls" '
+    '-DVMIME_HAVE_MESSAGING_PROTO_POP3=OFF -DVMIME_HAVE_MESSAGING_PROTO_SENDMAIL=OFF '
+    '-DVMIME_HAVE_MESSAGING_PROTO_MAILDIR=OFF -DVMIME_HAVE_MESSAGING_PROTO_SMTP=OFF '
+    '-DVMIME_SHARED_PTR_USE_CXX=ON -DVMIME_SHARED_PTR_USE_BOOST=OFF -DVMIME_BUILD_SHARED_LIBRARY=OFF'
+    '-DCMAKE_BUILD_TYPE="Release" -DVMIME_BUILD_SAMPLES=OFF -DVMIME_BUILD_STATIC_LIBRARY=ON '
+    '-DVMIME_TLS_SUPPORT_LIB_IS_OPENSSL=ON -DVMIME_TLS_SUPPORT_LIB_IS_GNUTLS=OFF -DCMAKE_INSTALL_PREFIX=install'
+     , 'make install'])
+    exit()
+
     download_dependency('https://docs.google.com/uc?export=download&id=0B9ZUy-jroUhzdGhwUUNhaFBXXzA', 'utf8cpp', ['source'],
                         '2.3.4', type='.zip')
 
@@ -125,8 +135,12 @@ if __name__ == "__main__":
     #a dynamic library on Unix systems. I don't know why it doesn't have this flag by default,
     #but without it the code isn't position independent and can't be used to compile something
     #position independent
+    #TODO: It'd be nice if we didn't have to && all these commands together, but it only works
+    #this way. We should probably figure out why and fix that
     github_dependency('https://github.com/htacg/tidy-html5', 'tidy-html5', ['build/cmake', 'include'],
-                      ['cd build/cmake && cmake ../.. -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS} -fPIC" -DBUILD_SHARED_LIB:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../include && make && make install && cd ../..'])
+                      ['cd build/cmake && cmake ../.. -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS} -fPIC" '
+                      '-DBUILD_SHARED_LIB:BOOL=OFF' '-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../include'
+                      ' && make && make install'])
 
     github_dependency('https://github.com/miloyip/rapidjson', 'rapidjson', ['include/rapidjson'])
     download_dependency('http://www.sqlite.org/2014/sqlite-amalgamation-3080600.zip', 'sqlite',
@@ -135,10 +149,19 @@ if __name__ == "__main__":
                         ['pugixml-1.4/src'], '1.4')
     #TODO: adjust the vmime one so it doesn't spit stuff out in disparate directories like it is now (see tidy-html5)
     github_dependency('https://github.com/Mindful/vmime', 'vmime', ['install'],
-    ['cmake -G "Unix Makefiles" -DVMIME_HAVE_MESSAGING_PROTO_POP3=OFF -DVMIME_HAVE_MESSAGING_PROTO_SENDMAIL=OFF -DVMIME_HAVE_MESSAGING_PROTO_MAILDIR=OFF -DVMIME_HAVE_MESSAGING_PROTO_SMTP=OFF -DVMIME_SHARED_PTR_USE_CXX=ON -DVMIME_SHARED_PTR_USE_BOOST=OFF -DVMIME_BUILD_SHARED_LIBRARY=ON -DCMAKE_BUILD_TYPE="Release" -DVMIME_BUILD_SAMPLES=OFF -DVMIME_BUILD_STATIC_LIBRARY=OFF -DCMAKE_INSTALL_PREFIX=install'
+    ['cmake -G "Unix Makefiles" -DCMAKE_CXX_FLAGS="${CMAKE_C_FLAGS} -fPIC -lgnutls" '
+    '-DVMIME_HAVE_MESSAGING_PROTO_POP3=OFF -DVMIME_HAVE_MESSAGING_PROTO_SENDMAIL=OFF '
+    '-DVMIME_HAVE_MESSAGING_PROTO_MAILDIR=OFF -DVMIME_HAVE_MESSAGING_PROTO_SMTP=OFF '
+    '-DVMIME_SHARED_PTR_USE_CXX=ON -DVMIME_SHARED_PTR_USE_BOOST=OFF -DVMIME_BUILD_SHARED_LIBRARY=OFF'
+    '-DCMAKE_BUILD_TYPE="Release" -DVMIME_BUILD_SAMPLES=OFF -DVMIME_BUILD_STATIC_LIBRARY=ON '
+    '-DVMIME_TLS_SUPPORT_LIB_IS_OPENSSL=ON -DVMIME_TLS_SUPPORT_LIB_IS_GNUTLS=OFF -DCMAKE_INSTALL_PREFIX=install'
      , 'make install'])
 
-    download_dependency('https://googletest.googlecode.com/files/gtest-1.7.0.zip', 'gtest', ['gtest-1.7.0'], '1.7', ['cd gtest-1.7.0/ && cmake -G "Unix Makefiles" && make'])
+    #A little silly to get the same git repo twice, but it's clearer this way
+    github_dependency('https://github.com/google/googletest', 'gtest', ['googletest'], ['cd googletest && cmake -G "Unix Makefiles" && make'])
+    github_dependency('https://github.com/google/googletest', 'gmock', ['googlemock'], ['cd googlemock && autoreconf -fvi && '
+        'cp -r ../../../gtest ./gtest && cd make && make && mv gmock_main.a ../gmock_main.a'])
+
 
     github_dependency('https://github.com/unnonouno/iconvpp', 'iconvpp', ['.'])
 
