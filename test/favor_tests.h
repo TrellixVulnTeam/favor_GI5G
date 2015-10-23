@@ -48,6 +48,8 @@ TEST(ToUTF8, SampleEncodings){
     ASSERT_NE(string(big5_string), string(big5_string_out));
     ASSERT_EQ(string(big5_string_out), to_utf8(big5_string, "BIG5"));
 
+    ASSERT_EQ("", to_utf8("", "SHIFT_JIS"));
+
 }
 
 TEST(ToUTF8, Errors){

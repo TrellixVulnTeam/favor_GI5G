@@ -213,6 +213,7 @@ namespace favor {
     }
 
     string to_utf8(const string& s, const string& inputEncoding){
+        if (s.length() == 0) return "";
         string out;
         try {
             iconvpp::converter conv("UTF-8",   // output encoding

@@ -198,6 +198,7 @@ namespace favor {
             if (tp->getType().getSubType() == vmime::mediaTypes::TEXT_HTML) {
                 shared_ptr<const vmime::htmlTextPart> htp = dynamic_pointer_cast<const vmime::htmlTextPart>(tp);
                 try{
+                    DLOG("Handling html for mail with UID "+as_string(uid));
                     handleHTMLandEncoding(&(os), bodyStream, htp, bodyFinal);
                 } catch (badMessageDataException& e){
                     logger::warning("Failed to parse html text part of message with UID "+as_string(uid));
