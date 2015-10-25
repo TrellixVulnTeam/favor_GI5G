@@ -50,7 +50,7 @@ IF(FAVOR_EMAIL_MANAGER)
 #  find_library(TIDY_LOCATION libtidy.a PATHS ${favor_SOURCE_DIR}/src/lib/tidy-html5/lib NO_DEFAULT_PATH)
 #  add_library(libtidy STATIC IMPORTED)
 #  set_target_properties(libtidy PROPERTIES IMPORTED_LOCATION ${TIDY_LOCATION})
-  list(APPEND compilation_libraries ${favor_SOURCE_DIR}/src/lib/tidy-html5/lib/libtidys.a)
+  list(APPEND compilation_libraries ${favor_SOURCE_DIR}/src/lib/tidy-html5/libtidy.a)
 ENDIF()
 
 # Include Line

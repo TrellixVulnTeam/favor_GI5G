@@ -504,25 +504,25 @@ namespace favor {
 
                 string addressString = lowercase(mailbox->getEmail().toString()); //Have to lowercase email addresses
 
-                //While most other mediums are going to have a clean 1:1 mapping, different email clients can send
-                //differet names from the same address, so we just pick the most common one
-
-                auto words = mailbox->getName().getWordList();
-                if (words.size() != 0){
-                    nameOccurenceCount[addressString][words[0]->getConvertedText(vmime::charsets::UTF_8)]+= 1;
-                }
-
-                for (auto it = nameOccurenceCount.begin(); it != nameOccurenceCount.end(); ++it){
-                    int localMaxNameCount = 0;
-                    const string* mostCommonName;
-                    for (auto innerIt = it->second.begin(); innerIt != it->second.end(); ++innerIt){
-                        if (innerIt->second > localMaxNameCount){
-                            localMaxNameCount = innerIt->second;
-                            mostCommonName = &(it->first);
-                        }
-                    }
-                    setCountedAddressName(it->first, *mostCommonName);
-                }
+//                //While most other mediums are going to have a clean 1:1 mapping, different email clients can send
+//                //differet names from the same address, so we just pick the most common one
+//
+//                auto words = mailbox->getName().getWordList();
+//                if (words.size() != 0){
+//                    nameOccurenceCount[addressString][words[0]->getConvertedText(vmime::charsets::UTF_8)]+= 1;
+//                }
+//
+//                for (auto it = nameOccurenceCount.begin(); it != nameOccurenceCount.end(); ++it){
+//                    int localMaxNameCount = 0;
+//                    const string* mostCommonName;
+//                    for (auto innerIt = it->second.begin(); innerIt != it->second.end(); ++innerIt){
+//                        if (innerIt->second > localMaxNameCount){
+//                            localMaxNameCount = innerIt->second;
+//                            mostCommonName = &(it->first);
+//                        }
+//                    }
+//                    setCountedAddressName(it->first, *mostCommonName);
+//                }
 
                 countAddress(addressString);
             }

@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "vmime/include/vmime/vmime.hpp"
 #include "vmime/include/vmime/net/imap/IMAPFolderStatus.hpp"
 #include "tidy-html5/tidy.h"
-#include "tidy-html5/tidybuffio.h"
+#include "tidy-html5/buffio.h"
 
 namespace favor {
     class EmailManager : public AccountManager {
