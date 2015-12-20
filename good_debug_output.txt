@@ -1,0 +1,137 @@
+Breakpoint 1, vmime::charsetConverter_iconv::charsetConverter_iconv (this=0xa47850, source=..., dest=..., opts=...)
+    at /home/josh/projects/favor/src/lib/dependencies/vmime_all/src/vmime/charsetConverter_iconv.cpp:132
+132 /home/josh/projects/favor/src/lib/dependencies/vmime_all/src/vmime/charsetConverter_iconv.cpp: No such file or directory.
+$1 = {
+  <vmime::charsetConverter> = {
+    <vmime::object> = {
+      <std::enable_shared_from_this<vmime::object>> = {
+        _M_weak_this = std::weak_ptr (empty) 0x0
+      }, 
+      members of vmime::object: 
+      _vptr.object = 0x7ffff7db24d0 <vtable for vmime::charsetConverter_iconv+16>
+    }, <No data fields>}, 
+  members of vmime::charsetConverter_iconv: 
+  m_desc = 0x0, 
+  m_source = {
+    <vmime::component> = {
+      <vmime::object> = {
+        <std::enable_shared_from_this<vmime::object>> = {
+          _M_weak_this = std::weak_ptr (empty) 0x0
+        }, 
+        members of vmime::object: 
+        _vptr.object = 0x7ffff7dbc9d0 <vtable for vmime::charset+16>
+      }, 
+      members of vmime::component: 
+      m_parsedOffset = 0, 
+      m_parsedLength = 0
+    }, 
+    members of vmime::charset: 
+    m_name = "utf-7"
+  }, 
+  m_dest = {
+    <vmime::component> = {
+      <vmime::object> = {
+        <std::enable_shared_from_this<vmime::object>> = {
+          _M_weak_this = std::weak_ptr (empty) 0x0
+        }, 
+        members of vmime::object: 
+        _vptr.object = 0x7ffff7dbc9d0 <vtable for vmime::charset+16>
+      }, 
+      members of vmime::component: 
+      m_parsedOffset = 0, 
+      m_parsedLength = 0
+    }, 
+    members of vmime::charset: 
+    m_name = "utf-8"
+  }, 
+  m_options = {
+    <vmime::object> = {
+      <std::enable_shared_from_this<vmime::object>> = {
+        _M_weak_this = std::weak_ptr (empty) 0x0
+      }, 
+      members of vmime::object: 
+      _vptr.object = 0x7ffff7dafe90 <vtable for vmime::charsetConverterOptions+16>
+    }, 
+    members of vmime::charsetConverterOptions: 
+---Type <return> to continue, or q <return> to quit---
+    silentlyReplaceInvalidSequences = true, 
+    invalidSequence = "?"
+  }
+}
+
+Breakpoint 2, vmime::charsetConverter_iconv::~charsetConverter_iconv (this=0xa47850, __in_chrg=<optimized out>)
+    at /home/josh/projects/favor/src/lib/dependencies/vmime_all/src/vmime/charsetConverter_iconv.cpp:145
+145 in /home/josh/projects/favor/src/lib/dependencies/vmime_all/src/vmime/charsetConverter_iconv.cpp
+$2 = {
+  <vmime::charsetConverter> = {
+    <vmime::object> = {
+      <std::enable_shared_from_this<vmime::object>> = {
+        _M_weak_this = std::weak_ptr (expired, weak 2) 0xa47850
+      }, 
+      members of vmime::object: 
+      _vptr.object = 0x7ffff7db24d0 <vtable for vmime::charsetConverter_iconv+16>
+    }, <No data fields>}, 
+  members of vmime::charsetConverter_iconv: 
+  m_desc = 0xa610a0, 
+  m_source = {
+    <vmime::component> = {
+      <vmime::object> = {
+        <std::enable_shared_from_this<vmime::object>> = {
+          _M_weak_this = std::weak_ptr (empty) 0x0
+        }, 
+        members of vmime::object: 
+        _vptr.object = 0x7ffff7dbc9d0 <vtable for vmime::charset+16>
+      }, 
+      members of vmime::component: 
+      m_parsedOffset = 0, 
+      m_parsedLength = 0
+    }, 
+    members of vmime::charset: 
+    m_name = "utf-7"
+  }, 
+  m_dest = {
+    <vmime::component> = {
+      <vmime::object> = {
+        <std::enable_shared_from_this<vmime::object>> = {
+          _M_weak_this = std::weak_ptr (empty) 0x0
+        }, 
+        members of vmime::object: 
+        _vptr.object = 0x7ffff7dbc9d0 <vtable for vmime::charset+16>
+      }, 
+      members of vmime::component: 
+      m_parsedOffset = 0, 
+      m_parsedLength = 0
+    }, 
+    members of vmime::charset: 
+    m_name = "utf-8"
+  }, 
+  m_options = {
+    <vmime::object> = {
+      <std::enable_shared_from_this<vmime::object>> = {
+        _M_weak_this = std::weak_ptr (empty) 0x0
+      }, 
+      members of vmime::object: 
+---Type <return> to continue, or q <return> to quit---
+      _vptr.object = 0x7ffff7dafe90 <vtable for vmime::charsetConverterOptions+16>
+    }, 
+    members of vmime::charsetConverterOptions: 
+    silentlyReplaceInvalidSequences = true, 
+    invalidSequence = "?"
+  }
+}
+137 in /home/josh/projects/favor/src/lib/dependencies/vmime_all/src/vmime/charsetConverter_iconv.cpp
+vmime::charsetConverterOptions::~charsetConverterOptions (this=0xa478d0, __in_chrg=<optimized out>) at /home/josh/projects/favor/src/lib/dependencies/vmime_all/src/vmime/charsetConverterOptions.hpp:38
+38  /home/josh/projects/favor/src/lib/dependencies/vmime_all/src/vmime/charsetConverterOptions.hpp: No such file or directory.
+$3 = {
+  <vmime::object> = {
+    <std::enable_shared_from_this<vmime::object>> = {
+      _M_weak_this = std::weak_ptr (empty) 0x0
+    }, 
+    members of vmime::object: 
+    _vptr.object = 0x7ffff7dafe90 <vtable for vmime::charsetConverterOptions+16>
+  }, 
+  members of vmime::charsetConverterOptions: 
+  silentlyReplaceInvalidSequences = true, 
+  invalidSequence = "?"
+}
+(gdb) s

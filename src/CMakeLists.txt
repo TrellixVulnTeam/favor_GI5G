@@ -16,13 +16,14 @@ IF(FAVOR_DEBUG)
   ################################
   add_definitions(-DDEBUG)
   ADD_SUBDIRECTORY (lib/gtest)
+  set(CMAKE_BUILD_TYPE Debug)
   include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
   # Link test executable against gtest & gtest_main
   LIST(APPEND compilation_libraries gtest gtest_main)
 ENDIF()
 
-SET(CMAKE_CXX_FLAGS "-std=c++11")
+SET(CMAKE_CXX_FLAGS "-std=c++11 -O0 -g")
 
 
 # Include Email
@@ -33,6 +34,7 @@ IF(FAVOR_EMAIL_MANAGER)
   
   #VMIME
   LIST(APPEND compilation_libraries ${favor_SOURCE_DIR}/src/lib/vmime/lib/libvmime.a)
+
   #OpenSSL, which must come after Vmime:
   #he traditional behavior of linkers is to search for external functions from left to right in the libraries
   #specified on the command line. This means that a library containing the definition of a function should appear
@@ -67,6 +69,7 @@ ENDIF()
 add_library(favor SHARED ${compilation_files})
 
 target_include_directories(favor PUBLIC lib/gtest/include)
+target_include_directories(favor PUBLIC lib/vmime/include)
 target_include_directories(favor PUBLIC managers)
 target_include_directories(favor PUBLIC .) #So managers can get at core files
 target_include_directories(favor PUBLIC lib)
