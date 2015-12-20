@@ -45,7 +45,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "rapidjson/stringbuffer.h"
 #include "pugixml/pugixml.hpp"
 #include "utf8cpp/utf8.h"
+#ifndef ANDROID
 #include "iconvpp/iconv.hpp"
+#endif
 
 //Favor core headers
 #include "definitions.h"
@@ -105,7 +107,9 @@ namespace favor {
 
     string lowercase(const string& s);
 
+#ifndef ANDROID
     string to_utf8(const string& s, const string& inputEncoding);
+#endif
 
     string as_string(int i);
 

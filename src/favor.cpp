@@ -212,6 +212,7 @@ namespace favor {
         return buff.GetString();
     }
 
+#ifndef ANDROID
     string to_utf8(const string& s, const string& inputEncoding){
         if (s.length() == 0) return "";
         string out;
@@ -226,6 +227,7 @@ namespace favor {
         }
         return out;
     }
+#endif
 
 
     string as_string(const Message &m) {

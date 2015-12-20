@@ -7,14 +7,7 @@ LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/lib/sqlite/sqlite3.c) #Sql
 add_definitions(-DSQLITE_THREADSAFE=2)
 LIST(APPEND compilation_files ${favor_SOURCE_DIR}/src/lib/pugixml/pugixml.cpp)
 
-
-
-
-SET(CMAKE_CXX_FLAGS "-std=c++11")
-set(compilation_libraries ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
-#${CMAKE_DL_LIBS} is our "-ldl"
-#${CMAKE_THREAD_LIBS_INIT} is our "-pthread"
-
+set(compilation_libraries ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS}) #-pthread and #-ldl
 
 OPTION(FAVOR_DEBUG "Favor's debug and test settings" ON)
 IF(FAVOR_DEBUG)
@@ -28,6 +21,9 @@ IF(FAVOR_DEBUG)
   # Link test executable against gtest & gtest_main
   LIST(APPEND compilation_libraries gtest gtest_main)
 ENDIF()
+
+SET(CMAKE_CXX_FLAGS "-std=c++11")
+
 
 # Include Email
 OPTION(FAVOR_EMAIL_MANAGER "Include the MessageManager for Email" ON)
@@ -50,7 +46,7 @@ IF(FAVOR_EMAIL_MANAGER)
 #  find_library(TIDY_LOCATION libtidy.a PATHS ${favor_SOURCE_DIR}/src/lib/tidy-html5/lib NO_DEFAULT_PATH)
 #  add_library(libtidy STATIC IMPORTED)
 #  set_target_properties(libtidy PROPERTIES IMPORTED_LOCATION ${TIDY_LOCATION})
-  list(APPEND compilation_libraries ${favor_SOURCE_DIR}/src/lib/tidy-html5/libtidy.a)
+  list(APPEND compilation_libraries ${favor_SOURCE_DIR}/src/lib/tidy-html5/libtidys.a)
 ENDIF()
 
 # Include Line
