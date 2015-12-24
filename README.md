@@ -9,13 +9,9 @@ This is more accurately a paragraph about what favor _will be_, as I'm very much
 TODO list:
 ==
 This is currently very messy because I'm mostly using it for myself. Also changes frequently.
- - Move as much as we can (ideally everything) from the python dependency fetching script to using CMake's [ExternalProject](https://cmake.org/cmake/help/v2.8.8/cmake.html#module%3AExternalProject) module
- - Move code from core sections (esp the favor.cpp file) that cannot be build on Android to a specific non-android util file.
- - In the worker address table computing code, we need to figure out what we're doing with snames suggested by _AccountManager::setCountedAddressName_ (how to use/store them, whether to save them or give them to the reader, etc.)
  - Use [Google Mock](https://github.com/google/googletest/blob/master/googlemock/docs/ForDummies.md) to write EmailManager and SkypeManager tests, refactoring code as appropriate/necessary
- - Update our used libraries
- - Briefly verify that <regex> does indeed compile/work on the NDK via 4.9. It should, but it's still an untested change for us
- - Should managed addresses be an AccountManager member, shared by all the Managers?
+ - Consider moving as much as we can (ideally everything) from the python dependency fetching script to using CMake's [ExternalProject](https://cmake.org/cmake/help/v2.8.8/cmake.html#module%3AExternalProject) module
+ - In the worker address table computing code, we need to figure out what we're doing with snames suggested by _AccountManager::setCountedAddressName_ (how to use/store them, whether to save them or give them to the reader, etc.)
  - Figure out how we want to handle failures of the AndroidTextManager the same way we do with the C++ based AccountManagers.
  - Look at how Google Test works with the NDK, because it does work with the NDK.
  - libiconv on Android and eventually windows platforms

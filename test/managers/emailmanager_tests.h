@@ -171,12 +171,4 @@ TEST(EmailManager, General){
         //valid, strippable XML
     }
 
-//TEST(EmailManager, FetchAsddresses){
-//    initialize();
-//    worker::buildDatabase();
-//    //reader::refreshAll();
-//
-//    AccountManager::addAccount(EMAIL_LOGIN, TYPE_EMAIL, "{\"password\":\"" EMAIL_PASSWORD "\"}");
-//    reader::accountList()->front()->updateAddresses();
-//}
 }

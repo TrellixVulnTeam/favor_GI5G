@@ -29,12 +29,7 @@ namespace favor{
     void SkypeManager::updateJson() {
         setJsonLong(lastMessageTime);
         setJsonLong(lastTransferTime);
-        rapidjson::Value addrsVal;
-        addrsVal.SetArray();
-        for (auto it = managedAddresses.begin(); it != managedAddresses.end(); ++it){
-            addrsVal.PushBack(rapidjson::Value(it->c_str(), json.GetAllocator()).Move(), json.GetAllocator());
-        }
-        json[managedAddrListName] = addrsVal;
+        updateManagedAddresses();
     }
 
 
@@ -199,15 +194,9 @@ namespace favor{
 
 
     void SkypeManager::fetchAddresses() {
-        //TODO: we can use Skype's pretty names to guess suggested display names the same way we do with the email manager
-
         //Go through the participants table, pick up every participant who isn't a phone number and their convo IDs (for now; not sure we want to deal with numbers)
         //go to the messages table and run a count looking for all messages that correspond to that participant's ID(s)
         //we now have a number of messages corresponding to each participant and can organize by that
-
-        //TODO: finally, to get the suggested pretty name, run a query in the messages table by (a) convo ID for each participant, excluding messages where
-        //the "author" is our account. Then, we can use the display name on the message to get a pretty name for that contact
-
 
         std::unordered_map<string, vector<long>> participantToIDMap;
 

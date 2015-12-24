@@ -434,12 +434,7 @@ namespace favor {
         setJsonLong(lastSentUid);
         setJsonLong(lastReceivedUidValidity);
         setJsonLong(lastSentUidValidity);
-        rapidjson::Value addrsVal;
-        addrsVal.SetArray();
-        for (auto it = managedAddresses.begin(); it != managedAddresses.end(); ++it){
-            addrsVal.PushBack(rapidjson::Value(it->c_str(), json.GetAllocator()).Move(), json.GetAllocator());
-        }
-        json[managedAddrListName] = addrsVal;
+        updateManagedAddresses();
     }
 
     void EmailManager::fetchMessages() {
@@ -511,7 +506,6 @@ namespace favor {
                 if (words.size() != 0){
                     nameOccurenceCount[addressString][words[0]->getConvertedText(vmime::charsets::UTF_8)]+= 1;
                 }
-                DLOG("2222222222222222222222222222")
 
 
                 for (auto it = nameOccurenceCount.begin(); it != nameOccurenceCount.end(); ++it){

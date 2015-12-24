@@ -302,6 +302,15 @@ namespace favor {
             return withoutXML;
         }
 
+        void AccountManager::updateManagedAddresses(){
+            rapidjson::Value addrsVal;
+            addrsVal.SetArray();
+            for (auto it = managedAddresses.begin(); it != managedAddresses.end(); ++it){
+                addrsVal.PushBack(rapidjson::Value(it->c_str(), json.GetAllocator()).Move(), json.GetAllocator());
+            }
+            json[managedAddrListName] = addrsVal;
+        }
+
 
         //AccountManagers are pretty lightweight so they don't need to be on the heap for memory reasons, but we have to use pointers for polymorphism
         AccountManager* AccountManager::buildManager(string accNm, favor::MessageType typ, string detailsJson) {

@@ -103,6 +103,8 @@ namespace favor {
 
             void setCountedAddressName(const string &address, const string &name);
 
+            void updateManagedAddresses();
+
 
 
             string stripXML(const pugi::xml_document &doc);

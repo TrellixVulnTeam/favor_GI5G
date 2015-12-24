@@ -71,6 +71,8 @@ def github_dependency(url, name, source_directories, preparatory_commands=[]):
 
     check_output(['git', 'clone', url])
     directory = url.split("/")[-1]
+    if directory[-4:] == ".git":
+        directory = directory[:-4]
     os.rename(directory, name+'_all')
     directory = name+'_all'
     os.chdir(directory)
@@ -103,8 +105,6 @@ def download_dependency(url, name, source_directories, version, preparatory_comm
 
 
 if __name__ == "__main__":
-
-    #First, development dependencies.
     root_directory = os.getcwd();
     os.chdir("./src/lib/")    
 
@@ -113,10 +113,13 @@ if __name__ == "__main__":
         os.makedirs(DIRNAME)
     os.chdir(DIRNAME)
 
+
+    #We're adding -fPIC to several libraries here (vmime, tidy-html5, etc.) so that they
+    #can be linked statically as it's cleaner this way
+
     #SASL support is turned off for now because it introduces more dependencies
     #The TLS_SUPPORT_LIB and CHARSETCONV_LIB could conceivably be changed, but
     #at least the former would also requires changes to the cmake file
-     #TODO: adjust the vmime one so it doesn't spit stuff out in disparate directories like it is now (see tidy-html5)
     github_dependency('https://github.com/Mindful/vmime', 'vmime', ['install'],
     ['cmake -G "Unix Makefiles" -DCMAKE_CXX_FLAGS="${CMAKE_C_FLAGS} -fPIC" '
     '-DVMIME_HAVE_MESSAGING_PROTO_POP3=OFF -DVMIME_HAVE_MESSAGING_PROTO_SENDMAIL=OFF '
@@ -126,30 +129,13 @@ if __name__ == "__main__":
     '-DVMIME_HAVE_SASL_SUPPORT=OFF -DVMIME_TLS_SUPPORT_LIB=openssl -DVMIME_CHARSETCONV_LIB=iconv '
     '-DCMAKE_INSTALL_PREFIX=install' , 'make install'])
 
-    download_dependency('https://docs.google.com/uc?export=download&id=0B9ZUy-jroUhzdGhwUUNhaFBXXzA', 'utf8cpp', ['source'],
-                        '2.3.4', type='.zip')
-
-    #Old tidy-html5 that I configured to be compilable on android. Deprecated now because we
-    #don't (yet?) need tidy on Android and it's way too far behind master
-    #github_dependency('https://github.com/Mindful/tidy-html5', 'tidy-html5', ['lib', 'include'],
-                      #['cd build/gmake/', 'make', 'cd ../..'])
-    
-    #As of 10/11/15, the added -fPIC here is necessary for tidy to work when Favor is compiled into
-    #a dynamic library on Unix systems. I don't know why it doesn't have this flag by default,
-    #but without it the code isn't position independent and can't be used to compile something
-    #position independent
-    #TODO: It'd be nice if we didn't have to && all these commands together, but it only works
-    #this way. We should probably figure out why and fix that
     github_dependency('https://github.com/htacg/tidy-html5', 'tidy-html5', ['build/cmake', 'include'],
                       ['cd build/cmake && cmake ../.. -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS} -fPIC" '
                       '-DBUILD_SHARED_LIB:BOOL=OFF' '-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../include'
                       ' && make && make install'])
 
     github_dependency('https://github.com/miloyip/rapidjson', 'rapidjson', ['include/rapidjson'])
-    download_dependency('http://www.sqlite.org/2014/sqlite-amalgamation-3080600.zip', 'sqlite',
-                        ['sqlite-amalgamation-3080600'], '3.8.6')
-    download_dependency('http://github.com/zeux/pugixml/releases/download/v1.4/pugixml-1.4.zip', 'pugixml',
-                        ['pugixml-1.4/src'], '1.4')
+    github_dependency('https://github.com/zeux/pugixml.git', 'pugixml', ['src'])
 
 
     #A little silly to get the same git repo twice, but it's clearer this way
@@ -159,5 +145,10 @@ if __name__ == "__main__":
 
 
     github_dependency('https://github.com/unnonouno/iconvpp', 'iconvpp', ['.'])
+
+    download_dependency('https://docs.google.com/uc?export=download&id=0B9ZUy-jroUhzdGhwUUNhaFBXXzA', 'utf8cpp', ['source'],
+                        '2.3.4', type='.zip')
+    download_dependency('https://www.sqlite.org/2015/sqlite-amalgamation-3090200.zip', 'sqlite',
+                        ['sqlite-amalgamation-3090200'], '3.9.2')
 
 
