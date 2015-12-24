@@ -341,7 +341,7 @@ namespace favor {
 
 
     SentRec<shared_ptr<vmime::net::folder>> EmailManager::findSentRecFolder(shared_ptr<vmime::net::store> st) {
-        vector<shared_ptr<vmime::net::folder>> folders = st->getRootFolder()->getFolders(true);
+        vector<shared_ptr<vmime::net::folder>> folders = st->getRootFolder()->getFolders(true); //Fails here
         std::regex sentRegex("sent", std::regex::ECMAScript | std::regex::icase);
         shared_ptr<vmime::net::folder> sent = null;
         shared_ptr<vmime::net::folder> inbox = null;
@@ -507,22 +507,24 @@ namespace favor {
 //                //While most other mediums are going to have a clean 1:1 mapping, different email clients can send
 //                //differet names from the same address, so we just pick the most common one
 //
-//                auto words = mailbox->getName().getWordList();
-//                if (words.size() != 0){
-//                    nameOccurenceCount[addressString][words[0]->getConvertedText(vmime::charsets::UTF_8)]+= 1;
-//                }
-//
-//                for (auto it = nameOccurenceCount.begin(); it != nameOccurenceCount.end(); ++it){
-//                    int localMaxNameCount = 0;
-//                    const string* mostCommonName;
-//                    for (auto innerIt = it->second.begin(); innerIt != it->second.end(); ++innerIt){
-//                        if (innerIt->second > localMaxNameCount){
-//                            localMaxNameCount = innerIt->second;
-//                            mostCommonName = &(it->first);
-//                        }
-//                    }
-//                    setCountedAddressName(it->first, *mostCommonName);
-//                }
+                const std::vector<shared_ptr<const vmime::word>> words = mailbox->getName().getWordList();
+                if (words.size() != 0){
+                    nameOccurenceCount[addressString][words[0]->getConvertedText(vmime::charsets::UTF_8)]+= 1;
+                }
+                DLOG("2222222222222222222222222222")
+
+
+                for (auto it = nameOccurenceCount.begin(); it != nameOccurenceCount.end(); ++it){
+                    int localMaxNameCount = 0;
+                    const string* mostCommonName;
+                    for (auto innerIt = it->second.begin(); innerIt != it->second.end(); ++innerIt){
+                        if (innerIt->second > localMaxNameCount){
+                            localMaxNameCount = innerIt->second;
+                            mostCommonName = &(it->first);
+                        }
+                    }
+                    setCountedAddressName(it->first, *mostCommonName);
+                }
 
                 countAddress(addressString);
             }

@@ -66,6 +66,7 @@ ENDIF()
 
 add_library(favor SHARED ${compilation_files})
 
+target_include_directories(favor PUBLIC lib/vmime/include)
 target_include_directories(favor PUBLIC lib/gtest/include)
 target_include_directories(favor PUBLIC managers)
 target_include_directories(favor PUBLIC .) #So managers can get at core files
