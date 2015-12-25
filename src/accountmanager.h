@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef favor_accountmanager_include
 #define favor_accountmanager_include
 
-#ifdef DEBUG
+#ifdef TESTING
 #include "gtest/gtest_prod.h"
 #endif
 
@@ -161,7 +161,7 @@ namespace favor {
             #endif
 
             //TESTS
-            #ifdef DEBUG
+            #ifdef TESTING
                 FRIEND_TEST(AccountManagerCore, SaveMessage);
             #endif
         };

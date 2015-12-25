@@ -11,15 +11,8 @@ set(compilation_libraries ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS}) #-pthread 
 
 OPTION(FAVOR_DEBUG "Favor's debug and test settings" ON)
 IF(FAVOR_DEBUG)
-  ################################
-  # GTest
-  ################################
   add_definitions(-DDEBUG)
-  ADD_SUBDIRECTORY (lib/gtest)
-  include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-
-  # Link test executable against gtest & gtest_main
-  LIST(APPEND compilation_libraries gtest gtest_main)
+  set(CMAKE_BUILD_TYPE Debug)
 ENDIF()
 
 SET(CMAKE_CXX_FLAGS "-std=c++11")
@@ -34,8 +27,7 @@ IF(FAVOR_EMAIL_MANAGER)
   #VMIME
   LIST(APPEND compilation_libraries ${favor_SOURCE_DIR}/src/lib/vmime/lib/libvmime.a)
   #OpenSSL, which must come after Vmime:
-  #he traditional behavior of linkers is to search for external functions from left to right in the libraries
-  #specified on the command line. This means that a library containing the definition of a function should appear
+  #A library containing the definition of a function should appear
   #after any source files or object files which use it.
   find_package(OpenSSL REQUIRED)
   include_directories(${OPENSSL_INCLUDE_DIR})
@@ -43,9 +35,6 @@ IF(FAVOR_EMAIL_MANAGER)
 
   
   #TIDY
-#  find_library(TIDY_LOCATION libtidy.a PATHS ${favor_SOURCE_DIR}/src/lib/tidy-html5/lib NO_DEFAULT_PATH)
-#  add_library(libtidy STATIC IMPORTED)
-#  set_target_properties(libtidy PROPERTIES IMPORTED_LOCATION ${TIDY_LOCATION})
   list(APPEND compilation_libraries ${favor_SOURCE_DIR}/src/lib/tidy-html5/libtidys.a)
 ENDIF()
 
@@ -65,10 +54,19 @@ ENDIF()
 
 
 add_library(favor SHARED ${compilation_files})
+target_compile_options(favor PUBLIC -std=c++11)
 
-target_include_directories(favor PUBLIC lib/vmime/include)
-target_include_directories(favor PUBLIC lib/gtest/include)
-target_include_directories(favor PUBLIC managers)
-target_include_directories(favor PUBLIC .) #So managers can get at core files
-target_include_directories(favor PUBLIC lib)
+add_library(favor_test SHARED ${compilation_files})
+target_compile_options(favor_test PUBLIC -std=c++11 -O0 -g)
+target_compile_definitions(favor_test PUBLIC TESTING)
+
+set(incl_dirs lib/vmime/include lib/gtest/include managers lib .) #Last . is so managers can get at core files
+
+IF(TARGET favor_test) #TODO: It seems like this being run regardless, but there's no harm in building it in normal builds
+  ADD_SUBDIRECTORY (lib/gtest)
+ENDIF()
+
+target_include_directories(favor PUBLIC ${incl_dirs})
+target_include_directories(favor_test PUBLIC ${incl_dirs} ${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 target_link_libraries(favor ${compilation_libraries})
+target_link_libraries(favor_test ${compilation_libraries})

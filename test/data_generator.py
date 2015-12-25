@@ -155,6 +155,8 @@ class Account(Track):
         return "#define ACC_" + format_defstring(self.name) + "_ARGS (" + list_to_string(
             ['"' + self.name + '"', TYPEDEFS[self.accountType],
              self.json_escaped()]) + ")\n"
+    def outname(self):
+        return "#define ACC_" + format_defstring(self.name) + "_NAME \"" + self.name + "\"\n"
 
 
 MSG_ID = 0
@@ -339,6 +341,7 @@ if __name__ == '__main__':
     out.write("\n\n")
     for account in Track.MAPS[Account].values():
         out.write(account.defargs())
+        out.write(account.outname())
     out.write("\n\n")
 
 

@@ -2,27 +2,19 @@
 #include "accountmanager.h"
 #include "gtest/gtest.h"
 #include "emailmanager.h"
+#include "../test/testing.h"
 
 using namespace std;
 using namespace favor;
 
-/*
- * Some of these tests use an actual account and hit the wire because it's just the easiest way to run them.
- */
-#define EMAIL_LOGIN ""
-#define EMAIL_PASSWORD ""
-#define JP_EMAIL ""
-#define ALT_EMAIL ""
-
 namespace favor {
 
-    class mockMessageStructure : public vmime::net::messageStructure {
-//        MOCK_METHOD0(getPartCount, size_t());
-//        MOCK_METHOD1(getPartAt, mockMessagePart(size_t pos));
+    class MockEmailManager : EmailManager {
+
     };
 
 
-    class EmailManagerTest : public ::testing::Test {
+    class EmailManagerTest : public DatabaseTest {
     protected:
 
         EmailManager* manager;
@@ -35,12 +27,20 @@ namespace favor {
             manager->consultJson(true);
         }
 
+        EmailManager* getManager(){
+            return manager;
+        }
+
         string getPassword(){
             return manager->password;
         }
 
         string getURL(){
             return manager->serverURL;
+        }
+
+        set<string>& getManagedAddresses(){
+            return manager->managedAddresses;
         }
 
         void setJson(string json){
@@ -56,13 +56,30 @@ namespace favor {
             return manager->toXML(ss);
         }
 
+        void populateDb(){
+            string sql = "BEGIN IMMEDIATE TRANSACTION;";
+            sql += contactSeed;
+            sql += addressSeed;
+            sql += accountSeed;
+            sql += "COMMIT TRANSACTION;";
+
+            worker::exec(sql);
+        }
+
+        void newManager(){
+            manager =  new EmailManager(ACC_account1_at_test_dot_com_NAME,  "{\"password\":\"password\", \"url\":\"imap://example.url:0\"}");
+        }
+
 
         virtual void SetUp() override {
-            manager =  new EmailManager("emailtest@email.com",  "{\"password\":\"password\", \"url\":\"imap://example.url:0\"}");
-
+            DatabaseTest::SetUp();
+            populateDb();
+            reader::refreshAll(); //These values are expected to be correct in other methods, so it tests the refresh methods
+            newManager();
         }
 
         virtual void TearDown() override {
+            DatabaseTest::TearDown();
             delete manager;
         }
     };
@@ -73,25 +90,10 @@ Address
  */
 
 
-TEST(EmailManager, General){
-    //TODO: this is a mess, and should at least inherit from something to use the in-memory database
-    if (EMAIL_PASSWORD == ""){
-        logger::warning("Email test skipped; no login info provided on this run");
-        return;
+    TEST_F(EmailManagerTest, UpdateMessages){
+        getManagedAddresses().insert("Test Address 1");
+        getManager()->updateMessages();
     }
-    initialize();
-    worker::buildDatabase();
-    //reader::refreshAll();
-
-    AccountManager::addAccount(EMAIL_LOGIN, TYPE_EMAIL, "{\"password\":\"" EMAIL_PASSWORD "\"}");
-    worker::createContactWithAddress(JP_EMAIL, TYPE_EMAIL, "JP_TEST");
-    worker::createContactWithAddress(ALT_EMAIL, TYPE_EMAIL, "OTHER_TEST");
-    worker::createContactWithAddress("no-reply@accounts.google.com", TYPE_EMAIL, "HTML TEST");
-    logger::info("-----------------------------------------------------------------");
-    logger::info(favor::as_string(favor::reader::accountList()->front()->type));
-    logger::info(favor::reader::accountList()->front()->accountName);
-    reader::accountList()->front()->updateMessages();
-}
 
     TEST_F(EmailManagerTest, ConsultJsonWithNoPassword) {
         setJson("{\"url\":\"imap://example.url:0\"}");
@@ -101,7 +103,7 @@ TEST(EmailManager, General){
 
     TEST_F(EmailManagerTest, ConsultJsonWithBadEmail) {
         ASSERT_THROW(constructNewManager("NO_EMAILING_ALLOWED",  "{\"password\":\"password\", \"url\":\"imap://example.url:0\"}"), badUserDataException);
-        SetUp(); //just so we don't delete man empty manager pointer in teardown, since the attempt to construct a new one here will except
+        newManager(); //This is to avoid segfaults in TearDown() when we delete the manager
     }
 
     TEST_F(EmailManagerTest, ConsultJsonForURl) {

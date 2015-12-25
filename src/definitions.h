@@ -33,6 +33,12 @@ DEBUG - Also pretty obvious, it's true when we're building for debug
 #define DLOG(x)
 #endif
 
+#ifdef TESTING
+#define mockable virtual
+#else
+#define mockable
+#endif
+
 #ifdef ANDROID
 #define CLASS_PATH "com/favor/library/"
 #endif

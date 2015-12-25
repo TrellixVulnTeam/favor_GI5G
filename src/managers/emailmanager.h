@@ -20,6 +20,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef favor_emailmanager_include
 #define favor_emailmanager_include
 
+#ifdef TESTING
+#include "../test/vmime_mocks/mock_store.h"
+#include "../test/vmime_mocks/mock_session.h"
+#endif
+
+
 #include "favor.h"
 #include "accountmanager.h"
 #include "vmime/include/vmime/vmime.hpp"
@@ -55,13 +61,14 @@ namespace favor {
         static std::regex emailRegex;
         static const std::unordered_map<string, string> imapServers;
 
+        template<typename T>
         shared_ptr<vmime::net::store> login();
 
         string folderList(vector<shared_ptr<vmime::net::folder>> folders);
 
         bool toXML(std::stringstream &ss);
 
-        void parseMessage(bool sent, favor::shared_ptr<vmime::net::message> m);
+        mockable void parseMessage(bool sent, favor::shared_ptr<vmime::net::message> m);
 
         bool parseMessageParts(long uid, const vmime::messageParser& mp, string& bodyFinal);
 

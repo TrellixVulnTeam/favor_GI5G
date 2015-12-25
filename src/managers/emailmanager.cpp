@@ -290,8 +290,9 @@ namespace favor {
         return out;
     }
 
+    template<typename T> //Templated for testing purposes
     shared_ptr<vmime::net::store> EmailManager::login() {
-        shared_ptr<session> sess = make_shared<session>();
+        shared_ptr<T> sess = make_shared<T>();
 
         //TODO: test this on a normal IMAP server (if any don't use IMAPS anymore, anyway)
         if (serverURL.getProtocol() == "imaps") {
@@ -309,7 +310,7 @@ namespace favor {
             st->setCertificateVerifier(vmime::make_shared<TrustingCertificateVerifier>());
             st->setTracerFactory(make_shared<InfoTracerFactory>());
             st->connect();
-            logger::info("Successfully connected to " + string(serverURL) + "as " + accountName);
+            logger::info("Successfully connected to " + string(serverURL) + " as " + accountName);
         }
         catch (vmime::exceptions::authentication_error &e) {
             logger::error("Could not authenticate to " + string(serverURL) + " as " + accountName + " with the credentials provided");
@@ -423,8 +424,7 @@ namespace favor {
         vmime::net::messageSet wantedMessages(folder->UIDSearch(cmd));
         vector<shared_ptr<vmime::net::message>> messages = folder->getAndFetchMessages(wantedMessages,
                 vmime::net::fetchAttributes::STRUCTURE | vmime::net::fetchAttributes::FULL_HEADER | vmime::net::fetchAttributes::UID);
-        if (messages.size() == 0) return;
-        else for (unsigned int i = 0; i < messages.size(); ++i) parseMessage(sent, messages[i]);
+        for (unsigned int i = 0; i < messages.size(); ++i) parseMessage(sent, messages[i]);
 
         folder->close(false);
     }
@@ -449,7 +449,11 @@ namespace favor {
         }
 
         try {
-            vmime::shared_ptr<vmime::net::store> st = login();
+            #ifdef TESTING
+            vmime::shared_ptr<vmime::net::store> st = login<MockSession>();
+            #else
+            vmime::shared_ptr<vmime::net::store> st = login<vmime::net::session>();
+            #endif
 
             SentRec<shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
             for (auto it = addresses->begin(); it != addresses->end(); ++it){
@@ -528,7 +532,7 @@ namespace favor {
 
     void EmailManager::fetchAddresses() {
         try {
-            vmime::shared_ptr<vmime::net::store> st = login();
+            vmime::shared_ptr<vmime::net::store> st = login<vmime::net::session>();
             SentRec<shared_ptr<vmime::net::folder>> sentRecFolders = findSentRecFolder(st);
             shared_ptr<vmime::net::folder> sent = sentRecFolders.sent;
             sent->open(vmime::net::folder::MODE_READ_ONLY);
