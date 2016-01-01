@@ -5,8 +5,11 @@ SET(CMAKE_CXX_FLAGS "-std=c++11")
 add_definitions(-DDEBUG) #This needs to be here for tests to compile properly in Favor's CMAKE, god knows why
 set(CMAKE_BUILD_TYPE Debug)
 add_executable (tests main.cpp)
-target_include_directories(favor PUBLIC ../src/lib/gtest/include)
+target_include_directories(tests PUBLIC ../src/lib/gtest/googletest/include)
+target_include_directories(tests PUBLIC ../src/lib/gtest/googlemock/include)
 target_link_libraries(tests gtest gtest_main)
+target_link_libraries(tests gmock gmock_main)
+
 
 # Link the executable to the favor testing library
 target_link_libraries (tests favor_test)

@@ -6,18 +6,30 @@
 
 using namespace std;
 using namespace favor;
+using ::testing::_;
+
 
 namespace favor {
 
-    class MockEmailManager : EmailManager {
+    class MockEmailManager : public EmailManager {
 
+        MOCK_METHOD2(parseMessage, void(bool sent, favor::shared_ptr<vmime::net::message> m));
+
+        MOCK_METHOD1(findSentRecFolder, SentRec<std::shared_ptr<vmime::net::folder>>(favor::shared_ptr<vmime::net::store> st));
+
+
+    public:
+        MockEmailManager(string accNm, string detailsJson) : EmailManager(accNm, detailsJson) {}
     };
-
 
     class EmailManagerTest : public DatabaseTest {
     protected:
 
         EmailManager* manager;
+
+        MockEmailManager& getMockEmailManager(){
+            return *(dynamic_cast<MockEmailManager*>(getManager()));
+        }
 
         std::time_t toTime(const vmime::datetime input) {
             return EmailManager::toTime(input);
@@ -49,7 +61,7 @@ namespace favor {
 
         void constructNewManager(string username, string json){
             delete manager;
-            manager = new EmailManager(username, json);
+            manager = new MockEmailManager(username, json);
         }
 
         bool toXml(stringstream &ss){
@@ -67,7 +79,7 @@ namespace favor {
         }
 
         void newManager(){
-            manager =  new EmailManager(ACC_account1_at_test_dot_com_NAME,  "{\"password\":\"password\", \"url\":\"imap://example.url:0\"}");
+            constructNewManager(ACC_account1_at_test_dot_com_NAME,  "{\"password\":\"password\", \"url\":\"imap://example.url:0\"}");
         }
 
 
@@ -92,7 +104,17 @@ Address
 
     TEST_F(EmailManagerTest, UpdateMessages){
         getManagedAddresses().insert("Test Address 1");
+        EXPECT_CALL(getMockEmailManager(), findSentRecFolder(_)).times(1);
         getManager()->updateMessages();
+
+        //Methods should be called,
+    }
+
+    TEST_F(EmailManagerTest, UpdateMessagesWithNewAddresses){
+        getManagedAddresses().insert("Test Address 1");
+        getManager()->updateMessages();
+
+        //same as above, but with the extra catch-up calls (catch up beings et to true) for fetchFromFolder
     }
 
     TEST_F(EmailManagerTest, ConsultJsonWithNoPassword) {

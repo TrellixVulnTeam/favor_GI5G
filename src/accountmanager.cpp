@@ -46,7 +46,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #endif
 /*
-The Json is mostly just used by the subordinate classes, but we do use the "prevFailure" value
+The json is mostly just used by the child classes, but we do use the "prevFailure" value
  */
 
 

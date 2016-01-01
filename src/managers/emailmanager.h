@@ -86,7 +86,7 @@ namespace favor {
 
         string searchCommand(bool sent, shared_ptr<const vector<Address>> addresses, long startUid, long endUid);
 
-        SentRec<std::shared_ptr<vmime::net::folder>> findSentRecFolder(favor::shared_ptr<vmime::net::store> st);
+        mockable SentRec<std::shared_ptr<vmime::net::folder>> findSentRecFolder(favor::shared_ptr<vmime::net::store> st);
 
         void fetchFromFolder(favor::shared_ptr<vmime::net::folder> folder, shared_ptr<const vector<Address>> addresses, bool catchUp);
 

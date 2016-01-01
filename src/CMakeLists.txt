@@ -63,7 +63,7 @@ target_compile_definitions(favor_test PUBLIC TESTING)
 set(incl_dirs lib/vmime/include lib/gtest/include managers lib .) #Last . is so managers can get at core files
 
 IF(TARGET favor_test) #TODO: It seems like this being run regardless, but there's no harm in building it in normal builds
-  ADD_SUBDIRECTORY (lib/gtest)
+  ADD_SUBDIRECTORY(lib/gtest)
 ENDIF()
 
 target_include_directories(favor PUBLIC ${incl_dirs})

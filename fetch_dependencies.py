@@ -138,10 +138,8 @@ if __name__ == "__main__":
     github_dependency('https://github.com/zeux/pugixml.git', 'pugixml', ['src'])
 
 
-    #A little silly to get the same git repo twice, but it's clearer this way
-    github_dependency('https://github.com/google/googletest', 'gtest', ['googletest'], ['cd googletest && cmake -G "Unix Makefiles" && make'])
-    github_dependency('https://github.com/google/googletest', 'gmock', ['googlemock'], ['cd googlemock && autoreconf -fvi && '
-        'cp -r ../../../gtest ./gtest && cd make && make && mv gmock_main.a ../gmock_main.a'])
+    #Cmake for this may be redundant because it's in our cmake files anyway, but it doesn't hurt
+    github_dependency('https://github.com/google/googletest', 'gtest', ['.'], ['cmake -G "Unix Makefiles" && make'])
 
 
     github_dependency('https://github.com/unnonouno/iconvpp', 'iconvpp', ['.'])
