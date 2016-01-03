@@ -35,7 +35,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace favor {
     class EmailManager : public AccountManager {
+        #ifdef TESTING
         friend class EmailManagerTest;
+        friend class MockEmailManager;
+        #endif
         friend class AccountManager;
 
     public:

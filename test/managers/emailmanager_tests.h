@@ -7,25 +7,31 @@
 using namespace std;
 using namespace favor;
 using ::testing::_;
+using ::testing::Invoke;
 
 
 namespace favor {
 
     class MockEmailManager : public EmailManager {
 
+    public:
+        MockEmailManager(string accNm, string detailsJson) : EmailManager(accNm, detailsJson) {}
+
         MOCK_METHOD2(parseMessage, void(bool sent, favor::shared_ptr<vmime::net::message> m));
 
         MOCK_METHOD1(findSentRecFolder, SentRec<std::shared_ptr<vmime::net::folder>>(favor::shared_ptr<vmime::net::store> st));
 
+        SentRec<std::shared_ptr<vmime::net::folder>> findSentRecFolderConcrete(favor::shared_ptr<vmime::net::store> st){
+            return EmailManager::findSentRecFolder(st);
+        }
 
-    public:
-        MockEmailManager(string accNm, string detailsJson) : EmailManager(accNm, detailsJson) {}
+        ~MockEmailManager(){};
     };
 
     class EmailManagerTest : public DatabaseTest {
     protected:
 
-        EmailManager* manager;
+        MockEmailManager* manager;
 
         MockEmailManager& getMockEmailManager(){
             return *(dynamic_cast<MockEmailManager*>(getManager()));
@@ -79,7 +85,7 @@ namespace favor {
         }
 
         void newManager(){
-            constructNewManager(ACC_account1_at_test_dot_com_NAME,  "{\"password\":\"password\", \"url\":\"imap://example.url:0\"}");
+            manager = new MockEmailManager(ACC_account1_at_test_dot_com_NAME,  "{\"password\":\"password\", \"url\":\"imap://example.url:0\"}");
         }
 
 
@@ -104,18 +110,24 @@ Address
 
     TEST_F(EmailManagerTest, UpdateMessages){
         getManagedAddresses().insert("Test Address 1");
-        EXPECT_CALL(getMockEmailManager(), findSentRecFolder(_)).times(1);
+        /*We're letting the mock calls fall through to the actual functions here which is a little sloppy,
+         * but mocking out vmime's internals is a production and it doesn't make sense to do it more than once
+         * (with the mock objects built to let this function and the functions it calls run their normal course)*/
+
+        EXPECT_CALL(getMockEmailManager(), findSentRecFolder(_)).Times(1)
+                .WillOnce(Invoke(&getMockEmailManager(), &MockEmailManager::findSentRecFolderConcrete));
+
+
         getManager()->updateMessages();
 
-        //Methods should be called,
     }
 
-    TEST_F(EmailManagerTest, UpdateMessagesWithNewAddresses){
-        getManagedAddresses().insert("Test Address 1");
-        getManager()->updateMessages();
-
-        //same as above, but with the extra catch-up calls (catch up beings et to true) for fetchFromFolder
-    }
+//    TEST_F(EmailManagerTest, UpdateMessagesWithNewAddresses){
+//        getManagedAddresses().insert("Test Address 1");
+//        getManager()->updateMessages();
+//
+//        //same as above, but with the extra catch-up calls (catch up beings et to true) for fetchFromFolder
+//    }
 
     TEST_F(EmailManagerTest, ConsultJsonWithNoPassword) {
         setJson("{\"url\":\"imap://example.url:0\"}");
