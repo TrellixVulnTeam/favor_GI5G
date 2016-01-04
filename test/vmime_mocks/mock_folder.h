@@ -10,6 +10,8 @@
 #include "vmime/include/vmime/net/imap/IMAPFolder.hpp"
 #include "vmime/include/vmime/net/folderAttributes.hpp"
 #include "mock_status.h"
+#include "mock_message.h"
+#include "../testing_definitions.h"
 
 
 class MockImapFolder : public vmime::net::imap::IMAPFolder {
@@ -76,6 +78,9 @@ public:
             (const vmime::net::messageSet& msgs, const vmime::net::fetchAttributes& attribs) override
     {
         std::vector <std::shared_ptr<vmime::net::message> > messages;
+        for (int i = 0; i < EMAILMANAGER_MAIL_COUNT; i++){
+            messages.push_back(std::make_shared<MockImapMessage>(std::dynamic_pointer_cast<vmime::net::imap::IMAPFolder>(shared_from_this()), i, i*2));
+        }
         return messages;
     }
 

@@ -145,7 +145,7 @@ namespace favor {
 
             string getTableName(bool sent) const;
 
-            shared_ptr<vector<Address>> contactAddresses() const;
+            mockable shared_ptr<vector<Address>> contactAddresses() const;
 
             //Work
             void updateMessages();

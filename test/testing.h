@@ -9,6 +9,8 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include "testdata.h"
+#include "testing_definitions.h"
+
 
 using namespace std;
 using namespace favor;

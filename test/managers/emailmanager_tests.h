@@ -8,6 +8,7 @@ using namespace std;
 using namespace favor;
 using ::testing::_;
 using ::testing::Invoke;
+using ::testing::Return;
 
 
 namespace favor {
@@ -21,8 +22,16 @@ namespace favor {
 
         MOCK_METHOD1(findSentRecFolder, SentRec<std::shared_ptr<vmime::net::folder>>(favor::shared_ptr<vmime::net::store> st));
 
+        MOCK_METHOD3(fetchFromFolder, void(favor::shared_ptr<vmime::net::folder> folder, shared_ptr<const vector<Address>> addresses, bool catchUp));
+
+        MOCK_CONST_METHOD0(contactAddresses, shared_ptr<vector<Address>>());
+
         SentRec<std::shared_ptr<vmime::net::folder>> findSentRecFolderConcrete(favor::shared_ptr<vmime::net::store> st){
             return EmailManager::findSentRecFolder(st);
+        }
+
+        shared_ptr<vector<Address>> contactAddressesConcerete(){
+            return AccountManager::contactAddresses();
         }
 
         ~MockEmailManager(){};
@@ -55,6 +64,10 @@ namespace favor {
 
         string getURL(){
             return manager->serverURL;
+        }
+
+        void fetchMessages() {
+            manager->fetchMessages();
         }
 
         set<string>& getManagedAddresses(){
@@ -108,26 +121,62 @@ Address
  */
 
 
-    TEST_F(EmailManagerTest, UpdateMessages){
-        getManagedAddresses().insert("Test Address 1");
-        /*We're letting the mock calls fall through to the actual functions here which is a little sloppy,
-         * but mocking out vmime's internals is a production and it doesn't make sense to do it more than once
-         * (with the mock objects built to let this function and the functions it calls run their normal course)*/
+    TEST_F(EmailManagerTest, FetchMessages){
+
+        shared_ptr<vector<Address>> addresses = make_shared<vector<Address>>();
+        addresses->push_back(Address ADDR_test1_at_test_dot_com_ARGS);
+        addresses->push_back(Address ADDR_test3_at_test_dot_com_ARGS);
+
+        int addressesSize = addresses->size();
+
+        for (int i = 0; i < addressesSize; ++i){
+            getManagedAddresses().insert(addresses->at(i).addr);
+        }
+
+        ASSERT_EQ(getManagedAddresses().size(), addressesSize);
+
+        EXPECT_CALL(getMockEmailManager(), contactAddresses()).Times(1).WillOnce(Return(addresses));
 
         EXPECT_CALL(getMockEmailManager(), findSentRecFolder(_)).Times(1)
                 .WillOnce(Invoke(&getMockEmailManager(), &MockEmailManager::findSentRecFolderConcrete));
 
+        EXPECT_CALL(getMockEmailManager(), fetchFromFolder(_,_,false)).Times(2);
+        fetchMessages();
 
-        getManager()->updateMessages();
+        ASSERT_EQ(getManagedAddresses().size(), addressesSize); //Ensure no new addresses have made their way in
 
     }
 
-//    TEST_F(EmailManagerTest, UpdateMessagesWithNewAddresses){
-//        getManagedAddresses().insert("Test Address 1");
-//        getManager()->updateMessages();
-//
-//        //same as above, but with the extra catch-up calls (catch up beings et to true) for fetchFromFolder
-//    }
+    TEST_F(EmailManagerTest, FetchMessagesWithNewAddresses){
+        shared_ptr<vector<Address>> addresses = make_shared<vector<Address>>();
+        addresses->push_back(Address ADDR_test1_at_test_dot_com_ARGS);
+        addresses->push_back(Address ADDR_test3_at_test_dot_com_ARGS);
+
+        int addressesSize = addresses->size();
+
+        for (int i = 0; i < addressesSize; ++i){
+            getManagedAddresses().insert(addresses->at(i).addr);
+        }
+
+        ASSERT_EQ(getManagedAddresses().size(), addressesSize);
+
+        EXPECT_CALL(getMockEmailManager(), contactAddresses()).Times(1)
+                .WillOnce(Invoke(&getMockEmailManager(), &MockEmailManager::contactAddressesConcerete));
+
+        EXPECT_CALL(getMockEmailManager(), findSentRecFolder(_)).Times(1)
+                .WillOnce(Invoke(&getMockEmailManager(), &MockEmailManager::findSentRecFolderConcrete));
+
+        EXPECT_CALL(getMockEmailManager(), fetchFromFolder(_,_,true)).Times(2);
+        EXPECT_CALL(getMockEmailManager(), fetchFromFolder(_,_,false)).Times(2);
+        fetchMessages();
+
+        ASSERT_NE(getManagedAddresses().size(), addressesSize); //Ensure new addresses have made their way in
+    }
+
+    TEST_F(EmailManagerTest, fetchFromFolder){
+//        EXPECT_CALL(getMockEmailManager(), parseMessage(true, _)).Times(EMAILMANAGER_MAIL_COUNT);
+//        EXPECT_CALL(getMockEmailManager(), parseMessage(false, _)).Times(EMAILMANAGER_MAIL_COUNT);
+    }
 
     TEST_F(EmailManagerTest, ConsultJsonWithNoPassword) {
         setJson("{\"url\":\"imap://example.url:0\"}");

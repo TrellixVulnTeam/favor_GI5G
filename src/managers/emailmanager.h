@@ -91,7 +91,7 @@ namespace favor {
 
         mockable SentRec<std::shared_ptr<vmime::net::folder>> findSentRecFolder(favor::shared_ptr<vmime::net::store> st);
 
-        void fetchFromFolder(favor::shared_ptr<vmime::net::folder> folder, shared_ptr<const vector<Address>> addresses, bool catchUp);
+        void mockable fetchFromFolder(favor::shared_ptr<vmime::net::folder> folder, shared_ptr<const vector<Address>> addresses, bool catchUp);
 
         class InfoTracer : public vmime::net::tracer {
         public:
