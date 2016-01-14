@@ -10,5 +10,7 @@
  */
 
 #define EMAILMANAGER_MAIL_COUNT 4
+#define FAVOR_MEMORY_DB "file:favorDB?mode=memory&cache=shared"
+#define SKYPE_MEMORY_DB "file:skypeDB?mode=memory&cache=shared"
 
 #endif //FAVOR_TESTING_DEFINITIONS_H

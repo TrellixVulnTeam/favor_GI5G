@@ -182,13 +182,11 @@ namespace favor{
             if (!badAddresses.count(addresses[i].addr)){
                 const vector<long>& ids = participantIds.at(addresses[i].addr);
                 for (int j = 0; j < ids.size(); ++j){
-                    DLOG("Bind "+as_string(usedAddressTotal) +" to convo id "+as_string(ids[j]));
                     sqlite3_bind_int64(stmt, usedAddressTotal, ids[j]);
                     ++usedAddressTotal;
                 }
             }
         }
-        DLOG("Bind "+as_string(usedAddressTotal)+" to timestamp "+as_string(time));
         sqlite3_bind_int64(stmt, usedAddressTotal, time);
     }
 
@@ -220,7 +218,6 @@ namespace favor{
             string participant = sqlite3_get_string(stmt, 0);
             long convoID = sqlite3_column_int64(stmt, 1);
 
-            DLOG(participant + " : "+ as_string(convoID));
 
             participantToIDMap[participant].push_back(convoID);
 
@@ -242,7 +239,6 @@ namespace favor{
             }
 
 
-            DLOG(sqlSubstmt)
             sqlv(sqlite3_prepare_v2(db, sqlSubstmt.c_str(), sqlSubstmt.length(), &stmt, NULL));
 
             sqlv(sqlite3_bind_text(stmt, 1, accountName.c_str(), accountName.length(), SQLITE_STATIC));
@@ -255,7 +251,6 @@ namespace favor{
             sqlv(sqlite3_step(stmt));
             long sum = sqlite3_column_int64(stmt, 0);
             setAddressCount(it->first, sum);
-            DLOG("sent msg sum for "+it->first+" : "+as_string(sum));
             sqlv(sqlite3_finalize(stmt));
         }
 
@@ -272,9 +267,7 @@ namespace favor{
                 string displayName = sqlite3_get_string(stmt, 0);
                 string authorAddress= it->first;
                 setCountedAddressName(authorAddress, displayName);
-                DLOG("Author: "+authorAddress +" Display Name: "+displayName);
             } else if (result == SQLITE_DONE){
-                DLOG("No name found for "+it->first);
             } else sqlv(result);
 
             sqlv(sqlite3_finalize(stmt));
@@ -312,7 +305,6 @@ namespace favor{
                 " FROM " SKYPE_MSG_TABLE_NAME " ");
         sql += buildSelection((*addresses), badAddressIDs, participantToIDMap, SKYPE_MSG_COLUMN_CONVO, SKYPE_MSG_COLUMN_DATE, catchUp);
         sql += " ORDER BY " SKYPE_MSG_COLUMN_DATE " " DB_SORT_ORDER;
-        DLOG(sql);
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
         bindSelection(stmt, (*addresses), badAddressIDs, participantToIDMap, lastMessageTime);
 
@@ -364,7 +356,6 @@ namespace favor{
                 SKYPE_TRANSFERS_COLUMN_STATUS " FROM " SKYPE_TRANSFERS_TABLE_NAME " ");
         sql += buildSelection((*addresses), badAddressIDs, participantToIDMap, SKYPE_TRANSFERS_COLUMN_CONVO, SKYPE_TRANSFERS_COLUMN_DATE, catchUp);
         sql += " AND " SKYPE_TRANSFERS_COLUMN_STATUS "=" SKYPE_TRANSFERS_STATUS_SUCCESS ";";
-        DLOG(sql);
         sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
         bindSelection(stmt, (*addresses), badAddressIDs, participantToIDMap, lastTransferTime);
 

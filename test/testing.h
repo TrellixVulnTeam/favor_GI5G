@@ -18,7 +18,7 @@ using namespace favor;
 namespace favor{
     void configureDatabaseForTesting(){
         ASSERT_EQ(sqlite3_config(SQLITE_CONFIG_URI,1), SQLITE_OK);
-        favor::dbName = "file::memory:?cache=shared";
+        favor::dbName = FAVOR_MEMORY_DB;
         favor::dbPath = "";
         favor::initialize();
         worker::buildDatabase();

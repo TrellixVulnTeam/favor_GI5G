@@ -2,6 +2,7 @@
 #include "accountmanager.h"
 #include "gtest/gtest.h"
 #include "skypemanager.h"
+#include "skype_testdata.h"
 
 
 //TODO: this test should be based on a fixture that generates a database with a skype account pre-inserted, which we use for
@@ -11,6 +12,48 @@
 #define SKYPE_ACCOUNT_NAME "joshua.tanner"
 #define SKYPE_CONTACT_NAME ""
 #define SKYPE_CONTACT_NAME2 ""
+
+//These are the 4 tables we actually make use of
+/*
+ *  #define SKYPE_MSG_TABLE_NAME "Messages"
+    #define SKYPE_ACCOUNTS_TABLE_NAME "Accounts"
+    #define SKYPE_PARTICIPANTS_TABLE_NAME "Participants"
+    #define SKYPE_TRANSFERS_TABLE_NAME "Transfers"
+
+ */
+
+namespace favor {
+
+class SkypeManagerTest : public DatabaseTest {
+protected:
+
+    void populateDb(){
+        string sql = "BEGIN IMMEDIATE TRANSACTION;";
+        sql += contactSeed;
+        sql += addressSeed;
+        sql += accountSeed;
+        sql += "COMMIT TRANSACTION;";
+
+        worker::exec(sql);
+
+        sqlite3 *db;
+        sqlv(sqlite3_open(SKYPE_MEMORY_DB, &db));
+        sql.clear();
+        sql += SKYPE_SQLITE_SCHEMA;
+        sqlv(sqlite3_exec(db, sql.c_str(), NULL, NULL, NULL));
+    }
+
+
+    virtual void SetUp() override {
+        DatabaseTest::SetUp();
+        populateDb();
+        reader::refreshAll(); //These values are expected to be correct in other methods, so it tests the refresh methods
+    }
+
+    virtual void TearDown() override {
+        DatabaseTest::TearDown();
+    }
+};
 
 
 TEST(SkypeManager, General){
@@ -34,6 +77,9 @@ TEST(SkypeManager, General){
     //worker::createContactWithAddress("GIGGLE", TYPE_LINE, "GIGGLE_WIGGLE");
 
     worker::backupDatabase();
+
+
+}
 
 
 }
