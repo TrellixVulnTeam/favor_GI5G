@@ -51,7 +51,6 @@ namespace favor{
             for (int i = 0; i < msgCount; ++i){
                 JNIString address(env, (jstring) env->GetObjectArrayElement(addresses, i));
                 JNIString body(env, (jstring) env->GetObjectArrayElement(bodies, i));
-                //TODO: date may need to become a time_t
                 accManager->holdMessage(sentArray[i], idArray[i], dateArray[i], address, mediaArray[i], body);
                 address.deleteRefAndInvalidate();
                 body.deleteRefAndInvalidate();

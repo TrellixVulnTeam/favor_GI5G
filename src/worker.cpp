@@ -173,7 +173,7 @@ namespace favor {
                 addrOutList.push_back(Address(it->addr, count, it->contactId, type));
             }
             for (auto it = countedAddresses.begin(); it != countedAddresses.end(); it++) {
-                addrOutList.push_back(Address(it->first, it->second, -1, type));
+                addrOutList.push_back(Address(it->first, it->second, Address::NO_CONTACT_ID, type));
             }
 
             addrOutList.sort(compareAddress);

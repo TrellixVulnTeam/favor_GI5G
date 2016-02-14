@@ -27,15 +27,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace favor {
     class Address {
     public:
+        const static int NO_CONTACT_ID = -1;
+
         const string addr;
         const int count;
         const long contactId;
         const MessageType type;
 
+
         Address(string addr, int c, int contact, MessageType t) : addr(addr), count(c), contactId(contact), type(t){}
 
         bool belongsToContact(){
-            return contactId > -1;
+            return contactId > NO_CONTACT_ID;
         }
 
         bool operator==(const Address& other) const{

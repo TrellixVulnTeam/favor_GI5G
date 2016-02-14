@@ -447,7 +447,7 @@ namespace favor {
                 ret->push_back(Address(
                         reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)),
                         sqlite3_column_int(stmt, 1),
-                        sqlite3_column_type(stmt, 2) == SQLITE_NULL ? -1 : sqlite3_column_int(stmt, 2),
+                        sqlite3_column_type(stmt, 2) == SQLITE_NULL ? Address::NO_CONTACT_ID : sqlite3_column_int(stmt, 2),
                         t));
                 //-1 if there's no corresponding contact, otherwise that contact's ID
 
@@ -486,7 +486,7 @@ namespace favor {
                 ret->push_back(Address(
                         reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)),
                         sqlite3_column_int(stmt, 1),
-                        sqlite3_column_type(stmt, 2) == SQLITE_NULL ? -1 : sqlite3_column_int(stmt, 2),
+                        sqlite3_column_type(stmt, 2) == SQLITE_NULL ? Address::NO_CONTACT_ID : sqlite3_column_int(stmt, 2),
                         (MessageType) sqlite3_column_int(stmt, 3)));
                         //-1 if there's no corresponding contact, otherwise that contact's ID
 
