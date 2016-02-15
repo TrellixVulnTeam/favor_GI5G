@@ -105,7 +105,7 @@ namespace favor {
             return contactId;
         }
 
-        void createContactWithAddress(const string &address, MessageType type, const string &displayName){
+        long createContactWithAddress(const string &address, MessageType type, const string &displayName){
             long contactId = createContact(displayName, type);
 
             string sql = "INSERT OR REPLACE INTO " ADDRESS_TABLE(type) " VALUES (?,?,?);";
@@ -116,10 +116,12 @@ namespace favor {
             sqlv(sqlite3_bind_int64(stmt, 3, contactId));
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_finalize(stmt));
+            return contactId;
         }
 
-        void createContactFromAddress(const Address& addr, const string& displayName){
+        long createContactFromAddress(const Address& addr, const string& displayName){
             long contactId = createContact(displayName, addr.type);
+
             string sql = "UPDATE " ADDRESS_TABLE(addr.type) " SET contact_id=? WHERE address=?";
             sqlite3_stmt* stmt;
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
@@ -128,8 +130,11 @@ namespace favor {
             sqlv(sqlite3_step(stmt));
             sqlv(sqlite3_finalize(stmt));
             if (sqlite3_changes(db) == 0) logger::warning("Contact "+displayName+" created from address "+as_string(addr)+" which SQLite does not report finding.");
+            return contactId;
         }
 
+        //Some of this code is refactored out so we can reuse sqlite statements for most of our address creation
+        //May be a pretty unnecessary optimization, but doesn't hurt
         void saveAddress(const Address &a, sqlite3_stmt* stmt) {
             sqlv(sqlite3_bind_text(stmt, 1, a.addr.c_str(), a.addr.length(), SQLITE_STATIC));
             sqlv(sqlite3_bind_int(stmt, 2, a.count));
@@ -141,6 +146,16 @@ namespace favor {
             //so that we can leave it unbound when it's -1
 
         }
+
+        void createAddress(string addrString, int count, long contactId, MessageType type){
+            Address addr(addrString, count, contactId, type);
+            string sql = "INSERT INTO " ADDRESS_TABLE(type) " VALUES(?,?,?);";
+            sqlite3_stmt* stmt;
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            saveAddress(addr, stmt);
+            sqlv(sqlite3_finalize(stmt)); //Finalizing it here is just cleanup
+        }
+
 
         void rewriteAddressTable(const list<Address>& newAddresses, const MessageType& type){
             beginTransaction();

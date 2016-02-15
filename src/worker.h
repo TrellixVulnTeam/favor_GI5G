@@ -52,9 +52,11 @@ namespace favor {
         //Writing methods
         void exec(string sql);
 
-        void createContactWithAddress(const string &address, MessageType type, const string &displayName);
+        void createAddress(string addrString, int count, long contactId, MessageType type);
 
-        void createContactFromAddress(const Address& addr, const string& displayName);
+        long createContactWithAddress(const string &address, MessageType type, const string &displayName);
+
+        long createContactFromAddress(const Address& addr, const string& displayName);
 
         void recomputeAddressTable(std::unordered_map<std::string, int>& countedAddresses, std::unordered_map<std::string, std::string>& addressNames, MessageType type);
     }

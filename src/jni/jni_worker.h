@@ -28,31 +28,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace favor{
     namespace jni{
 
-        JNIEXPORT void JNICALL _createContact(JNIEnv* env, jobject callingObj, jstring address, jint type, jstring displayName, jboolean addressExistsHint){
+        JNIEXPORT jlong JNICALL _createContact(JNIEnv* env, jobject callingObj, jstring address, jint type, jstring displayName, jboolean addressExistsHint){
             //TODO: this isn't finding/associating with the address properly when we pass it one that exists
             JNIString addressString(env, address);
             JNIString displaynameString(env, displayName);
             logger::info("Create contact with address: "+addressString.getString()+" and name "+displaynameString.getString());
             //Short circuiting saves us the method call if we know the address exists
+            jlong contactId;
             if (addressExistsHint || reader::addressExists(addressString, static_cast<MessageType>(type))){
                 //We believe our reader or hint, make an address object and pass it in like it was from the database
                 jniExcept(
                     Address addrObj(addressString, -1, -1, static_cast<MessageType>(type));
-                        logger::info("Address exists, creating from "+as_string(addrObj));
-                    worker::createContactFromAddress(addrObj, displaynameString);
+                        logger::info("Address exists, creating from address with name"+addrObj.addr);
+                    contactId = worker::createContactFromAddress(addrObj, displaynameString);
                 )
             } else {
                 //There's no address already, so we make one
                 logger::info("No address found, creating with address");
                 jniExcept(
-                    worker::createContactWithAddress(addressString, static_cast<MessageType>(type), displaynameString);
+                   contactId = worker::createContactWithAddress(addressString, static_cast<MessageType>(type), displaynameString);
                 )
             }
+            return contactId;
+        }
 
+        JNIEXPORT void JNICALL _createAddress(JNIEnv* env, jobject callingObj, jstring address, jint type,
+                jlong inputCount, jlong inputContactId){
+            JNIString addressString(env, address);
+            long contactId = (long)inputContactId;
+            long count = (long)inputCount;
+            logger::info("Create address "+addressString.getString()+" with contact id "+as_string(contactId)+" and count "+as_string(count));
+            jniExcept(
+                    worker::createAddress(addressString.getString(), count, contactId, static_cast<MessageType>(type));
+            )
         }
 
         static JNINativeMethod workerMethodTable[] = {
-                {"_createContact", "(Ljava/lang/String;ILjava/lang/String;Z)V", (void*) _createContact}
+                {"_createContact", "(Ljava/lang/String;ILjava/lang/String;Z)J", (void*) _createContact},
+                {"_createAddress", "(Ljava/lang/String;IJJ)V", (void*) _createAddress}
         };
 
     }

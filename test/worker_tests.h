@@ -43,6 +43,34 @@ bool findContact (InputIterator first, InputIterator last, const Contact& val)
         return false;
 }
 
+TEST_F(Worker, CreateAddress){
+        Address addr1("test@test.com", 0, Address::NO_CONTACT_ID, TYPE_EMAIL);
+        Address addr2("LineTest", 0, Address::NO_CONTACT_ID, TYPE_LINE);
+        Address addr3("test2@test.com", 0, Address::NO_CONTACT_ID, TYPE_EMAIL);
+
+        worker::createAddress(addr1.addr, addr1.count, addr1.contactId, addr1.type);
+        worker::createAddress(addr2.addr, addr2.count, addr2.contactId, addr2.type);
+
+        auto addresses = reader::addresses(FLAG_ALL, false);
+        ASSERT_EQ(addresses->size(), 2);
+
+        bool addr1Found = false;
+        bool addr2Found = false;
+        bool addr3Found = false;
+
+        for (auto it = addresses->begin(); it != addresses->end(); ++it){
+                logger::info(as_string(*it));
+                addr1Found = addr1Found || ((*it) == addr1);
+                addr2Found = addr2Found || ((*it) == addr2);
+                addr3Found = addr3Found || ((*it) == addr3);
+        }
+
+        ASSERT_TRUE(addr1Found);
+        ASSERT_TRUE(addr2Found);
+        ASSERT_FALSE(addr3Found);
+
+}
+
 TEST_F(Worker, CreateContactWithAddress){
         Contact EmailTest1 CONTACT_EmailTest1_ARGS;
         Contact LineTest2 CONTACT_LineTest2_ARGS;
