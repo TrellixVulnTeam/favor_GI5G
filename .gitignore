@@ -14,3 +14,5 @@ test/lib/*
 test/gtest
 test/testdata.h
 src/jni/jbuild.sh
+src/jni/cp-build.sh 
+

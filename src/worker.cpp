@@ -122,13 +122,7 @@ namespace favor {
         long createContactFromAddress(const Address& addr, const string& displayName){
             long contactId = createContact(displayName, addr.type);
 
-            string sql = "UPDATE " ADDRESS_TABLE(addr.type) " SET contact_id=? WHERE address=?";
-            sqlite3_stmt* stmt;
-            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
-            sqlv(sqlite3_bind_int64(stmt, 1, contactId));
-            sqlv(sqlite3_bind_text(stmt, 2, addr.addr.c_str(), addr.addr.length(), SQLITE_STATIC));
-            sqlv(sqlite3_step(stmt));
-            sqlv(sqlite3_finalize(stmt));
+            updateAddressContactId(addr.addr, addr.type, contactId);
             if (sqlite3_changes(db) == 0) logger::warning("Contact "+displayName+" created from address "+as_string(addr)+" which SQLite does not report finding.");
             return contactId;
         }
@@ -154,6 +148,16 @@ namespace favor {
             sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
             saveAddress(addr, stmt);
             sqlv(sqlite3_finalize(stmt)); //Finalizing it here is just cleanup
+        }
+
+        void updateAddressContactId(string addrString, MessageType type, long contactId){
+            string sql = "UPDATE " ADDRESS_TABLE(type) " SET contact_id=? WHERE address=?";
+            sqlite3_stmt* stmt;
+            sqlv(sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, NULL));
+            sqlv(sqlite3_bind_int64(stmt, 1, contactId));
+            sqlv(sqlite3_bind_text(stmt, 2, addrString.c_str(), addrString.length(), SQLITE_STATIC));
+            sqlv(sqlite3_step(stmt));
+            sqlv(sqlite3_finalize(stmt));
         }
 
 

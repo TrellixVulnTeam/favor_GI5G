@@ -39,7 +39,7 @@ namespace favor{
                 //We believe our reader or hint, make an address object and pass it in like it was from the database
                 jniExcept(
                     Address addrObj(addressString, -1, -1, static_cast<MessageType>(type));
-                        logger::info("Address exists, creating from address with name"+addrObj.addr);
+                        logger::info("Address exists, creating from address with name "+addrObj.addr);
                     contactId = worker::createContactFromAddress(addrObj, displaynameString);
                 )
             } else {
@@ -63,9 +63,19 @@ namespace favor{
             )
         }
 
+        JNIEXPORT void JNICALL _updateAddressContactId(JNIEnv* env, jobject callingObj, jstring address, jint type, jlong inputContactId){
+            JNIString addressString(env, address);
+            long contactId = (long)inputContactId;
+            logger::info("Update address "+addressString.getString()+" to contact id "+as_string(contactId));
+            jniExcept(
+                    worker::updateAddressContactId(addressString.getString(), static_cast<MessageType>(type), contactId);
+            )
+        }
+
         static JNINativeMethod workerMethodTable[] = {
                 {"_createContact", "(Ljava/lang/String;ILjava/lang/String;Z)J", (void*) _createContact},
-                {"_createAddress", "(Ljava/lang/String;IJJ)V", (void*) _createAddress}
+                {"_createAddress", "(Ljava/lang/String;IJJ)V", (void*) _createAddress},
+                {"_updateAddressContactId", "(Ljava/lang/String;IJ)V", (void*) _updateAddressContactId}
         };
 
     }

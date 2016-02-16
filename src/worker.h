@@ -54,6 +54,8 @@ namespace favor {
 
         void createAddress(string addrString, int count, long contactId, MessageType type);
 
+        void updateAddressContactId(string addrString, MessageType type, long contactId);
+
         long createContactWithAddress(const string &address, MessageType type, const string &displayName);
 
         long createContactFromAddress(const Address& addr, const string& displayName);
