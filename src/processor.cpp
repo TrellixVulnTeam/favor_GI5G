@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <limits.h>
 #include "processor.h"
+#include "conversation_data.h"
 
 namespace favor {
     namespace processor {
@@ -167,7 +168,10 @@ namespace favor {
         /*
             First holds response times for us, second for the other party.
          */
-        shared_ptr<SentRec<vector<time_t>>> strippedDates(shared_ptr<vector<Message>> messages){
+        //TODO: see "Conversation Stripping" note, but we should implement an "optimistic" boolean to determine
+        //whether we optimistically use the latest date to compute response time (as we do now), or pessimisticly
+        //use the earliest one to compute it
+        shared_ptr<SentRec<vector<time_t>>> strippedDates(const shared_ptr<const vector<Message>> messages){
             shared_ptr<SentRec<vector<time_t>>> result = std::make_shared<SentRec<vector<time_t>>>();
             auto back = messages->rbegin(); //Iteration goes backwards because messages are sorted descending
             //Order is very important here, because we get meaningless results if we're not moving the same direction time is
@@ -265,7 +269,7 @@ namespace favor {
 
         //For response times we compute both sent and rec, cache them separately, return the one requested
 
-        SentRec<double> conversationalResponseTimeCompute(shared_ptr<vector<Message>> query){
+        SentRec<double> conversationalResponseTimeCompute(const shared_ptr<const vector<Message>> query){
             auto sentRecDates = strippedDates(query);
 
             double averageReceived = 0;
@@ -302,6 +306,49 @@ namespace favor {
                 cacheResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, false, sentRecAvgs.received);
 
                 return sent ? sentRecAvgs.sent : sentRecAvgs.received;
+            }
+        }
+
+
+        ConversationData computeConvoData(AccountManager *account, const Contact *c, time_t fromDate, time_t untilDate){
+            //TODO: we want the max conversational response, not the average conversational response. 
+            double sentConversationalResponse, recConversationalResponse;
+            auto query = reader::queryConversation(account, *c, KEY_DATE, fromDate, untilDate);
+            if (countResult(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, true) &&
+                    countResult(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, false)){
+                sentConversationalResponse = getResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, true);
+                recConversationalResponse = getResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, false);
+            } else {
+                SentRec<double> sentRecAvgs = conversationalResponseTimeCompute(query);
+                sentConversationalResponse = sentRecAvgs.sent;
+                recConversationalResponse = sentRecAvgs.received;
+                cacheResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, true, sentRecAvgs.sent);
+                cacheResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, false, sentRecAvgs.received);
+            }
+
+            ConversationData result;
+            auto back = query->rbegin(); //Iteration goes backwards because messages are sorted descending
+            //Order is very important here, because we get meaningless results if we're not moving the same direction time is
+
+            vector<long> messageCounts, timeLengths, totalCharCounts;
+            long messageCounter, timeLengthCounter, totalCharCounter;
+            bool conversation = false;
+            for (auto it = back; it != query->rend(); ++it){
+               //TODO: convo algorithm
+                //if time from this message until the next one of a different sent value is > max conversational value
+            }
+
+        };
+
+        ConversationData conversationData(AccountManager *account, const Contact *c, time_t fromDate, time_t untilDate) {
+            //Sent is hardcoded as true because we generate results for sent and received together
+            if (c == NULL) throw queryException("Cannot run conversation queries with a null contact");
+            if (countResult(CONVO_DATA, account, c, fromDate, untilDate, true)){
+                return getResult<ConversationData>(CONVO_DATA, account, c, fromDate, untilDate, true);
+            } else {
+                ConversationData conversationData = computeConvoData(account, c, fromDate, untilDate);
+                cacheResult<ConversationData>(CONVO_DATA, account, c, fromDate, untilDate, true, conversationData);
+                return conversationData;
             }
         }
 

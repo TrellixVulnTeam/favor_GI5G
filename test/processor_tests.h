@@ -11,12 +11,12 @@ namespace favor{
     namespace processor{
         //Defining the methods here is a cheesy way to get at the methods defined in the processor file but not exposed
         //in the normal header
-        shared_ptr<SentRec<vector<time_t>>> strippedDates(shared_ptr<vector<Message>> messages);
+        shared_ptr<SentRec<vector<time_t>>> strippedDates(const shared_ptr<const vector<Message>> messages);
         long percentile(float percent, vector<long>& input);
         long standardDeviationFloor(int deviations, const std::vector<std::pair<long,long>>& input);
         vector<long> denseTimes(const vector<time_t>& input);
         SentRec<long> responseTimeNintiethCompute(shared_ptr<vector<Message>> query);
-        SentRec<double> conversationalResponseTimeCompute(shared_ptr<vector<Message>> query);
+        SentRec<double> conversationalResponseTimeCompute(const shared_ptr<const vector<Message>> query);
     }
 
 }

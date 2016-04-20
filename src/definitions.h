@@ -144,7 +144,7 @@ namespace favor{
         return static_cast<Key>(static_cast<int>(lhs) | static_cast<int>(rhs));
     }
 
-    enum ResultType {AVG_CHARS, AVG_CONV_RESPONSE, TOTAL_CHARS, RESPONSE_NINTIETH, TOTAL_MESSAGES};
+    enum ResultType {AVG_CHARS, AVG_CONV_RESPONSE, TOTAL_CHARS, RESPONSE_NINTIETH, TOTAL_MESSAGES, CONVO_DATA};
 }
 //We need nulls so that averages work properly with messages we failed to record
 #define RECEIVED_TABLE_SCHEMA "(id INTEGER NOT NULL, address TEXT NOT NULL, date INTEGER, charcount INTEGER, media INTEGER, body TEXT, PRIMARY KEY(id))"
