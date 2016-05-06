@@ -269,26 +269,41 @@ namespace favor {
 
         //For response times we compute both sent and rec, cache them separately, return the one requested
 
-        SentRec<double> conversationalResponseTimeCompute(const shared_ptr<const vector<Message>> query){
+        shared_ptr<SentRec<vector<long>>> sentRecDenseTimes(const shared_ptr<const vector<Message>> query){
             auto sentRecDates = strippedDates(query);
+
+            shared_ptr<SentRec<vector<long>>> ret = std::make_shared<SentRec<vector<long>>>();
+
+            if (sentRecDates->received.size() > 0){
+                ret->sent = denseTimes(sentRecDates->received);
+            } else {
+                logger::warning("Received dates for dense empty, returning empty vector");
+            }
+
+            if (sentRecDates->sent.size() > 0){
+                ret->received = denseTimes(sentRecDates->sent);
+            } else {
+                logger::warning("Sent dates for dense time empty, returning empty vector");
+            }
+
+            return ret;
+        }
+
+        SentRec<double> conversationalResponseTimeCompute(const shared_ptr<const vector<Message>> query){
+            auto sentRecDates = sentRecDenseTimes(query);
 
             double averageReceived = 0;
             double averageSent = 0;
 
-            if (sentRecDates->received.size() > 0){
-                vector<long> recResponseTimes = denseTimes(sentRecDates->received);
-                if (recResponseTimes.size() > 0){
-                    for (auto it = recResponseTimes.begin(); it != recResponseTimes.end(); ++it) averageReceived += *it;
-                    averageReceived /= (double)recResponseTimes.size();
-                }
+            if (sentRecDates->sent.size() > 0){
+                for (auto it = sentRecDates->sent.begin(); it != sentRecDates->sent.end(); ++it) averageReceived += *it;
+                averageReceived /= (double)sentRecDates->sent.size();
             } else logger::warning("Received dates empty, returning 0");
 
-            if (sentRecDates->sent.size() > 0){
-                vector<long> sentResponseTimes = denseTimes(sentRecDates->sent);
-                if (sentResponseTimes.size() > 0){
-                    for (auto it = sentResponseTimes.begin(); it != sentResponseTimes.end(); ++it) averageSent += *it;
-                    averageSent /= (double)sentResponseTimes.size();
-                }
+
+            if (sentRecDates->received.size() > 0){
+                for (auto it = sentRecDates->received.begin(); it != sentRecDates->received.end(); ++it) averageSent += *it;
+                averageSent /= (double)sentRecDates->received.size();
             } else logger::warning("Sent dates empty, returning 0");
 
             return SentRec<double>(averageSent, averageReceived);
@@ -311,22 +326,22 @@ namespace favor {
 
 
         ConversationData computeConvoData(AccountManager *account, const Contact *c, time_t fromDate, time_t untilDate){
-            //TODO: we want the max conversational response, not the average conversational response. 
-            double sentConversationalResponse, recConversationalResponse;
+            ConversationData result;
             auto query = reader::queryConversation(account, *c, KEY_DATE, fromDate, untilDate);
-            if (countResult(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, true) &&
-                    countResult(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, false)){
-                sentConversationalResponse = getResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, true);
-                recConversationalResponse = getResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, false);
-            } else {
-                SentRec<double> sentRecAvgs = conversationalResponseTimeCompute(query);
-                sentConversationalResponse = sentRecAvgs.sent;
-                recConversationalResponse = sentRecAvgs.received;
-                cacheResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, true, sentRecAvgs.sent);
-                cacheResult<double>(AVG_CONV_RESPONSE, account, c, fromDate, untilDate, false, sentRecAvgs.received);
+            auto conversationalResponseTimes = sentRecDenseTimes(query);
+            if (conversationalResponseTimes->sent.size() == 0){
+                logger::warning("Empty sent conversational response times in compute conversational data, returning 0s");
+                return result;
+            } else if (conversationalResponseTimes->received.size() == 0) {
+                logger::warning("Empty received conversational response times in compute conversational data, returning 0s");
+                return result;
             }
 
-            ConversationData result;
+            long maxSentConvoResponse = *(std::max_element(conversationalResponseTimes->sent.begin(),
+                                                           conversationalResponseTimes->sent.end()));
+            long maxRecConvoResponse = *(std::max_element(conversationalResponseTimes->received.begin(),
+                                                          conversationalResponseTimes->received.end()));
+
             auto back = query->rbegin(); //Iteration goes backwards because messages are sorted descending
             //Order is very important here, because we get meaningless results if we're not moving the same direction time is
 
