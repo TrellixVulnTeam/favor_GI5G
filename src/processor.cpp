@@ -326,6 +326,11 @@ namespace favor {
 
 
         ConversationData computeConvoData(AccountManager *account, const Contact *c, time_t fromDate, time_t untilDate){
+            /*
+             * We use the same dates to compute response time as we're given to search for conversations.
+             * TODO: does that make sense?
+             * We may just never call this on anything less than the full set of messages, though.
+             */
             ConversationData result;
             auto query = reader::queryConversation(account, *c, KEY_DATE, fromDate, untilDate);
             auto conversationalResponseTimes = sentRecDenseTimes(query);
@@ -344,16 +349,68 @@ namespace favor {
 
             auto back = query->rbegin(); //Iteration goes backwards because messages are sorted descending
             //Order is very important here, because we get meaningless results if we're not moving the same direction time is
+            auto convoStart = query->rend();
 
             vector<long> messageCounts, timeLengths, totalCharCounts;
-            long messageCounter, timeLengthCounter, totalCharCounter;
+            long messageCounter = 0, totalCharCounter = 0;
             bool conversation = false;
+
+            /*
+             * Keep a one-off starter pointer at the last message with the same sent/rec as current message.
+             * Move it up if we hit a new message that is further than opposite (rec for sent, sent for rec) convoResponse f
+             * rom the beginning, keep
+             * moving it up until we get to a message within convoResponse from current. When we hit a message with
+             * a sent/rec value different from current, we are either starting a conversation or logging all of our
+             * one-offs.
+             *
+             * In convesation mode, we do the same thing until we hit a new message further than opposite convoResponse,
+             * which ends the conversation. The last message in a conversation and similarly sent or rec messages before it
+             * all count as the end of the convo, and not one-offs.
+             *
+             * Alternatively:
+             * If we track the total number of sent messages, rec messages, sent messages in convos and rec messages
+             * in convos, then we can just compute one-offs with subtraction. However, we're not doing this because
+             * it's only marginally more efficient (same big O) and it removes the possobility of collecting data about
+             * one-offs
+             */
             for (auto it = back; it != query->rend(); ++it){
-               //TODO: convo algorithm
-                //if time from this message until the next one of a different sent value is > max conversational value
+
+                if (it->date - back->date <= (it->sent ? maxRecConvoResponse : maxSentConvoResponse)){
+                    //We're within conversational response range
+                    if (it->sent == back->sent){
+                        //Consecutive one-offs or conversation messages from the same person
+                        if (conversation){
+                            messageCounter++;
+                            totalCharCounter += it->charCount;
+                        } else {
+                            //Nothing; we'll count one-offs later
+                        }
+                    } else {
+                        if (!conversation){
+                            //We're starting a conversation
+                            //TODO: check for one-offs before this conversation, and record them
+                            convoStart = it;
+                            messageCounter = 1;
+                            totalCharCounter = it->charCount;
+                            conversation = true;
+                        } else {
+                            messageCounter++;
+                            totalCharCounter += it->charCount;
+                        }
+                    }
+                } else {
+                    //We're outside of conversational response range
+                    if (conversation){
+                        conversation = false;
+                        //TODO: ending a conversation, handle time and conversation ender metrics
+                    } else {
+                        //TODO: one-offs before this, count them up
+                    }
+                    //TODO: move the new one-off counter (back) to here
+                }
             }
 
-        };
+        }
 
         ConversationData conversationData(AccountManager *account, const Contact *c, time_t fromDate, time_t untilDate) {
             //Sent is hardcoded as true because we generate results for sent and received together
