@@ -258,7 +258,16 @@ namespace favor {
     }
 
     string as_string(const AccountManager& a){
-        string result = "[Account Name: "+a.accountName+ "| Type: "+as_string((int)a.type)+" | JSON: \""+a.getJson()+"\"]";
+        string result = "[Account Name: "+a.accountName+ " | Type: "+as_string((int)a.type)+" | JSON: \""+a.getJson()+"\"]";
+        return result;
+    }
+
+    string as_string(const ConversationData c){
+        string result = "[Average Message Count: "+as_string(c.averageMsgCount)+" | Average Total Chars: "+as_string(c.averangeTotalChars);
+        result += " | Average Duration: "+as_string(c.averageLengthTime)+" | Sent Started Count: "+as_string(c.sentStartedCount);
+        result += " | Sent Ended Count: "+as_string(c.sentEndedCount)+" | Sent One-Off Count: "+as_string(c.sentOneOffCount);
+        result += " | Rec Started Count: "+as_string(c.recStartedCount)+" | Rec Ended Count: "+as_string(c.recEndedCount);
+        result += " | Rec One-off Count: "+as_string(c.recOneOffCount);
         return result;
     }
 

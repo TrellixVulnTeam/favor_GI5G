@@ -17,6 +17,8 @@ namespace favor{
         vector<long> denseTimes(const vector<time_t>& input);
         SentRec<long> responseTimeNintiethCompute(shared_ptr<vector<Message>> query);
         SentRec<double> conversationalResponseTimeCompute(const shared_ptr<const vector<Message>> query);
+        ConversationData fillInConvoData(shared_ptr<std::vector<Message>> query, long maxSentConvoResponse, long maxRecConvoResponse);
+        shared_ptr<SentRec<vector<long>>> sentRecDenseTimes(const shared_ptr<const vector<Message>> query);
     }
 
 }
@@ -35,6 +37,12 @@ using namespace favor;
     Note: A lot of these tests are checking the results against hand-computed algorithm results because there isn't really
     a better way to do it
  */
+
+//namespace favor{
+//    std::shared_ptr<std::vector<Message>> getDefaultMessages(){
+//
+//    }
+//}
 
 
 TEST(Processor, StrippedDates){
@@ -189,5 +197,42 @@ TEST(Processor, AverageConversationalResponseTime){
     times = favor::processor::conversationalResponseTimeCompute(msgs);
     ASSERT_EQ(times.sent, 0); //3.33 = 3
     ASSERT_EQ(times.received, 0); //1.5 =2
+
+}
+
+TEST(Processor, ConversationMetrics){
+    std::shared_ptr<std::vector<Message>> msgs = std::make_shared<std::vector<Message>>();
+    std::string addr("test@test.com");
+    int id = 0;
+
+    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(17), addr, 0, 1));
+
+    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(17), addr, 0, 1));
+
+    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(16), addr, 0, 1));
+
+    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(15), addr, 0, 1));
+
+    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(14), addr, 0, 1));
+    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(12), addr, 0, 1));
+
+    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(10), addr, 0, 1));
+
+    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(5), addr, 0, 1));
+
+    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(3), addr, 0, 1));
+    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(2), addr, 0, 1));
+
+    auto conversationalResponseTimes = favor::processor::sentRecDenseTimes(msgs);
+
+
+    long maxSentConvoResponse = *(std::max_element(conversationalResponseTimes->sent.begin(),
+                                                   conversationalResponseTimes->sent.end()));
+    long maxRecConvoResponse = *(std::max_element(conversationalResponseTimes->received.begin(),
+                                                  conversationalResponseTimes->received.end()));
+    ConversationData result = favor::processor::fillInConvoData(msgs, maxSentConvoResponse, maxRecConvoResponse);
+    logger::info("----------");
+    logger::info(as_string(result));
+    logger::info("----------");
 
 }

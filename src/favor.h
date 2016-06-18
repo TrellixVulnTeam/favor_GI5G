@@ -53,6 +53,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "definitions.h"
 #include "exceptions.h"
 #include "types.h"
+#include "conversation_data.h"
 
 namespace favor {
     class Message;
@@ -129,6 +130,8 @@ namespace favor {
 
 
     string as_string(const rapidjson::Document &json);
+
+    string as_string(const ConversationData c);
 }
 
 #endif

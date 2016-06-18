@@ -324,29 +324,8 @@ namespace favor {
             }
         }
 
-
-        ConversationData computeConvoData(AccountManager *account, const Contact *c, time_t fromDate, time_t untilDate){
-            /*
-             * We use the same dates to compute response time as we're given to search for conversations.
-             * TODO: does that make sense?
-             * We may just never call this on anything less than the full set of messages, though.
-             */
+        ConversationData fillInConvoData(shared_ptr<std::vector<Message>> query, long maxSentConvoResponse, long maxRecConvoResponse){
             ConversationData result;
-            auto query = reader::queryConversation(account, *c, KEY_DATE, fromDate, untilDate);
-            auto conversationalResponseTimes = sentRecDenseTimes(query);
-            if (conversationalResponseTimes->sent.size() == 0){
-                logger::warning("Empty sent conversational response times in compute conversational data, returning 0s");
-                return result;
-            } else if (conversationalResponseTimes->received.size() == 0) {
-                logger::warning("Empty received conversational response times in compute conversational data, returning 0s");
-                return result;
-            }
-
-            long maxSentConvoResponse = *(std::max_element(conversationalResponseTimes->sent.begin(),
-                                                           conversationalResponseTimes->sent.end()));
-            long maxRecConvoResponse = *(std::max_element(conversationalResponseTimes->received.begin(),
-                                                          conversationalResponseTimes->received.end()));
-
             auto back = query->rbegin(); //Iteration goes backwards because messages are sorted descending
             //Order is very important here, because we get meaningless results if we're not moving the same direction time is
             auto convoStart = query->rend();
@@ -378,38 +357,105 @@ namespace favor {
                 if (it->date - back->date <= (it->sent ? maxRecConvoResponse : maxSentConvoResponse)){
                     //We're within conversational response range
                     if (it->sent == back->sent){
-                        //Consecutive one-offs or conversation messages from the same person
                         if (conversation){
+                            //Consecutive conversation messages from the same person
                             messageCounter++;
                             totalCharCounter += it->charCount;
                         } else {
-                            //Nothing; we'll count one-offs later
+                            logger::info(""); //Need spoemthjing to dbug on
+                            //We're looking at consecutive one-offs outside a conversation; we count these later
                         }
                     } else {
                         if (!conversation){
                             //We're starting a conversation
-                            //TODO: check for one-offs before this conversation, and record them
+                            if (it->sent) result.sentStartedCount++;
+                            else result.recStartedCount++;
                             convoStart = it;
                             messageCounter = 1;
                             totalCharCounter = it->charCount;
                             conversation = true;
+                            //If we have consecutive messages before this, they're retroactively part of the conversation
+                            while(back != it){
+                                messageCounter++;
+                                totalCharCounter += back->charCount;
+                                back++;
+                            }
+                            back = it;
                         } else {
+                            //Normal conversational exchange
                             messageCounter++;
                             totalCharCounter += it->charCount;
+                            back = it;
                         }
                     }
                 } else {
                     //We're outside of conversational response range
                     if (conversation){
+                        //Conversation is ending
+                        if (back->sent) result.recStartedCount; //Person who fails to respond ends the conversation
+                        else result.sentEndedCount;
+                        messageCounts.push_back(messageCounter);
+                        totalCharCounts.push_back(totalCharCounter);
+                        timeLengths.push_back(it->date - convoStart->date);
                         conversation = false;
-                        //TODO: ending a conversation, handle time and conversation ender metrics
+                        back = it;
                     } else {
-                        //TODO: one-offs before this, count them up
+                        //one-offs before this, count them up
+                        while (back != it){
+                            if (back->sent) result.sentOneOffCount++;
+                            else result.recOneOffCount++;
+                            back++;
+                        }
                     }
-                    //TODO: move the new one-off counter (back) to here
                 }
             }
 
+            if (conversation){
+                //algorithm ended mid-conversation; no one has ended this yet, but we should still use metrics
+                messageCounts.push_back(messageCounter);
+                totalCharCounts.push_back(totalCharCounter);
+                timeLengths.push_back(query->begin()->date - convoStart->date); //Normal begin will be last element in reverse
+            }
+
+            if (messageCounts.size() == 0){
+                //No conversations found
+                return result;
+            }
+
+            result.averageMsgCount = std::accumulate(messageCounts.begin(), messageCounts.end(), 0)
+                                     / (double)messageCounts.size();
+            result.averageLengthTime = std::accumulate(timeLengths.begin(), timeLengths.end(), 0)
+                                       / (double)timeLengths.size();
+            result.averangeTotalChars = std::accumulate(totalCharCounts.begin(), totalCharCounts.end(), 0)
+                                        / (double)totalCharCounts.size();
+            return result;
+        }
+
+
+        ConversationData computeConvoData(AccountManager *account, const Contact *c, time_t fromDate, time_t untilDate){
+            /*
+             * We use the same dates to compute response time as we're given to search for conversations.
+             * TODO: does that make sense?
+             * We may just never call this on anything less than the full set of messages, though.
+             */
+            ConversationData result;
+            auto query = reader::queryConversation(account, *c, KEY_DATE, fromDate, untilDate);
+            auto conversationalResponseTimes = sentRecDenseTimes(query);
+            if (conversationalResponseTimes->sent.size() == 0){
+                logger::warning("Empty sent conversational response times in compute conversational data, returning 0s");
+                return result;
+            } else if (conversationalResponseTimes->received.size() == 0) {
+                logger::warning("Empty received conversational response times in compute conversational data, returning 0s");
+                return result;
+            }
+
+            long maxSentConvoResponse = *(std::max_element(conversationalResponseTimes->sent.begin(),
+                                                           conversationalResponseTimes->sent.end()));
+            long maxRecConvoResponse = *(std::max_element(conversationalResponseTimes->received.begin(),
+                                                          conversationalResponseTimes->received.end()));
+            result = fillInConvoData(query, maxSentConvoResponse, maxRecConvoResponse);
+
+            return result;
         }
 
         ConversationData conversationData(AccountManager *account, const Contact *c, time_t fromDate, time_t untilDate) {
