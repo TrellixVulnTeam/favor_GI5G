@@ -453,7 +453,12 @@ namespace favor {
                                                            conversationalResponseTimes->sent.end()));
             long maxRecConvoResponse = *(std::max_element(conversationalResponseTimes->received.begin(),
                                                           conversationalResponseTimes->received.end()));
-            result = fillInConvoData(query, maxSentConvoResponse, maxRecConvoResponse);
+
+            if (maxSentConvoResponse == 0 || maxRecConvoResponse == 0){
+                logger::warning("Insufficient convoersation response info to fill in conversation info");
+            } else {
+                result = fillInConvoData(query, maxSentConvoResponse, maxRecConvoResponse);
+            }
 
             return result;
         }

@@ -38,14 +38,51 @@ using namespace favor;
     a better way to do it
  */
 
-//namespace favor{
-//    std::shared_ptr<std::vector<Message>> getDefaultMessages(){
-//
-//    }
-//}
+namespace favor{
+    std::shared_ptr<std::vector<Message>> getDefaultMessagesVector(){
+        std::shared_ptr<std::vector<Message>> msgs = std::make_shared<std::vector<Message>>();
+        std::string addr("test@test.com");
+        int id = 0;
+
+        //Inserted in reverse order to match DB sort
+
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(17), addr, 0, 1));
+
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(17), addr, 0, 1));
+
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(16), addr, 0, 1));
+
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(15), addr, 0, 1));
+
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(14), addr, 0, 1));
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(12), addr, 0, 1));
+
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(10), addr, 0, 1));
+
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(5), addr, 0, 1));
+
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(3), addr, 0, 1));
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(2), addr, 0, 1));
+
+        return msgs;
+    }
+
+    std::shared_ptr<std::vector<Message>> getTwoMessageVector(){
+        std::shared_ptr<std::vector<Message>> msgs = std::make_shared<std::vector<Message>>();
+        std::string addr("test@test.com");
+        int id = 0;
+
+        //Inserted in reverse order to match DB sort
+
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(3), addr, 0, 1));
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(2), addr, 0, 1));
+
+        return msgs;
+    }
+}
 
 
-TEST(Processor, StrippedDates){
+TEST(Processor, StrippedDates_1){
     //Messages are sorted descending
     std::shared_ptr<std::vector<Message>> msgs = std::make_shared<std::vector<Message>>();
     std::string addr("test@test.com");
@@ -65,8 +102,13 @@ TEST(Processor, StrippedDates){
     ASSERT_EQ(1, result1->received.size());
     ASSERT_EQ((result1->received)[0], 3*60);
 
+}
 
-    msgs->clear();
+TEST(Processor, StrippedDates_2){
+    std::shared_ptr<std::vector<Message>> msgs = std::make_shared<std::vector<Message>>();
+    std::string addr("test@test.com");
+    int id = 0;
+
     msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(56), addr, 0, 1));
     msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(55), addr, 0, 1));
     msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(50), addr, 0, 1));
@@ -85,6 +127,7 @@ TEST(Processor, StrippedDates){
     ASSERT_EQ((result2->received)[0], 8*60);
     ASSERT_EQ((result2->received)[1], 16*60);
 }
+
 
 TEST(Processor, Percentile){
     std::vector<long> nums = {2,4,7,10,11,14};
@@ -120,108 +163,43 @@ TEST(Processor, DenseTimes){
 
 }
 
-TEST(Processor, ResponseTimeNintieth){
+TEST(Processor, ResponseTimeNintieth_Default){
     //Example has no discards, but we're not testing discarding here - that's in date stripping
-    std::shared_ptr<std::vector<Message>> msgs = std::make_shared<std::vector<Message>>();
-    std::string addr("test@test.com");
-    int id = 0;
-
-    //Inserted in reverse order to match DB sort
-
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(17), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(17), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(16), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(15), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(14), addr, 0, 1));
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(12), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(10), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(5), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(3), addr, 0, 1));
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(2), addr, 0, 1));
+    std::shared_ptr<std::vector<Message>> msgs = getDefaultMessagesVector();
 
     SentRec<long> times = favor::processor::responseTimeNintiethCompute(msgs);
     //Nintieth here is just largest number with such small arrays
     ASSERT_EQ(times.sent, 5*60);
     ASSERT_EQ(times.received, 3*60);
+}
 
-    msgs->clear();
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(3), addr, 0, 1));
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(2), addr, 0, 1));
+TEST(Processor, ResponseTimeNintieth_TwoMessages){
+    std::shared_ptr<std::vector<Message>> msgs = getTwoMessageVector();
 
-    times = favor::processor::responseTimeNintiethCompute(msgs);
+    SentRec<long> times = favor::processor::responseTimeNintiethCompute(msgs);
     ASSERT_EQ(times.sent, 0); //3.33 = 3
     ASSERT_EQ(times.received, 0); //1.5 =2
 }
 
-TEST(Processor, AverageConversationalResponseTime){
+TEST(Processor, AverageConversationalResponseTime_Default){
 
-    std::shared_ptr<std::vector<Message>> msgs = std::make_shared<std::vector<Message>>();
-    std::string addr("test@test.com");
-    int id = 0;
+    std::shared_ptr<std::vector<Message>> msgs = getDefaultMessagesVector();
 
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(17), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(17), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(16), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(15), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(14), addr, 0, 1));
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(12), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(10), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(5), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(3), addr, 0, 1));
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(2), addr, 0, 1));
-
-    logger::info("test1");
     SentRec<double> times = favor::processor::conversationalResponseTimeCompute(msgs);
-    ASSERT_EQ(times.sent, 3*60); //3.33 = 3
+    ASSERT_EQ(times.sent, 3*60); //3.33 = 3 //TODO: make into constants and reuse in conversationmetrics
     ASSERT_EQ(times.received, 1.5*60); //1.5 =2
-
-    logger::info("test2");
-    msgs->clear();
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(3), addr, 0, 1));
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(2), addr, 0, 1));
-
-    times = favor::processor::conversationalResponseTimeCompute(msgs);
-    ASSERT_EQ(times.sent, 0); //3.33 = 3
-    ASSERT_EQ(times.received, 0); //1.5 =2
-
 }
 
-TEST(Processor, ConversationMetrics){
-    std::shared_ptr<std::vector<Message>> msgs = std::make_shared<std::vector<Message>>();
-    std::string addr("test@test.com");
-    int id = 0;
+TEST(Processor, AverageConversationalResponseTime_TwoMessages){
+    std::shared_ptr<std::vector<Message>> msgs = getTwoMessageVector();
 
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(17), addr, 0, 1));
+    SentRec<double> times = favor::processor::conversationalResponseTimeCompute(msgs);
+    ASSERT_EQ(times.sent, 0); //3.33 = 3
+    ASSERT_EQ(times.received, 0); //1.5 =2
+}
 
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(17), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(16), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(15), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(14), addr, 0, 1));
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(12), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(10), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(5), addr, 0, 1));
-
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(3), addr, 0, 1));
-    msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(2), addr, 0, 1));
+TEST(Processor, ConversationMetrics_EndMidConvo){
+    std::shared_ptr<std::vector<Message>> msgs = getDefaultMessagesVector();
 
     auto conversationalResponseTimes = favor::processor::sentRecDenseTimes(msgs);
 
@@ -230,9 +208,26 @@ TEST(Processor, ConversationMetrics){
                                                    conversationalResponseTimes->sent.end()));
     long maxRecConvoResponse = *(std::max_element(conversationalResponseTimes->received.begin(),
                                                   conversationalResponseTimes->received.end()));
+    logger::info("Max sent convo: "+as_string(maxSentConvoResponse));
+    logger::info("Max rec convo :"+as_string(maxRecConvoResponse));
     ConversationData result = favor::processor::fillInConvoData(msgs, maxSentConvoResponse, maxRecConvoResponse);
     logger::info("----------");
     logger::info(as_string(result));
     logger::info("----------");
+    //TODO: assert things
+
+}
+
+
+TEST(Processor, ConversationMetrics_TwoMessages){
+    std::shared_ptr<std::vector<Message>> msgs = getTwoMessageVector();
+    std::shared_ptr<std::vector<Message>> defaultMsgs = getDefaultMessagesVector();
+
+
+
+}
+
+
+TEST(Processor, ConversationMetrics_HappyPath){
 
 }
