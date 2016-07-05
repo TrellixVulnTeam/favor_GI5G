@@ -67,6 +67,30 @@ namespace favor{
         return msgs;
     }
 
+    std::shared_ptr<std::vector<Message>> getConvoMessagesVector(){
+        std::shared_ptr<std::vector<Message>> msgs = std::make_shared<std::vector<Message>>();
+        std::string addr("test@test.com");
+        int id = 0;
+
+        //Inserted in reverse order to match DB sort
+
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(100), addr, 0, 10000));
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(82), addr, 0, 15));
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(80), addr, 0, 5));
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(60), addr, 0, 10000));
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(45), addr, 0, 15));
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(44), addr, 0, 5));
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(40), addr, 0, 10000));
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(17), addr, 0, 20));
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(13), addr, 0, 20));
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(10), addr, 0, 20));
+        msgs->push_back(Message(TYPE_EMAIL, false, ++id, BM(9), addr, 0, 20));
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(8), addr, 0, 20));
+        msgs->push_back(Message(TYPE_EMAIL, true, ++id, BM(2), addr, 0, 10000));
+
+        return msgs;
+    }
+
     std::shared_ptr<std::vector<Message>> getTwoMessageVector(){
         std::shared_ptr<std::vector<Message>> msgs = std::make_shared<std::vector<Message>>();
         std::string addr("test@test.com");
@@ -79,6 +103,9 @@ namespace favor{
 
         return msgs;
     }
+
+    const int MAX_SENT_CONVO = 300;
+    const int MAX_REC_CONVO = 180;
 }
 
 
@@ -169,8 +196,8 @@ TEST(Processor, ResponseTimeNintieth_Default){
 
     SentRec<long> times = favor::processor::responseTimeNintiethCompute(msgs);
     //Nintieth here is just largest number with such small arrays
-    ASSERT_EQ(times.sent, 5*60);
-    ASSERT_EQ(times.received, 3*60);
+    ASSERT_EQ(times.sent, MAX_SENT_CONVO);
+    ASSERT_EQ(times.received, MAX_REC_CONVO);
 }
 
 TEST(Processor, ResponseTimeNintieth_TwoMessages){
@@ -198,36 +225,67 @@ TEST(Processor, AverageConversationalResponseTime_TwoMessages){
     ASSERT_EQ(times.received, 0); //1.5 =2
 }
 
+
 TEST(Processor, ConversationMetrics_EndMidConvo){
     std::shared_ptr<std::vector<Message>> msgs = getDefaultMessagesVector();
 
-    auto conversationalResponseTimes = favor::processor::sentRecDenseTimes(msgs);
+    ConversationData result = favor::processor::fillInConvoData(msgs, MAX_SENT_CONVO, MAX_REC_CONVO);
 
 
-    long maxSentConvoResponse = *(std::max_element(conversationalResponseTimes->sent.begin(),
-                                                   conversationalResponseTimes->sent.end()));
-    long maxRecConvoResponse = *(std::max_element(conversationalResponseTimes->received.begin(),
-                                                  conversationalResponseTimes->received.end()));
-    logger::info("Max sent convo: "+as_string(maxSentConvoResponse));
-    logger::info("Max rec convo :"+as_string(maxRecConvoResponse));
-    ConversationData result = favor::processor::fillInConvoData(msgs, maxSentConvoResponse, maxRecConvoResponse);
-    logger::info("----------");
-    logger::info(as_string(result));
-    logger::info("----------");
-    //TODO: assert things
+
+    ASSERT_EQ(result.totalConversations, 1);
+    ASSERT_EQ(result.averageMsgCount, 10);
+    ASSERT_EQ(result.averageLengthTime, 900);
+    ASSERT_EQ(result.averangeTotalChars, 10);
+
+    ASSERT_EQ(result.sentOneOffCount, 0);
+    ASSERT_EQ(result.sentEndedCount, 0);
+    ASSERT_EQ(result.sentStartedCount, 1); //We have one started and no ended because we cut off mid convo
+
+    ASSERT_EQ(result.recOneOffCount, 0);
+    ASSERT_EQ(result.recEndedCount, 0);
+    ASSERT_EQ(result.recStartedCount, 0);
 
 }
 
 
 TEST(Processor, ConversationMetrics_TwoMessages){
     std::shared_ptr<std::vector<Message>> msgs = getTwoMessageVector();
-    std::shared_ptr<std::vector<Message>> defaultMsgs = getDefaultMessagesVector();
 
+    ConversationData result = favor::processor::fillInConvoData(msgs, MAX_SENT_CONVO, MAX_REC_CONVO);
 
+    ASSERT_EQ(result.sentOneOffCount, 2);
+    ASSERT_EQ(result.sentEndedCount, 0);
+    ASSERT_EQ(result.sentStartedCount, 0);
+
+    ASSERT_EQ(result.recOneOffCount, 0);
+    ASSERT_EQ(result.recEndedCount, 0);
+    ASSERT_EQ(result.recStartedCount, 0);
+
+    ASSERT_EQ(result.totalConversations, 0);
+    ASSERT_EQ(result.averageLengthTime, 0);
+    ASSERT_EQ(result.averageMsgCount, 0);
+    ASSERT_EQ(result.averangeTotalChars, 0);
 
 }
 
 
 TEST(Processor, ConversationMetrics_HappyPath){
+    std::shared_ptr<std::vector<Message>> msgs = getConvoMessagesVector();
+
+    ConversationData result = favor::processor::fillInConvoData(msgs, MAX_SENT_CONVO, MAX_REC_CONVO);
+
+    ASSERT_EQ(result.sentOneOffCount, 1);
+    ASSERT_EQ(result.sentEndedCount, 0);
+    ASSERT_EQ(result.sentStartedCount, 1);
+
+    ASSERT_EQ(result.recOneOffCount, 3);
+    ASSERT_EQ(result.recEndedCount, 3);
+    ASSERT_EQ(result.recStartedCount, 2);
+
+    ASSERT_EQ(result.totalConversations, 3);
+    ASSERT_EQ(result.averageLengthTime, 240);
+    ASSERT_EQ(result.averageMsgCount, 3);
+    ASSERT_EQ((int)result.averangeTotalChars, 46); //int cast is cheap round down
 
 }

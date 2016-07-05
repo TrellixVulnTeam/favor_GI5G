@@ -267,7 +267,7 @@ namespace favor {
         result += " | Average Duration: "+as_string(c.averageLengthTime)+" | Sent Started Count: "+as_string(c.sentStartedCount);
         result += " | Sent Ended Count: "+as_string(c.sentEndedCount)+" | Sent One-Off Count: "+as_string(c.sentOneOffCount);
         result += " | Rec Started Count: "+as_string(c.recStartedCount)+" | Rec Ended Count: "+as_string(c.recEndedCount);
-        result += " | Rec One-off Count: "+as_string(c.recOneOffCount);
+        result += " | Rec One-off Count: "+as_string(c.recOneOffCount)+"]";
         return result;
     }
 

@@ -353,8 +353,7 @@ namespace favor {
              * one-offs
              */
             for (auto it = back; it != query->rend(); ++it){
-
-                if (it->date - back->date <= (it->sent ? maxRecConvoResponse : maxSentConvoResponse)){
+                if (it->date - back->date <= (it->sent ? maxSentConvoResponse : maxRecConvoResponse)){
                     //We're within conversational response range
                     if (it->sent == back->sent){
                         if (conversation){
@@ -367,20 +366,20 @@ namespace favor {
                         }
                     } else {
                         if (!conversation){
-                            //We're starting a conversation
-                            if (it->sent) result.sentStartedCount++;
-                            else result.recStartedCount++;
-                            convoStart = it;
+                            //We've detected a conversation, which we know to have started at "back"
+                            //(because this is what we check against in the if)
                             messageCounter = 1;
                             totalCharCounter = it->charCount;
-                            conversation = true;
-                            //If we have consecutive messages before this, they're retroactively part of the conversation
+                            convoStart = back;
                             while(back != it){
+                                //Messages before this are retroactively part of the conversation
                                 messageCounter++;
                                 totalCharCounter += back->charCount;
                                 back++;
                             }
-                            back = it;
+                            if (convoStart->sent) result.sentStartedCount++;
+                            else result.recStartedCount++;
+                            conversation = true;
                         } else {
                             //Normal conversational exchange
                             messageCounter++;
@@ -391,12 +390,12 @@ namespace favor {
                 } else {
                     //We're outside of conversational response range
                     if (conversation){
-                        //Conversation is ending
-                        if (back->sent) result.recStartedCount; //Person who fails to respond ends the conversation
-                        else result.sentEndedCount;
+                        //Conversation ended at "back", and we're now outside of it
+                        if (back->sent) result.recEndedCount++; //Person who fails to respond ends the conversation
+                        else result.sentEndedCount++;
                         messageCounts.push_back(messageCounter);
                         totalCharCounts.push_back(totalCharCounter);
-                        timeLengths.push_back(it->date - convoStart->date);
+                        timeLengths.push_back(back->date - convoStart->date);
                         conversation = false;
                         back = it;
                     } else {
@@ -415,12 +414,21 @@ namespace favor {
                 messageCounts.push_back(messageCounter);
                 totalCharCounts.push_back(totalCharCounter);
                 timeLengths.push_back(query->begin()->date - convoStart->date); //Normal begin will be last element in reverse
+            } else {
+                //one-offs before this, count them up
+                while (back != query->rend()){
+                    if (back->sent) result.sentOneOffCount++;
+                    else result.recOneOffCount++;
+                    back++;
+                }
             }
 
             if (messageCounts.size() == 0){
                 //No conversations found
                 return result;
             }
+
+            result.totalConversations = result.recStartedCount + result.sentStartedCount;
 
             result.averageMsgCount = std::accumulate(messageCounts.begin(), messageCounts.end(), 0)
                                      / (double)messageCounts.size();
