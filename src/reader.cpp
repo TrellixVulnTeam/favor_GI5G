@@ -235,7 +235,7 @@ namespace favor {
           ACTUAL QUERY METHODS
          */
 
-        enum ComputeCommand {SUM, COUNT, AVERAGE};
+        enum ComputeCommand {SUM, COUNT, AVERAGE, MAX};
         const char* const ComputeCommandName[3] = {"SUM", "COUNT", "AVG"};
 
         template <typename T>
@@ -364,6 +364,9 @@ namespace favor {
         }
         long count(const AccountManager* account, const Contact& c, time_t fromDate, time_t untilDate, bool sent){
             return sqlComputeCommand<long>(COUNT, &(c.getAddresses()), account->getTableName(sent), KEY_DATE, fromDate, untilDate);
+        }
+        long max(const AccountManager* account, const Contact& c, Key key, time_t fromDate, time_t untilDate, bool sent){
+            return sqlComputeCommand<long>(MAX, &(c.getAddresses()), account->getTableName(sent), key, fromDate, untilDate);
         }
 
         long sumAll(const AccountManager* account, Key key, time_t fromDate, time_t untilDate, bool sent){

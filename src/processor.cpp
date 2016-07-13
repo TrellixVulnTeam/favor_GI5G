@@ -472,13 +472,12 @@ namespace favor {
         }
 
         ConversationData conversationData(AccountManager *account, const Contact *c, time_t fromDate, time_t untilDate) {
-            //Sent is hardcoded as true because we generate results for sent and received together
             if (c == NULL) throw queryException("Cannot run conversation queries with a null contact");
-            if (countResult(CONVO_DATA, account, c, fromDate, untilDate, true)){
-                return getResult<ConversationData>(CONVO_DATA, account, c, fromDate, untilDate, true);
+            if (countResult(CONVO_DATA, account, c, fromDate, untilDate, SENT_DEFAULT_VAL)){
+                return getResult<ConversationData>(CONVO_DATA, account, c, fromDate, untilDate, SENT_DEFAULT_VAL);
             } else {
                 ConversationData conversationData = computeConvoData(account, c, fromDate, untilDate);
-                cacheResult<ConversationData>(CONVO_DATA, account, c, fromDate, untilDate, true, conversationData);
+                cacheResult<ConversationData>(CONVO_DATA, account, c, fromDate, untilDate, SENT_DEFAULT_VAL, conversationData);
                 return conversationData;
             }
         }
@@ -535,6 +534,22 @@ namespace favor {
                 return value;
             }
 
+        }
+
+        long lastContactDate(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate){
+            if (countResult(TOTAL_MESSAGES, account, c, fromDate, untilDate, SENT_DEFAULT_VAL)) {
+                return getResult<long>(TOTAL_MESSAGES, account, c, fromDate, untilDate, SENT_DEFAULT_VAL);
+            } else {
+                if (!c){
+                    throw queryException("Cannot get last contact date for null contact");
+                }
+                //zSent/Rec are separate tables either way, so we can't save a query somewhere else
+                long sent = reader::max(account, *c, KEY_DATE, fromDate, untilDate, true);
+                long rec = reader::max(account, *c, KEY_DATE, fromDate, untilDate, false);
+                long value = sent > rec ? sent : rec;
+                cacheResult<long>(TOTAL_MESSAGES, account, c, fromDate, untilDate, SENT_DEFAULT_VAL, value);
+                return value;
+            }
         }
 
 

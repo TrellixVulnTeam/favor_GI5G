@@ -24,7 +24,7 @@ namespace favor{
 }
 
 
-//TODO: test the caching methods
+//TODO: test the cache/the caching in some of the methods
 
 using namespace std;
 using namespace favor;
@@ -213,7 +213,7 @@ TEST(Processor, AverageConversationalResponseTime_Default){
     std::shared_ptr<std::vector<Message>> msgs = getDefaultMessagesVector();
 
     SentRec<double> times = favor::processor::conversationalResponseTimeCompute(msgs);
-    ASSERT_EQ(times.sent, 3*60); //3.33 = 3 //TODO: make into constants and reuse in conversationmetrics
+    ASSERT_EQ(times.sent, 3*60); //3.33 = 3
     ASSERT_EQ(times.received, 1.5*60); //1.5 =2
 }
 

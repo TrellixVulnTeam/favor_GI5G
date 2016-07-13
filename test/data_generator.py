@@ -39,6 +39,7 @@ def rint(max):
 class Track:
     IDS = {}
     MAPS = {}
+    MAXES = {}
 
 
     def __init__(self, name, cls):
@@ -55,6 +56,8 @@ class Track:
             Track.IDS[cls] += 1
             self.id = Track.IDS[cls]
             Track.MAPS[cls][name] = self
+
+    def self.maxCheck()
 
 
 class Address(Track):

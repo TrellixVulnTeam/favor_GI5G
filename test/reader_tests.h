@@ -62,6 +62,14 @@ TEST_F(Reader, SQLiteSum){
     ASSERT_EQ(ACCOUNT1_AT_TEST_DOT_COM_OVERALL_CHARCOUNT_RECEIVED, result);
 }
 
+TEST_F(Reader, SQLiteMax){
+    Contact EmailTest1 CONTACT_EmailTest1_ARGS;
+    AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
+    long result = reader::sum(Account1, EmailTest1, KEY_DATE, -1, -1, true);
+
+    logger::info("Max---------->"+as_string(result));
+}
+
 
 TEST_F(Reader, SQLiteAverage){
     Contact LineEmailTest3 CONTACT_LineEmailTest3_ARGS;

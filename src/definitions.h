@@ -86,6 +86,7 @@ namespace favor {
 #define ADDRESS_CHECK_MESSAGE_COUNT 500 //The number of recent sent messages we look at when determining what addresses to pull
 #define MAX_ADDRESSES 100 //Max addresses that we want to hold per type
 #define MESSAGE_FAILURE_RATIO 0.75
+#define SENT_DEFAULT_VAL true //for cases where sent/rec is irrelevant as an argument
 #define SAVE_BODY true //TODO: this will eventually be a variable we get from settings or something and not a constant
 #define INDEX_DB true //TODO: this will also eventually be a variable we get from settings
 
@@ -144,7 +145,8 @@ namespace favor{
         return static_cast<Key>(static_cast<int>(lhs) | static_cast<int>(rhs));
     }
 
-    enum ResultType {AVG_CHARS, AVG_CONV_RESPONSE, TOTAL_CHARS, RESPONSE_NINTIETH, TOTAL_MESSAGES, CONVO_DATA};
+    enum ResultType {AVG_CHARS, AVG_CONV_RESPONSE, TOTAL_CHARS, RESPONSE_NINTIETH, TOTAL_MESSAGES, CONVO_DATA,
+    LAST_CONTACT_DATE};
 }
 //We need nulls so that averages work properly with messages we failed to record
 #define RECEIVED_TABLE_SCHEMA "(id INTEGER NOT NULL, address TEXT NOT NULL, date INTEGER, charcount INTEGER, media INTEGER, body TEXT, PRIMARY KEY(id))"
