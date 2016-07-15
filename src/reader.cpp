@@ -236,7 +236,7 @@ namespace favor {
          */
 
         enum ComputeCommand {SUM, COUNT, AVERAGE, MAX};
-        const char* const ComputeCommandName[3] = {"SUM", "COUNT", "AVG"};
+        const char* const ComputeCommandName[4] = {"SUM", "COUNT", "AVG", "MAX"};
 
         template <typename T>
         T sqlComputeCommand(ComputeCommand cmd, const vector<Address>* addresses, const string& tableName, Key key, time_t fromDate, time_t untilDate){
@@ -264,9 +264,20 @@ namespace favor {
             sqlv(sqlite3_step(stmt));
             T result;
             switch(cmd){
-                case SUM: result = sqlite3_column_int64(stmt, 0);
-                case COUNT: result = sqlite3_column_int64(stmt, 0);
-                case AVERAGE: result = sqlite3_column_double(stmt, 0);
+                case SUM:
+                    result = sqlite3_column_int64(stmt, 0);
+                    break;
+                case COUNT:
+                    result = sqlite3_column_int64(stmt, 0);
+                    break;
+                case AVERAGE:
+                    result = sqlite3_column_double(stmt, 0);
+                    break;
+                case MAX:
+                    result = sqlite3_column_int64(stmt, 0);
+                    break;
+                default:
+                    throw queryException("Unsupported SQLite compute command issued");
             }
             sqlv(sqlite3_finalize(stmt));
             return result;
