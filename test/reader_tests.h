@@ -66,8 +66,10 @@ TEST_F(Reader, SQLiteMax){
     Contact EmailTest1 CONTACT_EmailTest1_ARGS;
     AccountManager* Account1 = AccountManager::buildManager ACC_account1_at_test_dot_com_ARGS;
     long result = reader::max(Account1, EmailTest1, KEY_DATE, -1, -1, true);
+    ASSERT_EQ(ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_SENT_MAXDATE, result);
 
-    ASSERT_EQ(ACCOUNT1_AT_TEST_DOT_COM_from_TEST1_AT_TEST_DOT_COM_date_max, result);
+    result = reader::max(Account1, EmailTest1, KEY_DATE, -1, -1, false);
+    ASSERT_EQ(ACCOUNT1_AT_TEST_DOT_COM_TEST3_AT_TEST_DOT_COM_RECEIVED_MAXDATE, result);
 }
 
 

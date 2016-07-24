@@ -20,9 +20,6 @@ MSG_MODIFIERS = []
 
 #TODO: we can generate initializer lists for the "definedX" vectors used in testing too, and that'd make things much easier
 
-
-
-
 def list_to_string(list):
     return ",".join(str(x) for x in list)
 
@@ -58,7 +55,6 @@ class Track:
             Track.IDS[cls] += 1
             self.id = Track.IDS[cls]
             Track.MAPS[cls][name] = self
-
 
 
 class Address(Track):
@@ -126,7 +122,6 @@ class Contact(Track):
 
 
 class Account(Track):
-
     def __init__(self, name, accountType):
         super().__init__(name, self.__class__)
         self.accountType = accountType
@@ -137,7 +132,6 @@ class Account(Track):
         self.metrics["overall"]["msgcount_sent"] = 0
         self.metrics["overall"]["charcount_received"] = 0
         self.metrics["overall"]["msgcount_received"] = 0
-        self.maxes = {}
 
     def json_escaped(self):
         return '"' + (json.dumps({"password": "no", "url": "imap://imap.no.com"}).replace('"', "\\\"")) + '"'
@@ -163,20 +157,6 @@ class Account(Track):
              self.json_escaped()]) + ")\n"
     def outname(self):
         return "#define ACC_" + format_defstring(self.name) + "_NAME \"" + self.name + "\"\n"
-
-    def maxCheck(self, address, sent, valueName, value):
-        isSent = 'to' if sent else 'from'
-        lookup = isSent+'_'+format_defstring(address.name).upper() + '_'+valueName+'_max'
-        current = self.maxes.get(lookup, 0)
-        self.maxes[lookup] = value if value > current else current
-        #TODO: write this max out somewhere
-
-    def maxesString(self):
-        result = ""
-        for key, value in self.maxes.items():
-            result += "#define "+format_defstring(self.name).upper() + "_" + key + " " + str(value) + "\n"
-
-        return result
 
 
 MSG_ID = 0
@@ -271,7 +251,6 @@ def generate_row(account, addr):
     media = getrandbits(1)
     account.messages[addr.name][sent].append((MSG_ID, address.name, msg_date, msg_charcount, bool(media)))
 
-    account.maxCheck(addr, sent, 'date', msg_date)
     sql += '" VALUES(' + ",".join(
         str(x) for x in [MSG_ID, '"' + address.name + '"', msg_date, msg_charcount, media,
                          '"Test message body"']) + ");"
@@ -363,7 +342,6 @@ if __name__ == '__main__':
     for account in Track.MAPS[Account].values():
         out.write(account.defargs())
         out.write(account.outname())
-        out.write(account.maxesString())
     out.write("\n\n")
 
 
