@@ -61,7 +61,8 @@ namespace favor{
         }
 
 
-        JNIEXPORT jlongArray JNICALL longMultiQuery(JNIEnv* env, jobject callingObj, jint query, jstring account, jint type, jlongArray contactIds, jlong fromDate, jlong untilDate, jboolean sent){
+        JNIEXPORT jlongArray JNICALL longMultiQuery(JNIEnv* env, jobject callingObj, jint query, jstring account,
+                    jint type, jlongArray contactIds, jlong fromDate, jlong untilDate, jboolean sent){
             JNIString accountName(env, account);
             AccountManager* accountManager = findAccountManager(accountName, (MessageType) type);
             jlong* contactIdArray = env->GetLongArrayElements(contactIds, NULL);
@@ -84,6 +85,34 @@ namespace favor{
             env->SetLongArrayRegion(result, 0, length, &buffer[0]);
             env->ReleaseLongArrayElements(contactIds, contactIdArray, JNI_ABORT);
             return result;
+        }
+
+        JNIEXPORT jlongArray JNICALL messageCountLastTwoWeeks(JNIEnv* env, jobject callingObj, jstring account, jint type,
+                     jlong contactId, jlong fromDate, jlong untilDate, jboolean sent){
+
+            JNIString accountName(env, account);
+            AccountManager* accountManager = findAccountManager(accountName, (MessageType) type);
+            Contact contact = findContact((long) contactId);
+            long endDate = processor::lastContactDate(accountManager, &contact);
+            auto messagesPerDay = processor::messagesPerDay(accountManager, &contact, endDate - (WEEK_IN_SECONDS * 2), endDate, sent);
+
+            jlongArray result = env->NewLongArray(messagesPerDay->size());
+            if (env->ExceptionOccurred() || result == NULL){
+                //Something went wrong, we failed to make our array
+                env->DeleteLocalRef(result);
+                logger::error("Unable to requisition array for longMultiQuery");
+                env->ExceptionClear();
+                return NULL;
+            }
+            std::vector<jlong> buffer(messagesPerDay->size());
+            for (size_t i = 0; i < messagesPerDay->size(); ++i){
+                buffer[i] = (jlong)(*messagesPerDay)[i];
+            }
+
+
+            env->SetLongArrayRegion(result, 0, messagesPerDay->size(), &buffer[0]);
+            return result;
+
         }
 
         //TODO: double version untested, but should work fine just like long
@@ -123,6 +152,7 @@ namespace favor{
                 {"doubleQuery", "(ILjava/lang/String;IJJJZ)D", (void*) doubleQuery},
                 {"longMultiQuery", "(ILjava/lang/String;I[JJJZ)[J", (void*) longMultiQuery},
                 {"doubleMultiQuery", "(ILjava/lang/String;I[JJJZ)[D", (void*) doubleMultiQuery},
+                {"messageCountLastTwoWeeks", "(Ljava/lang/String;IJJJZ)[J", (void*) messageCountLastTwoWeeks},
                 {"clearCache", "()V", (void*) clearCache}
         };
     }

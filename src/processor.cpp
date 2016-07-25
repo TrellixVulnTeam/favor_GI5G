@@ -536,19 +536,44 @@ namespace favor {
 
         }
 
-        long lastContactDate(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate){
-            if (countResult(TOTAL_MESSAGES, account, c, fromDate, untilDate, SENT_DEFAULT_VAL)) {
-                return getResult<long>(TOTAL_MESSAGES, account, c, fromDate, untilDate, SENT_DEFAULT_VAL);
+        long lastContactDate(AccountManager* account, const Contact* c){
+            if (countResult(TOTAL_MESSAGES, account, c, -1, -1, SENT_DEFAULT_VAL)) {
+                return getResult<long>(TOTAL_MESSAGES, account, c, -1, -1, SENT_DEFAULT_VAL);
             } else {
                 if (!c){
+                    //TODO: add a maxAll in reader and allow this
                     throw queryException("Cannot get last contact date for null contact");
                 }
-                //zSent/Rec are separate tables either way, so we can't save a query somewhere else
-                long sent = reader::max(account, *c, KEY_DATE, fromDate, untilDate, true);
-                long rec = reader::max(account, *c, KEY_DATE, fromDate, untilDate, false);
+                //Sent/Rec are separate tables either way, so we can't save a query somewhere else
+                long sent = reader::max(account, *c, KEY_DATE, -1, -1, true);
+                long rec = reader::max(account, *c, KEY_DATE, -1, -1, false);
                 long value = sent > rec ? sent : rec;
-                cacheResult<long>(TOTAL_MESSAGES, account, c, fromDate, untilDate, SENT_DEFAULT_VAL, value);
+                cacheResult<long>(TOTAL_MESSAGES, account, c, -1, -1, SENT_DEFAULT_VAL, value);
                 return value;
+            }
+        }
+
+
+        shared_ptr<vector<long>> messagesPerDay(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent){
+            if (countResult(MESSAGES_PER_DAY, account, c, fromDate, untilDate, sent)) {
+                return getResult<shared_ptr<vector<long>>>(MESSAGES_PER_DAY, account, c, -1, -1, SENT_DEFAULT_VAL);
+            } else {
+                time_t period = untilDate - fromDate;
+                if (period % DAY_IN_SECONDS != 0){
+                    throw new queryException("Should not get messages per day for a period of time not exactly divisible into days");
+                }
+                //TODO: test this, and when we do, make sure we get figure out how edge cases behave (msgs on start or end of valid period)
+                long dayCount = period / DAY_IN_SECONDS;
+                auto query = reader::queryContact(account, *c, KEY_DATE, fromDate, untilDate, sent);
+                shared_ptr<vector<long>> result = std::make_shared<vector<long>>();
+                for (auto it = query->begin(); it != query->end(); ++it){
+                    long bucket = (it->date - fromDate) / DAY_IN_SECONDS;
+                    //The last message (at the boundary) needs to be pushed one bucket back
+                    bucket = bucket == dayCount ? bucket - 1 : bucket; //TODO: make sure this happens/can actually happen
+                    (*result)[bucket] += 1;
+                }
+
+                return result;
             }
         }
 

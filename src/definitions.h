@@ -89,6 +89,8 @@ namespace favor {
 #define SENT_DEFAULT_VAL true //for cases where sent/rec is irrelevant as an argument
 #define SAVE_BODY true //TODO: this will eventually be a variable we get from settings or something and not a constant
 #define INDEX_DB true //TODO: this will also eventually be a variable we get from settings
+#define DAY_IN_SECONDS 86400
+#define WEEK_IN_SECONDS 604800
 
 //Database --------------------------------------------------------------------------------
 #define DB_PATH_FULL (string(favor::dbPath)+favor::dbName).c_str()
@@ -146,7 +148,7 @@ namespace favor{
     }
 
     enum ResultType {AVG_CHARS, AVG_CONV_RESPONSE, TOTAL_CHARS, RESPONSE_NINTIETH, TOTAL_MESSAGES, CONVO_DATA,
-    LAST_CONTACT_DATE};
+    LAST_CONTACT_DATE, MESSAGES_PER_DAY};
 }
 //We need nulls so that averages work properly with messages we failed to record
 #define RECEIVED_TABLE_SCHEMA "(id INTEGER NOT NULL, address TEXT NOT NULL, date INTEGER, charcount INTEGER, media INTEGER, body TEXT, PRIMARY KEY(id))"

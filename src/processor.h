@@ -38,6 +38,8 @@ namespace favor {
 
         long totalCharcount(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent);
         long totalMessagecount(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent);
+        long lastContactDate(AccountManager* account, const Contact* c);
+        shared_ptr<vector<long>> messagesPerDay(AccountManager* account, const Contact* c, time_t fromDate, time_t untilDate, bool sent);
 
 
         template<typename T>
