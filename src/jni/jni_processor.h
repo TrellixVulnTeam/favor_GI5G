@@ -88,7 +88,7 @@ namespace favor{
         }
 
         JNIEXPORT jlongArray JNICALL messageCountLastTwoWeeks(JNIEnv* env, jobject callingObj, jstring account, jint type,
-                     jlong contactId, jlong fromDate, jlong untilDate, jboolean sent){
+                     jlong contactId, jboolean sent){
 
             JNIString accountName(env, account);
             AccountManager* accountManager = findAccountManager(accountName, (MessageType) type);
@@ -104,8 +104,10 @@ namespace favor{
                 env->ExceptionClear();
                 return NULL;
             }
+            logger::info("CALLING MESAGE COUNT FOR LAST TWO WEEKS");
             std::vector<jlong> buffer(messagesPerDay->size());
             for (size_t i = 0; i < messagesPerDay->size(); ++i){
+                logger::info("add 1 to day "+as_string((*messagesPerDay)[i]));
                 buffer[i] = (jlong)(*messagesPerDay)[i];
             }
 
@@ -152,7 +154,7 @@ namespace favor{
                 {"doubleQuery", "(ILjava/lang/String;IJJJZ)D", (void*) doubleQuery},
                 {"longMultiQuery", "(ILjava/lang/String;I[JJJZ)[J", (void*) longMultiQuery},
                 {"doubleMultiQuery", "(ILjava/lang/String;I[JJJZ)[D", (void*) doubleMultiQuery},
-                {"messageCountLastTwoWeeks", "(Ljava/lang/String;IJJJZ)[J", (void*) messageCountLastTwoWeeks},
+                {"messageCountLastTwoWeeks", "(Ljava/lang/String;IJZ)[J", (void*) messageCountLastTwoWeeks},
                 {"clearCache", "()V", (void*) clearCache}
         };
     }
